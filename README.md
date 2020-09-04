@@ -1,1 +1,1 @@
-# SPHEREx_forecasts
+# SphereLikes
