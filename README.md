@@ -1,1 +1,1 @@
-# SPHEREx_forecasts
+# SPHEREx Simulated Likelihood Analysis
