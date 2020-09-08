@@ -1,0 +1,17 @@
+cl_file: ./spherelikes/data/test_file.txt #TODO: need to make this portable
+# Aliases for automatic covariance matrix
+aliases: [myOld]
+# Speed in evaluations/second (after theory inputs calculated).
+speed: 500
+params:
+  my_foreground_amp:
+    prior:
+      dist: uniform
+      min: 0
+      max: 100
+    ref:
+      dist: norm
+      loc: 153
+      scale: 27
+    proposal: 27
+    latex: A^{f}_{\rm{mine}}
