@@ -1,36 +1,39 @@
 # SphereLikes
 
+SphereLikes is a python package for the [SPHEREx](https://spherex.caltech.edu/) simulated likelihood anaysis. 
+It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/index.html) to run.
+
 ## Install Requirements
 
 1. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/):
 
-`conda create -n <yourenvname> python=3.7 anaconda`
+    `conda create -n <yourenvname> python=3.7 anaconda`
 
-`source activate <yourenvname>`
+    `source activate <yourenvname>`
 
-2. Install requirements (add `--user` for a cluster): 
+2. Install requirements (add `--user` on a cluster): 
 
-`pip install -r requirements.txt`
+    `pip install -r requirements.txt`
 
 ## Running spherelikes with Cobaya
 
 1. Add `spherelikes` package to your python path by manually executing:
 
-`GIT_ROOT=$(git rev-parse --show-toplevel)
+    `GIT_ROOT=$(git rev-parse --show-toplevel)
 
-LIKE_PATH=$GIT_ROOT/spherelikes/
+    LIKE_PATH=$GIT_ROOT/spherelikes/
 
-export PYTHONPATH=$PYTHONPATH:$LIKE_PATH
-`
+    export PYTHONPATH=$PYTHONPATH:$LIKE_PATH`
+
 or make use of the setup.sh file:
 
-`bash setup.sh`
-`source ~/.bashrc`
+    `bash setup.sh`
+    `source ~/.bashrc`
 
 2. Run a sample cobaya run (must be from the root of this directory):
 
-`python run.py`
+    `python run.py`
 
 Use `-f` to force delete existing sample chains when running a second time:
 
-`python run.py -f` 
+    `python run.py -f` 
