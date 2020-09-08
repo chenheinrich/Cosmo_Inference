@@ -2,7 +2,7 @@
 
 ## Install Requirements
 
-1. It is recommended you create a virtual environment:
+1. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/):
 
 `conda create -n <yourenvname> python=3.7 anaconda`
 
