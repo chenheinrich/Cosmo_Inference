@@ -25,7 +25,7 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
     export PYTHONPATH=$PYTHONPATH:$LIKE_PATH`
 
-or make use of the setup.sh file:
+    or make use of the setup.sh file:
 
     `bash setup.sh`
     `source ~/.bashrc`
