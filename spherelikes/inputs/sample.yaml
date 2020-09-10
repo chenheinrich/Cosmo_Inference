@@ -29,14 +29,14 @@ params:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.0
+    ref: 1.1
     propose: 0.1
     latex: 'b_g^{1}'
   gaussian_bias_2:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.0
+    ref: 1.1
     propose: 0.1
     latex: 'b_g^{2}'
   logA:

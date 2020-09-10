@@ -1,5 +1,7 @@
 from cobaya.theory import Theory
 import numpy as np
+import time
+import sys
 
 
 class PowerSpectrumBase(Theory):
@@ -12,11 +14,14 @@ class PowerSpectrumBase(Theory):
         'derived_param': {'derived': True}
     }
 
-    n_sample = 2
-    nz = 4
-    nk = 21
+    n_sample = 2  # number of galaxy samples
+    nz = 4  # number of z bins
+    nk = 21  # number of k points (to be changed into bins)
+    nmu = 10  # number of mu bins
     z_list = [0.25, 0.5, 0.75, 1]
-    k_list = np.linspace(0.001, 0.02, nk)
+    k_array = np.linspace(0.001, 0.02, nk)
+    mu_edges = np.linspace(0, 1, nmu + 1)
+    mu = (mu_edges[:-1] + mu_edges[1:]) / 2.0
 
     _delta_c = 1.686
     _k0 = 0.05  # 1/Mpc
@@ -58,39 +63,45 @@ class PowerSpectrumBase(Theory):
                 'omegam': None,
                 'As': None,
                 'ns': None,
+                'fsigma8': {'z': z_list},
             }
 
     def get_can_provide_params(self):
         return ['derived_param']
 
     def calculate(self, state, want_derived=True, **params_values_dict):
-        cl = self.provider.get_Cl()
 
-        # matter_power = self.calculate_matter_power()
-        state['matter_power'] = 1.0  # matter_power
-
-        galaxy_transfer = self.calculate_galaxy_transfer(**params_values_dict)
-        state['galaxy_transfer'] = 1.0  # galaxy_transfer
-
-        # AP_factor = self.calculate_AP_factor()
-        state['AP_factor'] = 1.0  # AP_factor
-
-        # TODO NEXT write a loop here, figure out data format first!!
-        # galaxy_ps = AP_factor * matter_power[nz, nk] *\
-        #    galaxy_transfer[j1, nk] * galaxy_transfer[j2, nk]
-        galaxy_ps = 1.0
-        state['galaxy_ps'] = galaxy_ps
-
+        state['matter_power'] = self._calculate_matter_power()  # (nz, nk)
+        state['galaxy_transfer'] = self._calculate_galaxy_transfer(
+            **params_values_dict)  # (n_sample, nz, nk, nmu)
+        state['AP_factor'] = self._calculate_AP_factor()  # (nz,)
+        # (n_sample, nz, nk, nmu)
+        state['galaxy_ps'] = self._calculate_galaxy_ps(state)
         # TODO placeholder for any derived paramter from this module
         state['derived'] = {'derived_param': 1.0}
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']
 
-    def calculate_matter_power(self):
-        """ matter_power is nz x nk numpy array"""
+    def _calculate_galaxy_ps(self, state):
+        print('entered _calculate_galaxy_ps')
+        n_ps = int(self.n_sample * (self.n_sample + 1) / 2)
+        galaxy_ps = np.zeros((n_ps, self.nz, self.nk, self.nmu))
+        jj = 0
+        for j1 in range(self.n_sample):
+            for j2 in range(j1, self.n_sample):
+                galaxy_ps[jj] = \
+                    state['AP_factor'].reshape((self.nz, 1, 1)) \
+                    * state['matter_power'].reshape((self.nz, self.nk, 1)) \
+                    * state['galaxy_transfer'][j1, :, :, :] \
+                    * state['galaxy_transfer'][j2, :, :, :]
+                jj = jj + 1
+        return galaxy_ps
+
+    def _calculate_matter_power(self):
+        """ Returns matter_power in a 2-d numpy array of shape (nz, nk)."""
         Pk_interpolator = self.provider.get_Pk_interpolator(nonlinear=False)
-        matter_power = np.array(Pk_interpolator(self.z_list, self.k_list))
+        matter_power = np.array(Pk_interpolator(self.z_list, self.k_array))
         return matter_power
 
         # TODO: Check robustness of the interpolator (or whatever method adopted)
@@ -101,32 +112,57 @@ class PowerSpectrumBase(Theory):
         # 3) look at linear vs nonlinear
         #    understand problem w/ diff = -0.5 for linear scales w/ the interpolator
 
-    def calculate_galaxy_transfer(self, **params_values_dict):
+    def _calculate_galaxy_transfer(self, **params_values_dict):
+        bias = self._calculate_galaxy_bias(
+            **params_values_dict)  # (n_sample, nz, nk)
+        kaiser = self._calculate_rsd_kaiser(bias)  # (n_sample, nz, nk, mu)
         galaxy_transfer = \
-            self._calculate_rsd_kaiser() * \
+            bias[:, :, :, np.newaxis] * kaiser * \
             self._calculate_nl_damping() * \
-            self._calculate_rsd_nl() * \
-            self._calculate_galaxy_bias(**params_values_dict)
+            self._calculate_rsd_nl()
         return galaxy_transfer
 
-    def _calculate_rsd_kaiser(self):
+    def _calculate_AP_factor(self):
         # TODO to complete
-        # omegam = self.provider.get_param('omegam')
-        return 1.0
+        DA = self.provider.get_angular_diameter_distance(self.z_list)
+        Hubble = self.provider.get_Hubble(self.z_list)
+        # want Hubble and DA here from fiducial cosmology
+        return np.ones(self.nz)
+
+    def _calculate_rsd_kaiser(self, bias):
+        """Returns the Kaiser factor in (n_sample, nz, nk, nmu) numpy array.
+
+        Note: we return one factor of kaiser = (1+f(z)/b_j(k,z) mu^2).
+        """
+        f = self._calculate_growth_rate()  # shape (nz,) # time: 0.001 sec
+        # self._calculate_growth_rate_approx()  # time:  1.71661376953125e-05 sec
+        # TODO choose best method
+        kaiser = (1.0 + f[:, np.newaxis] / bias)[:, :, :, np.newaxis]\
+            * self.mu ** 2
+        print('==>kaiser.shape', kaiser.shape)
+        assert kaiser.shape == (self.n_sample, self.nz, self.nk, self.nmu)
+        # TODO turn shape test into unit test
+        # print('==>kaiser.shape', kaiser.shape)
+        # assert kaiser.shape == (self.n_sample, self.nz, self.nk, self.nmu)
+        # TODO turn into unit test
+        #iz = 1
+        #print('a[0,iz=%i,:]' % iz, a[iz, :])
+        #print('expect:', f[iz] / bias[0, iz, :])
+        return kaiser
 
     def _calculate_nl_damping(self):
+        # TODO to implement
         return 1.0
 
     def _calculate_rsd_nl(self):
+        # TODO to implement
         return 1.0
 
-    # TODO might want this in bispectrum class too...
-    # could make into a separate theory class that returns galaxy bias
-    # similarly for galaxy transfer and alpha (alpha needed by bispectrum too)
     def _calculate_galaxy_bias(self, **params_values_dict):
+        """Returns galaxy bias in a 3-d numpy array of shape (n_sample, nz, nk)."""
         gaussian_bias_per_sample = self._calculate_gaussian_bias_array(
             **params_values_dict)
-        gaussian_bias_per_sample = gaussian_bias_per_sample[:, None]
+        gaussian_bias_per_sample = gaussian_bias_per_sample[:, np.newaxis]
         alpha = self._calculate_alpha()
         galaxy_bias = np.array([
             gaussian_bias_per_sample[j]
@@ -134,16 +170,10 @@ class PowerSpectrumBase(Theory):
             * (gaussian_bias_per_sample[j] - 1.0) * self._delta_c / alpha
             for j in range(self.n_sample)
         ])
-        print('galaxy_bias.shape', galaxy_bias.shape)
+        print('==>galaxy_bias', galaxy_bias)
         assert galaxy_bias.shape == (self.n_sample, self.nz, self.nk)
-
-        # TODO NEXT decide on data format here!!! and how to multiply to get the right format.
-        # galaxy_bias.shape = (n_sample, 1); alpha.shape = (nz, nk)
-        # want galaxy_bias.shape = (n_sample, nz, nk)  ?
-        # TODO add unit test check galaxy_bias.shape
-        # galaxy_power: (n_spectra_per_z x nz x nk x nmu) numpy array
-        # matter_power: (nz x nk) numpy array
-        # galaxy_transfer: (n_sample x nz x nk x nmu)
+        # TODO add unit test for galaxy_bias shape
+        # TODO add test for galaxy_bias content (perhaps w/ a plot)
 
         return galaxy_bias
 
@@ -156,6 +186,7 @@ class PowerSpectrumBase(Theory):
         return gaussian_bias
 
     def _calculate_alpha(self):
+        """Returns alpha as 2-d numpy array with shape (nz, nk) """
         # TODO double check w/ Jesus Torrado that this is the right way to get T(k)
         # option 1:
         # params, results = self.provider.get_CAMB_transfers()
@@ -167,26 +198,45 @@ class PowerSpectrumBase(Theory):
         # fnl = params_values_dict['fnl']
 
         initial_power = self._calculate_initial_power()
-        initial_power = np.transpose(initial_power[:, None])
+        initial_power = np.transpose(initial_power[:, np.newaxis])
         alpha = (5.0 / 3.0) * \
-            np.sqrt(self.calculate_matter_power() /
+            np.sqrt(self._calculate_matter_power() /
                     self._calculate_initial_power())
+        # TODO add unit test for alpha shape
         return alpha
 
     def _calculate_initial_power(self):
         # TODO want to make sure this corresponds to the same as camb module
         # Find out how to get it from camb itself (we might have other parameters
         # like nrun, nrunrun; and possibly customized initial power one day)
-        """Returns 1-d numpy array of initial power spectrum evaluated at k_list."""
+        """Returns 1-d numpy array of initial power spectrum evaluated at self.k_array."""
         k0 = self._k0  # 1/Mpc
         As = self.provider.get_param('As')
         ns = self.provider.get_param('ns')
-        k_array = np.array(self.k_list)
-        initial_power = (2.0 * np.pi**2) / (k_array**3) * \
-            As * (k_array / k0)**(ns - 1.0)
+        initial_power = (2.0 * np.pi**2) / (self.k_array**3) * \
+            As * (self.k_array / k0)**(ns - 1.0)
         return initial_power
 
-    # Common ingredients needed by bispectrum:
-    # galaxy bias, alpha, rsd factor
-    # TODO might want to think about how to interface, so only calculate once.
-    # Do this later at the design doc level.
+    def _calculate_growth_rate_approx(self):
+        """Returns f(z) = Omega_m(z)^0.55"""
+        growth_rate_index = 0.55
+        omegam = self.provider.get_param('omegam')
+        f = (omegam * (1.0 + np.array(self.z_list)) ** 3) ** growth_rate_index
+        return f
+
+    def _calculate_growth_rate(self):
+        """Returns f(z) from camb"""
+        params, results = self.provider.get_CAMB_transfers()
+        data = results.get_matter_transfer_data()
+        sigma_8 = data.sigma_8
+        print('==>sigma_8', sigma_8)
+        fsigma8 = self.provider.get_fsigma8(self.z_list)
+        print('==>fsigma8', fsigma8)
+        f = fsigma8 / sigma_8
+        print('==>f (accurate)', f)
+        return f
+
+        # Common ingredients needed by bispectrum:
+        # galaxy bias, alpha, rsd factor
+        # TODO might want to think about how to interface, so only calculate once.
+        # Do this later at the design doc level.
