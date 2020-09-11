@@ -18,13 +18,16 @@ class PowerSpectrumBase(Theory):
     nz = 4  # number of z bins
     nk = 21  # number of k points (to be changed into bins)
     nmu = 10  # number of mu bins
-    z_list = [0.25, 0.5, 0.75, 1]
+    z_list = [0.25, 0.5, 0.75, 1]  # TODO to change to SPHEREx numbers
+    sigz = [0.01, 0.01]  # TODO to change to SPHEREx numbers
+    z_array = np.array(z_list)
     k_array = np.linspace(0.001, 0.02, nk)
     mu_edges = np.linspace(0, 1, nmu + 1)
-    mu = (mu_edges[:-1] + mu_edges[1:]) / 2.0
+    mu_array = (mu_edges[:-1] + mu_edges[1:]) / 2.0
 
     _delta_c = 1.686
     _k0 = 0.05  # 1/Mpc
+    _fraction_recon = 0.5  # reconstruction fration
 
     def initialize(self):
         """called from __init__ to initialize"""
@@ -64,6 +67,7 @@ class PowerSpectrumBase(Theory):
                 'As': None,
                 'ns': None,
                 'fsigma8': {'z': z_list},
+                'sigma8': None,
             }
 
     def get_can_provide_params(self):
@@ -138,25 +142,68 @@ class PowerSpectrumBase(Theory):
         # self._calculate_growth_rate_approx()  # time:  1.71661376953125e-05 sec
         # TODO choose best method
         kaiser = (1.0 + f[:, np.newaxis] / bias)[:, :, :, np.newaxis]\
-            * self.mu ** 2
+            * self.mu_array ** 2
         print('==>kaiser.shape', kaiser.shape)
         assert kaiser.shape == (self.n_sample, self.nz, self.nk, self.nmu)
         # TODO turn shape test into unit test
         # print('==>kaiser.shape', kaiser.shape)
         # assert kaiser.shape == (self.n_sample, self.nz, self.nk, self.nmu)
         # TODO turn into unit test
-        #iz = 1
-        #print('a[0,iz=%i,:]' % iz, a[iz, :])
-        #print('expect:', f[iz] / bias[0, iz, :])
+        # iz = 1
+        # print('a[0,iz=%i,:]' % iz, a[iz, :])
+        # print('expect:', f[iz] / bias[0, iz, :])
         return kaiser
 
     def _calculate_nl_damping(self):
-        # TODO to implement
-        return 1.0
+        """Return non-linear damping factor in 3-d numpy array of shape (nz, nk, nmu).
+        Note: This is factor for galaxy density (not power spectrum)
+        so it is exp(-1/4 * arg), where arg = k^2 * [Sig_perp^2 + mu^2 * (Sig_para^2 - Sig_perp^2)]
+        where Sig_perp(z) = c_rec * D(z) * Sig0 and Sig_para(z) = Sig_perp * (1+f(z)).
+        """
+        self._Sig0 = 11.0  # Mpc/h # TODO need to change unit
+        Sig_perp = self._fraction_recon * self._Sig0 * self._calculate_growth()  # (nz,)
+        # might be able to avoid calculating f(z) twice # TODO optimize later
+        Sig_para = Sig_perp * (1.0 + self._calculate_growth_rate())  # (nz,)
+        arg = self.k_array[np.newaxis, :, np.newaxis] \
+            * ((Sig_perp**2)[:, np.newaxis, np.newaxis]
+               + (self.mu_array**2)[np.newaxis, np.newaxis, :]
+               * ((Sig_para ** 2)[:, np.newaxis, np.newaxis]
+                   - (Sig_perp**2)[:, np.newaxis, np.newaxis])
+               )
+        # TODO add unit test for shape
+        assert arg.shape == (self.nz, self.nk, self.nmu)
+        ans = np.exp(-0.25 * arg)
+        return ans
 
-    def _calculate_rsd_nl(self):
-        # TODO to implement
-        return 1.0
+    def _calculate_growth(self):
+        """Returns growth D(z) normalized to unity at z = 0 as a 1-d numpy array."""
+        # TODO find a better way to implement D(z), or call another name
+        # like sigma8_ratio or something to be clear.
+        sigma8 = self._calculate_sigma8()
+        sigma8_z0 = self.provider.get_param('sigma8')
+        print('==>sigma8_z0', sigma8_z0)
+        return sigma8 / sigma8_z0
+
+    def _calculate_rsd_nl(self):  # TODO find a better name
+        """Returns the blurring due to redshift error exp(-arg^2/2)
+        where arg = (1+z) * sigz * k_parallel/H(z). """
+        k_parallel = self.k_array[:, np.newaxis] \
+            * self.mu_array  # (nk, nmu)
+        Hubble = self.provider.get_Hubble(self.z_list)
+        # fac = Hubble.reshape((self.nz, 1, 1)) / k_parallel
+        k_parallel_over_H = k_parallel[np.newaxis, :, :] \
+            / Hubble.reshape((self.nz, 1, 1))
+        # TODO turn into unit test
+        assert k_parallel_over_H.shape == (self.nz, self.nk, self.nmu)
+        print('==>k_parallel_over_H.shape', k_parallel_over_H.shape)
+        arg = np.array(self.sigz).reshape(self.n_sample, 1, 1, 1) \
+            * (1.0 + self.z_array.reshape(1, self.nz, 1, 1)) \
+            * k_parallel_over_H
+        # TODO turn into unit test
+        print('==>arg.shape', arg.shape)
+        assert arg.shape == (self.n_sample, self.nz, self.nk, self.nmu)
+        ans = np.exp(- arg ** 2 / 2.0)
+        return ans
 
     def _calculate_galaxy_bias(self, **params_values_dict):
         """Returns galaxy bias in a 3-d numpy array of shape (n_sample, nz, nk)."""
@@ -218,21 +265,26 @@ class PowerSpectrumBase(Theory):
         return initial_power
 
     def _calculate_growth_rate_approx(self):
-        """Returns f(z) = Omega_m(z)^0.55"""
+        """Returns f(z) = Omega_m(z)^0.55 in a 1-d numpy array"""
         growth_rate_index = 0.55
         omegam = self.provider.get_param('omegam')
-        f = (omegam * (1.0 + np.array(self.z_list)) ** 3) ** growth_rate_index
+        f = (omegam * (1.0 + self.z_array) ** 3) ** growth_rate_index
         return f
+
+    def _calculate_sigma8(self):
+        # TODO checkout self.provider.get_sigma_R()
+        # (https://cobaya.readthedocs.io/en/latest/theory_camb.html#theories.camb.camb.get_fsigma8)
+        # same answer? (probably better to use self.provider.get_sigma_R() and no camb transfer)
+        params, results = self.provider.get_CAMB_transfers()
+        data = results.get_matter_transfer_data()
+        return data.sigma_8
 
     def _calculate_growth_rate(self):
         """Returns f(z) from camb"""
-        params, results = self.provider.get_CAMB_transfers()
-        data = results.get_matter_transfer_data()
-        sigma_8 = data.sigma_8
-        print('==>sigma_8', sigma_8)
+        sigma8 = self._calculate_sigma8()
         fsigma8 = self.provider.get_fsigma8(self.z_list)
         print('==>fsigma8', fsigma8)
-        f = fsigma8 / sigma_8
+        f = fsigma8 / sigma8
         print('==>f (accurate)', f)
         return f
 
