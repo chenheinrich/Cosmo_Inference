@@ -6,8 +6,11 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 import pathlib
-
+import logging
 from spherelikes import paths
+
+logging.getLogger('matplotlib.font_manager').disabled = True
+logging.getLogger('matplotlib.ticker').disabled = True
 
 
 class PowerSpectrumBase(Theory):
@@ -20,14 +23,14 @@ class PowerSpectrumBase(Theory):
         'derived_param': {'derived': True}
     }
 
-    n_sample = 2  # number of galaxy samples
+    nsample = 2  # number of galaxy samples
     nz = 4  # number of z bins
-    nk = 21  # number of k points (to be changed into bins)
+    nk = 211  # number of k points (to be changed into bins)
     nmu = 10  # number of mu bins
     z_list = [0.25, 0.5, 0.75, 1]  # TODO to change to SPHEREx numbers
     sigz = [0.01, 0.01]  # TODO to change to SPHEREx numbers
     z = np.array(z_list)
-    k = np.linspace(0.001, 0.02, nk)
+    k = np.logspace(np.log10(1e-5), np.log10(5.0), nk)
     mu_edges = np.linspace(0, 1, nmu + 1)
     mu = (mu_edges[:-1] + mu_edges[1:]) / 2.0
 
@@ -35,6 +38,9 @@ class PowerSpectrumBase(Theory):
     test_dir = paths.test_dir
     model_name = 'model_test'
     is_fiducial_model = False
+    do_test = False
+    do_test_plot = False
+    test_plot_names = None
 
     _delta_c = 1.686
     _k0 = 0.05  # 1/Mpc
@@ -43,7 +49,7 @@ class PowerSpectrumBase(Theory):
     def initialize(self):
         """called from __init__ to initialize"""
         self._setup_results_fid()
-        self._setup_test_dir()
+        self._setup_tests()
 
     def initialize_with_provider(self, provider):
         """
@@ -70,8 +76,8 @@ class PowerSpectrumBase(Theory):
         }
         if 'galaxy_ps' in requirements:
             return {
-                'Pk_interpolator': spec_Pk,
                 # 'Pk_grid': spec_Pk,
+                'Pk_interpolator': spec_Pk,
                 'Cl': {'tt': 2500},
                 'H0': None,
                 'angular_diameter_distance': {'z': z_list},
@@ -84,8 +90,8 @@ class PowerSpectrumBase(Theory):
             }
         if 'galaxy_transfer' in requirements:
             return{
-                'Pk_interpolator': spec_Pk,
                 # 'Pk_grid': spec_Pk,
+                'Pk_interpolator': spec_Pk,
                 'Cl': {'tt': 2500},
                 'H0': None,
                 'angular_diameter_distance': {'z': z_list},
@@ -107,16 +113,17 @@ class PowerSpectrumBase(Theory):
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        state['matter_power'] = self._calculate_matter_power()  # (nz, nk)
+        nonlinear = False
+        state['matter_power'] = self._calculate_matter_power(
+            nonlinear=nonlinear)
         state['galaxy_transfer'] = self._calculate_galaxy_transfer(
-            **params_values_dict)  # (n_sample, nz, nk, nmu)
-        state['AP_factor'] = self._calculate_AP_factor()  # (nz,)
-        # (n_sample, nz, nk, nmu)
+            **params_values_dict)
+        state['AP_factor'] = self._calculate_AP_factor()
         state['galaxy_ps'] = self._calculate_galaxy_ps(state)
         # TODO placeholder for any derived paramter from this module
         state['derived'] = {'derived_param': 1.0}
 
-        self._run_tests()
+        self._run_tests(params_values_dict)
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']
@@ -134,6 +141,9 @@ class PowerSpectrumBase(Theory):
         else:
             self._make_path_fid()
             self._load_results_fid()
+
+    def _setup_tests(self):  # TODO might not need this function
+        self._setup_test_dir()
 
     def _setup_test_dir(self):
         pathlib.Path(
@@ -157,7 +167,8 @@ class PowerSpectrumBase(Theory):
         # error handling goes here (decide how)
         print('is_same_z = ', is_same_z)
         var = self.results[name_of_variable]
-        assert var.size == self.results['aux']['z'].size
+        assert var.size == self.results['aux']['z'].size, (
+            var.size, self.results['aux']['z'].size)
         # TODO check against runing get_fid_model.py 68.8920532   80.38958972  94.11747952 109.75555669
         print('fid %s:' % name_of_variable, var)
         return var
@@ -168,12 +179,17 @@ class PowerSpectrumBase(Theory):
         return is_same
 
     def _calculate_galaxy_ps(self, state):
-        print('entered _calculate_galaxy_ps')
-        n_ps = int(self.n_sample * (self.n_sample + 1) / 2)
+        """Returns 4-d numpy array of shape (n_ps, nz, nk, nmu) for the galaxy power spectra.
+
+        Note: n_ps is the number of unique auto- and cross- power spectra bewteen nsample of
+        galaxy samples:
+            n_ps = nsample * (nsample + 1) / 2.
+        """
+        n_ps = int(self.nsample * (self.nsample + 1) / 2)
         galaxy_ps = np.zeros((n_ps, self.nz, self.nk, self.nmu))
         jj = 0
-        for j1 in range(self.n_sample):
-            for j2 in range(j1, self.n_sample):
+        for j1 in range(self.nsample):
+            for j2 in range(j1, self.nsample):
                 galaxy_ps[jj] = \
                     state['AP_factor'].reshape((self.nz, 1, 1)) \
                     * state['matter_power'].reshape((self.nz, self.nk, 1)) \
@@ -182,24 +198,42 @@ class PowerSpectrumBase(Theory):
                 jj = jj + 1
         return galaxy_ps
 
-    def _calculate_matter_power(self):
-        """ Returns matter_power in a 2-d numpy array of shape (nz, nk)."""
-        Pk_interpolator = self.provider.get_Pk_interpolator(nonlinear=False)
-        matter_power = np.array(Pk_interpolator(self.z_list, self.k))
+    def _calculate_matter_power(self, nonlinear=False):
+        """ Returns 2-d numpy array of shape (nz, nk) for the matter power spectrum.
+        Default is linear matter power."""
+
+        Pk_interpolator = self.provider.get_Pk_interpolator(
+            nonlinear=nonlinear)
+        matter_power = np.exp(np.array(
+            Pk_interpolator(self.z_list, np.log(self.k))))
         return matter_power
 
         # TODO: Check robustness of the interpolator (or whatever method adopted)
         # 1) use get_Pk_grid to cross-check results of interpolation
-        #    Code: Pk = self.provider.get_Pk_grid(nonlinear=False)
+        #    Code:
+        #   Pk = self.provider.get_Pk_grid(nonlinear=False)
         #    Pk_grid is a tuple of three arrays (z, k, Pk), where z, k are 1-d, and Pk is nz x nk.
         # 2) plot out P(k) interpolated and before interpolation
         # 3) look at linear vs nonlinear
         #    understand problem w/ diff = -0.5 for linear scales w/ the interpolator
 
+    def _calculate_matter_power_from_grid(self):
+        """ Returns 2-d numpy array of shape (nz, nk) for the matter power spectrum."""
+        Pk_grid = self.provider.get_Pk_grid(
+            nonlinear=False)  # returns (k, z, Pk)
+        self.k = Pk_grid[0]  # update k and nk
+        self.nk = self.k.size
+        assert np.all(self.z == Pk_grid[1]), (self.z, Pk_grid[1])
+        matter_power = Pk_grid[2]  # 2-d numpy array of shape (nz, nk)
+        # add test to check
+        return matter_power
+
     def _calculate_galaxy_transfer(self, **params_values_dict):
+        """Returns 4-d numpy array of shape (nsample, nz, nk, mu) for the galaxy transfer functions."""
+
         bias = self._calculate_galaxy_bias(
-            **params_values_dict)  # (n_sample, nz, nk)
-        kaiser = self._calculate_rsd_kaiser(bias)  # (n_sample, nz, nk, mu)
+            **params_values_dict)  # (nsample, nz, nk)
+        kaiser = self._calculate_rsd_kaiser(bias)  # (nsample, nz, nk, mu)
         galaxy_transfer = \
             bias[:, :, :, np.newaxis] * kaiser * \
             self._calculate_nl_damping() * \
@@ -207,6 +241,8 @@ class PowerSpectrumBase(Theory):
         return galaxy_transfer
 
     def _calculate_AP_factor(self):
+        """Returns 1-d numpy array of shape (nz,) for the Alcock-Pacynzski factors."""
+
         if self.is_fiducial_model is True:
             ap = np.ones(self.nz)
         else:
@@ -218,9 +254,11 @@ class PowerSpectrumBase(Theory):
         return ap
 
     def _calculate_rsd_kaiser(self, bias):
-        """Returns the Kaiser factor in (n_sample, nz, nk, nmu) numpy array.
+        """Returns a 4-d numpy array of shape (nsample, nz, nk, nmu) for RSD Kaiser factor.
 
-        Note: we return one factor of kaiser = (1+f(z)/b_j(k,z) mu^2).
+        Note: we return one factor of 
+            kaiser = (1 + f(z)/b_j(k,z) * mu^2) 
+        for the galaxy density, not power spectrum.
         """
         f = self._calculate_growth_rate()  # shape (nz,) # time: 0.001 sec
         # self._calculate_growth_rate_approx()  # time:  1.71661376953125e-05 sec
@@ -228,10 +266,10 @@ class PowerSpectrumBase(Theory):
         kaiser = (1.0 + f[:, np.newaxis] / bias)[:, :, :, np.newaxis]\
             * self.mu ** 2
         print('==>kaiser.shape', kaiser.shape)
-        assert kaiser.shape == (self.n_sample, self.nz, self.nk, self.nmu)
+        assert kaiser.shape == (self.nsample, self.nz, self.nk, self.nmu)
         # TODO turn shape test into unit test
         # print('==>kaiser.shape', kaiser.shape)
-        # assert kaiser.shape == (self.n_sample, self.nz, self.nk, self.nmu)
+        # assert kaiser.shape == (self.nsample, self.nz, self.nk, self.nmu)
         # TODO turn into unit test
         # iz = 1
         # print('a[0,iz=%i,:]' % iz, a[iz, :])
@@ -239,11 +277,16 @@ class PowerSpectrumBase(Theory):
         return kaiser
 
     def _calculate_nl_damping(self):
-        """Return non-linear damping factor in 3-d numpy array of shape (nz, nk, nmu).
-        Note: This is factor for galaxy density (not power spectrum)
-        so it is exp(-1/4 * arg), where arg = k^2 * [Sig_perp^2 + mu^2 * (Sig_para^2 - Sig_perp^2)]
-        where Sig_perp(z) = c_rec * D(z) * Sig0 and Sig_para(z) = Sig_perp * (1+f(z)).
+        """Return 3-d numpy array of shape (nz, nk, nmu) for the non-linear damping.
+
+        Note: This is the factor for the galaxy density (not power spectrum), so
+            ans = exp(-1/4 * arg), 
+        where 
+            arg = k^2 * [Sig_perp^2 + mu^2 * (Sig_para^2 - Sig_perp^2)]
+        and 
+            Sig_perp(z) = c_rec * D(z) * Sig0 and Sig_para(z) = Sig_perp * (1+f(z)).
         """
+
         self._Sig0 = 11.0  # Mpc/h # TODO need to change unit
         Sig_perp = self._fraction_recon * self._Sig0 * self._calculate_growth()  # (nz,)
         # might be able to avoid calculating f(z) twice # TODO optimize later
@@ -280,17 +323,17 @@ class PowerSpectrumBase(Theory):
         # TODO turn into unit test
         assert k_parallel_over_H.shape == (self.nz, self.nk, self.nmu)
         print('==>k_parallel_over_H.shape', k_parallel_over_H.shape)
-        arg = np.array(self.sigz).reshape(self.n_sample, 1, 1, 1) \
+        arg = np.array(self.sigz).reshape(self.nsample, 1, 1, 1) \
             * (1.0 + self.z.reshape(1, self.nz, 1, 1)) \
             * k_parallel_over_H
         # TODO turn into unit test
         print('==>arg.shape', arg.shape)
-        assert arg.shape == (self.n_sample, self.nz, self.nk, self.nmu)
+        assert arg.shape == (self.nsample, self.nz, self.nk, self.nmu)
         ans = np.exp(- arg ** 2 / 2.0)
         return ans
 
     def _calculate_galaxy_bias(self, **params_values_dict):
-        """Returns galaxy bias in a 3-d numpy array of shape (n_sample, nz, nk)."""
+        """Returns galaxy bias in a 3-d numpy array of shape (nsample, nz, nk)."""
         gaussian_bias_per_sample = self._calculate_gaussian_bias_array(
             **params_values_dict)
         gaussian_bias_per_sample = gaussian_bias_per_sample[:, np.newaxis]
@@ -299,21 +342,22 @@ class PowerSpectrumBase(Theory):
             gaussian_bias_per_sample[j]
             + 2.0 * params_values_dict['fnl']
             * (gaussian_bias_per_sample[j] - 1.0) * self._delta_c / alpha
-            for j in range(self.n_sample)
+            for j in range(self.nsample)
         ])
-        print('==>galaxy_bias', galaxy_bias)
-        assert galaxy_bias.shape == (self.n_sample, self.nz, self.nk)
+        print('==>galaxy_bias.shape', galaxy_bias.shape)
+        assert galaxy_bias.shape == (self.nsample, self.nz, self.nk)
         # TODO add unit test for galaxy_bias shape
         # TODO add test for galaxy_bias content (perhaps w/ a plot)
 
         return galaxy_bias
 
     def _calculate_gaussian_bias_array(self, **params_values_dict):
-        """"Returns a 1-d numpy array of gaussian galaxy bias, for each galaxy sample ."""
-        keys = ['gaussian_bias_%s' % (i) for i in range(1, self.n_sample + 1)]
+        """"Returns a 1-d numpy array of gaussian galaxy bias, for each galaxy sample.
+        """
+        keys = ['gaussian_bias_%s' % (i) for i in range(1, self.nsample + 1)]
         gaussian_bias = np.array([params_values_dict[key] for key in keys])
         print('==>gaussian_bias', gaussian_bias)
-        # TODO add unit test check gaussian_bias.shape == (self.n_sample, )
+        # TODO add unit test check gaussian_bias.shape == (self.nsample, )
         return gaussian_bias
 
     def _calculate_alpha(self):
@@ -377,91 +421,237 @@ class PowerSpectrumBase(Theory):
         # TODO might want to think about how to interface, so only calculate once.
         # Do this later at the design doc level.
 
-    def _run_tests(self):
-        self._make_plots()
+    def _run_tests(self, params_values_dict):
+        if self.do_test is True:
+            # TODO add more tests
+            if self.do_test_plot is True:
+                self._make_plots(params_values_dict,
+                                 names=self.test_plot_names)
 
-    def _make_plots(self):
-        plotter = Plotter(self)
-        names = [
-            'Hubble',
-            'angular_diameter_distance'
-        ]
+    def _make_plots(self, params_values_dict, names=None):
+        if names is None:
+            names = [
+                'Hubble',
+                'angular_diameter_distance',
+                'matter_power',
+                # 'matter_power_from_grid',
+                'alpha',
+                'galaxy_transfer'
+            ]
+        plotter = Plotter(self, params_values_dict)
+        plotter.make_plots(names)
         # could remove this in the future if it causes problems
         plt.close('all')
 
 
 class Plotter():
 
-    def __init__(self, theory):
+    def __init__(self, theory, params_values_dict):
         self.theory = theory
         self.z = self.theory.z
         self.k = self.theory.k
         self.mu = self.theory.mu
+        self.nz = self.theory.nz
+        self.nk = self.theory.nk
+        self.nmu = self.theory.nmu
+        self.nsample = self.theory.nsample
+        self.params_values_dict = params_values_dict
 
-    def make_plots(names):
+    def make_plots(self, names):
         for name in names:
             function_name = 'plot_' + name
-            try:
-                getattr(self, function_name)
-            except Exception as e:
-                print('Function %s is not implemented!' % function_name)
-                pass
+            function = getattr(self, function_name, None)
+            if callable(function):
+                print('Calling function {}'.format(function_name))
+                function()
+            else:
+                print('Function {} is not implemented!'.format(function_name))
+        # sys.exit()
 
     def plot_angular_diameter_distance(self):
         y1 = self.theory.provider.get_angular_diameter_distance(self.z)
-        y2 = self.theory._get_var_fid('angular_diameter_distance')
-        self.plot_1D('z', y1, '$D_A(z)$', 'angular_diameter_distance', y2=y2,
+        y_list = [y1]
+        if self.theory.is_fiducial_model is False:
+            y2 = self.theory._get_var_fid('angular_diameter_distance')
+            y_list.append(y2)
+        self.plot_1D('z', y_list, '$D_A(z)$', 'plot_angular_diameter_distance.png',
                      legend=['current model', 'fid. model'])
 
     def plot_Hubble(self):
         y1 = self.theory.provider.get_Hubble(self.z)
-        y2 = self.theory._get_var_fid('Hubble')
-        self.plot_1D('z', y1, '$H(z)$', 'Hubble', y2=y2,
+        y_list = [y1]
+        if self.theory.is_fiducial_model is False:
+            y2 = self.theory._get_var_fid('Hubble')
+            y_list.append(y2)
+        self.plot_1D('z', y_list, '$H(z)$', 'plot_Hubble.png',
                      legend=['current model', 'fid. model'])
 
-    def _get_indices(self, n_tot, n_wanted=5):
-        n_wanted = np.float(n_wanted)
-        if n_tot <= n_wanted:
-            indices = np.range(n_tot)
+    def plot_alpha(self):
+        data = self.theory._calculate_alpha()
+        axis_names = ['z', 'k']
+        ylatex = '$\\alpha(k)$'
+        yname = 'alpha'
+        plot_type = 'loglog'
+        self.plot_2D(axis_names, data, ylatex, yname, plot_type=plot_type)
+
+    def plot_matter_power(self):
+
+        data_nl = self.theory._calculate_matter_power(nonlinear=True)
+        data_lin = self.theory._calculate_matter_power(nonlinear=False)
+
+        axis_names = ['z', 'k']
+        plot_type = 'loglog'
+
+        yname = 'matter_power_nonlinear'
+        ylatex = '$P_m^{\mathrm{NL}}(z,k)$ [Mpc$^3$]'
+        self.plot_2D(axis_names, data_nl, ylatex, yname, plot_type=plot_type)
+
+        yname = 'matter_power_linear'
+        ylatex = '$P_m^{\mathrm{lin}}(z,k)$ [Mpc$^3$]'
+        self.plot_2D(axis_names, data_lin, ylatex, yname, plot_type=plot_type)
+
+    def plot_matter_power_from_grid(self):
+        data = self.theory._calculate_matter_power_from_grid()
+        axis_names = ['z', 'k']
+        ylatex = '$P_m(z,k)$ from grid'
+        yname = 'matter_power_from_grid'
+        plot_type = 'loglog'
+        self.plot_2D(axis_names, data, ylatex, yname, plot_type=plot_type)
+
+    def plot_galaxy_transfer(self):
+        data = self.theory._calculate_galaxy_transfer(
+            **self.params_values_dict)
+        axis_names = ['sample', 'z', 'k', 'mu']
+        yname = 'galaxy_transfer'
+        plot_type = 'loglog'
+
+        isamples = range(self.nsample)
+        izs = range(self.nz)
+        for isample in isamples:
+            for iz in izs:
+                axis_names_in = ['k', 'mu']
+                yname_in = yname + '_isample%s_iz%s' % (isample, iz)
+                data_in = data[isample, iz, :, :]
+                ylatex = 'galaxy transfer function $T_g(k, \mu)$'
+                self.plot_2D(axis_names_in, data_in, ylatex,
+                             yname_in, plot_type=plot_type)
+
+    def plot_galaxy_power(self):  # TODO to be completed
+        data = self.theory._calculate_galaxy_power()
+        axis_names = ['ps', 'z', 'k', 'mu']
+        yname = 'galaxy_power'
+        plot_type = 'loglog'
+
+        isamples = 0  # range(self.nsample)
+        izs = range(self.nz)
+        for isample in isamples:
+            for iz in izs:
+                axis_names_in = ['k', 'mu']
+                yname_in = yname + '_ips%s_iz%s' % (ips, iz)
+                data_in = data[isample, iz, :, :]
+                ylatex = 'galaxy power spectrum $P_g(k, \mu)$'
+                self.plot_2D(axis_names_in, data_in, ylatex,
+                             yname_in, plot_type=plot_type)
+
+    def plot_2D(self, *args, **kwargs):
+        self.make_plot_2D_fixed_axis('col', * args, **kwargs)
+        self.make_plot_2D_fixed_axis('row', * args, **kwargs)
+
+    def make_plot_2D_fixed_axis(self, fixed_axis_name, axis_names, data, ylatex, yname, plot_type='plot'):
+        """
+        Make 1D plot of selected rows of the input 2-d numpy array data.
+        If data has more than 5 rows, 5 indices equally spaced are selected.
+
+        [More doc needed here on input args.]
+        """
+
+        FIXED, VARIED = self._get_fixed_and_varied_axes(fixed_axis_name)
+
+        shape = data.shape
+        indices = self._get_indices(shape[FIXED], n_wanted=5)
+
+        if fixed_axis_name == 'row':
+            y_list = [data[i, :] for i in indices]
+        elif fixed_axis_name == 'col':
+            y_list = [data[:, i] for i in indices]
+
+        x = self.get_xarray(axis_names[FIXED])
+        legend = ['%s = %.2e' % (axis_names[FIXED], x[i])
+                  for i in indices]
+
+        plot_name = 'plot_%s_vs_%s.png' % (yname, axis_names[VARIED])
+        self.plot_1D(axis_names[VARIED], y_list, ylatex,
+                     plot_name, legend=legend, plot_type=plot_type)
+
+    def _get_fixed_and_varied_axes(self, fixed_axis):
+        if fixed_axis == 'row':
+            FIXED = 0
+            VARIED = 1
+        elif fixed_axis == 'col':
+            FIXED = 1
+            VARIED = 0
         else:
-            delta = np.floor(n_tot / n_wanted)
-            indices = np.arange(n_tot, delta)
+            print('Error: fixed_axis can only be row or col')
+        return FIXED, VARIED
+
+    def _get_indices(self, n_tot, n_wanted=5):
+        delta = 1 if n_tot <= n_wanted else int(np.floor(
+            n_tot / np.float(n_wanted)))
+        indices = np.arange(0, n_tot, delta)
+        # TODO add logging/logger ability to print only in debug mode
+        print('delta = {}'.format(delta))
+        print('indices = {}'.format(indices))
         return indices
 
-    def get_x(z_or_k):
-        if z_or_k == 'z':
+    def get_xarray(self, dim):
+        if dim == 'z':
             x = self.z
-        elif z_or_k == 'k':
+        elif dim == 'k':
             x = self.k
+        elif dim == 'mu':
+            x = self.mu
+        elif dim == 'sample':
+            x = np.arange(self.nsample)
         else:
-            print('error: ...')
+            print('Error: get_xarray can only take dim=z, k, mu or sample.')
+            # TODO raise custom Error
         return x
 
-    def get_xlabel(z_or_k):
-        if z_or_k == 'z':
+    def get_xlabel(self, dim):
+        if dim == 'z':
             xlabel = '$z$'
-        elif z_or_k == 'k':
-            xlabel = '$k$'
+        elif dim == 'k':
+            xlabel = '$k$ [1/Mpc]'
+        elif dim == 'mu':
+            xlabel = '$\mu$'
+        elif dim == 'sample':
+            xlabel = 'galaxy sample number'
         else:
             print('error: ...')
         return xlabel
 
-    def plot_1D(self, z_or_k, y1, ylatex, yname, y2=None, ylabel_2=None, legend=None):
+    def plot_1D(self, z_or_k, y_list, ylatex, plot_name, legend=None, plot_type='plot'):
 
-        x = get_x(z_or_k)
-        xlabel = get_xlabel(z_or_k)
+        allowed_plot_types = ['plot', 'loglog', 'semilogx', 'semilogy']
+
+        x = self.get_xarray(z_or_k)
+        xlabel = self.get_xlabel(z_or_k)
 
         fig, ax = plt.subplots()
 
-        ax.plot(x, y1)
-        if y2 is not None:
-            ax.plot(x, y2)
+        for y in y_list:
+            if plot_type in allowed_plot_types:
+                getattr(ax, plot_type)(x, y)
+            else:
+                print(
+                    "Error: plot_type can only be one of the following: {}".format(allowed_plot_types))
+                # Error handling for plot
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylatex)
         ax.legend(legend)
 
-        plot_name = os.path.join(self.theory.test_dir, 'plot_%s.png' % yname)
+        plot_name = os.path.join(self.theory.test_dir, plot_name)
         fig.savefig(plot_name)
         print('Saved plot = {}'.format(plot_name))
         plt.close()

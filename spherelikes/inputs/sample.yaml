@@ -18,6 +18,9 @@ theory:
   theories.base_classes.ps_base.ps_base.PowerSpectrumBase:
     stop_at_error: True
     is_fiducial_model: False # if running sampler, set to false
+    do_test: True
+    do_test_plot: True
+    test_plot_names: 
 
 params:
   fnl:
