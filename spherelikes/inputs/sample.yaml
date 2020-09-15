@@ -17,6 +17,7 @@ theory:
       WantTransfer: True
   theories.base_classes.ps_base.ps_base.PowerSpectrumBase:
     stop_at_error: True
+    is_fiducial_model: False # if running sampler, set to false
 
 params:
   fnl:
@@ -155,6 +156,7 @@ params:
 packages_path: '/Users/chenhe/Research/Shared/Cobaya/cosmo'
 
 sampler:
-  mcmc:
+  evaluate:
+  #mcmc:
 
 output: chains/sample/sample

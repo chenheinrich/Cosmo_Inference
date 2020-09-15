@@ -2,6 +2,12 @@ from cobaya.theory import Theory
 import numpy as np
 import time
 import sys
+import os
+import pickle
+import matplotlib.pyplot as plt
+import pathlib
+
+from spherelikes import paths
 
 
 class PowerSpectrumBase(Theory):
@@ -25,12 +31,19 @@ class PowerSpectrumBase(Theory):
     mu_edges = np.linspace(0, 1, nmu + 1)
     mu = (mu_edges[:-1] + mu_edges[1:]) / 2.0
 
+    model_dir = paths.model_dir
+    test_dir = paths.test_dir
+    model_name = 'model_test'
+    is_fiducial_model = False
+
     _delta_c = 1.686
     _k0 = 0.05  # 1/Mpc
     _fraction_recon = 0.5  # reconstruction fration
 
     def initialize(self):
         """called from __init__ to initialize"""
+        self._setup_results_fid()
+        self._setup_test_dir()
 
     def initialize_with_provider(self, provider):
         """
@@ -103,6 +116,8 @@ class PowerSpectrumBase(Theory):
         # TODO placeholder for any derived paramter from this module
         state['derived'] = {'derived_param': 1.0}
 
+        self._run_tests()
+
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']
 
@@ -111,6 +126,46 @@ class PowerSpectrumBase(Theory):
 
     def get_AP_factor(self):
         return self._current_state['AP_factor']
+
+    def _setup_results_fid(self):
+        print('is_fiducial_model = ', self.is_fiducial_model)
+        if self.is_fiducial_model is True:
+            print('Skipping loading of fiducial results since we are calculating it.')
+        else:
+            self._make_path_fid()
+            self._load_results_fid()
+
+    def _setup_test_dir(self):
+        pathlib.Path(
+            self.test_dir).mkdir(parents=True, exist_ok=True)
+
+    def _make_path_fid(self):
+        self.model_dir = os.path.join(self.model_dir, self.model_name)
+        self.fname_fid = os.path.join(
+            self.model_dir, self.model_name + '.pickle')
+
+    def _load_results_fid(self):
+        self.results = pickle.load(open(self.fname_fid, "rb"))
+
+    def _get_var_fid(self, name_of_variable):
+        # TODO want to document structure of results later
+        if name_of_variable not in ['Hubble', 'angular_diameter_distance']:
+            print('Error: name can only be: Hubble, angular_diameter_distance')
+            # throw error
+        is_same_z = self._check_z_fid()
+        # if not is_same:
+        # error handling goes here (decide how)
+        print('is_same_z = ', is_same_z)
+        var = self.results[name_of_variable]
+        assert var.size == self.results['aux']['z'].size
+        # TODO check against runing get_fid_model.py 68.8920532   80.38958972  94.11747952 109.75555669
+        print('fid %s:' % name_of_variable, var)
+        return var
+
+    def _check_z_fid(self):
+        z = self.results['aux']['z']
+        is_same = np.all(self.z == z)
+        return is_same
 
     def _calculate_galaxy_ps(self, state):
         print('entered _calculate_galaxy_ps')
@@ -152,11 +207,15 @@ class PowerSpectrumBase(Theory):
         return galaxy_transfer
 
     def _calculate_AP_factor(self):
-        # TODO to complete
-        DA = self.provider.get_angular_diameter_distance(self.z_list)
-        Hubble = self.provider.get_Hubble(self.z_list)
-        # want Hubble and DA here from fiducial cosmology
-        return np.ones(self.nz)
+        if self.is_fiducial_model is True:
+            ap = np.ones(self.nz)
+        else:
+            DA = self.provider.get_angular_diameter_distance(self.z_list)
+            Hubble = self.provider.get_Hubble(self.z_list)
+            Hubble_fid = self._get_var_fid('Hubble')
+            DA_fid = self._get_var_fid('angular_diameter_distance')
+            ap = (DA_fid / DA) ** 2 * (Hubble / Hubble_fid)
+        return ap
 
     def _calculate_rsd_kaiser(self, bias):
         """Returns the Kaiser factor in (n_sample, nz, nk, nmu) numpy array.
@@ -317,3 +376,92 @@ class PowerSpectrumBase(Theory):
         # galaxy bias, alpha, rsd factor
         # TODO might want to think about how to interface, so only calculate once.
         # Do this later at the design doc level.
+
+    def _run_tests(self):
+        self._make_plots()
+
+    def _make_plots(self):
+        plotter = Plotter(self)
+        names = [
+            'Hubble',
+            'angular_diameter_distance'
+        ]
+        # could remove this in the future if it causes problems
+        plt.close('all')
+
+
+class Plotter():
+
+    def __init__(self, theory):
+        self.theory = theory
+        self.z = self.theory.z
+        self.k = self.theory.k
+        self.mu = self.theory.mu
+
+    def make_plots(names):
+        for name in names:
+            function_name = 'plot_' + name
+            try:
+                getattr(self, function_name)
+            except Exception as e:
+                print('Function %s is not implemented!' % function_name)
+                pass
+
+    def plot_angular_diameter_distance(self):
+        y1 = self.theory.provider.get_angular_diameter_distance(self.z)
+        y2 = self.theory._get_var_fid('angular_diameter_distance')
+        self.plot_1D('z', y1, '$D_A(z)$', 'angular_diameter_distance', y2=y2,
+                     legend=['current model', 'fid. model'])
+
+    def plot_Hubble(self):
+        y1 = self.theory.provider.get_Hubble(self.z)
+        y2 = self.theory._get_var_fid('Hubble')
+        self.plot_1D('z', y1, '$H(z)$', 'Hubble', y2=y2,
+                     legend=['current model', 'fid. model'])
+
+    def _get_indices(self, n_tot, n_wanted=5):
+        n_wanted = np.float(n_wanted)
+        if n_tot <= n_wanted:
+            indices = np.range(n_tot)
+        else:
+            delta = np.floor(n_tot / n_wanted)
+            indices = np.arange(n_tot, delta)
+        return indices
+
+    def get_x(z_or_k):
+        if z_or_k == 'z':
+            x = self.z
+        elif z_or_k == 'k':
+            x = self.k
+        else:
+            print('error: ...')
+        return x
+
+    def get_xlabel(z_or_k):
+        if z_or_k == 'z':
+            xlabel = '$z$'
+        elif z_or_k == 'k':
+            xlabel = '$k$'
+        else:
+            print('error: ...')
+        return xlabel
+
+    def plot_1D(self, z_or_k, y1, ylatex, yname, y2=None, ylabel_2=None, legend=None):
+
+        x = get_x(z_or_k)
+        xlabel = get_xlabel(z_or_k)
+
+        fig, ax = plt.subplots()
+
+        ax.plot(x, y1)
+        if y2 is not None:
+            ax.plot(x, y2)
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylatex)
+        ax.legend(legend)
+
+        plot_name = os.path.join(self.theory.test_dir, 'plot_%s.png' % yname)
+        fig.savefig(plot_name)
+        print('Saved plot = {}'.format(plot_name))
+        plt.close()

@@ -8,6 +8,7 @@ import sys
 import shutil
 import pathlib
 import yaml
+import numpy as np
 
 # Package name (subject to change)
 package_name = 'spherelikes'
@@ -36,11 +37,23 @@ class FidModelCalculator():
 
     def make_model(self):
         info = yaml_load_file(self.cobaya_yaml_file)
+        info = self.set_is_fiducial_model_to_true(info)
         self.model = get_model(info)
 
     def make_point(self):
         self.make_initial_point()
         self.update_point()
+
+    def set_is_fiducial_model_to_true(self, info):
+        key_to_set = 'is_fiducial_model'
+        theories = []
+        for theory in info['theory'].keys():
+            if key_to_set in info['theory'][theory].keys():
+                print('Found key is_fiducial_model in theory %s' % theory)
+                print('Overwriting to is_fiducial_model = True')
+                info['theory'][theory]['is_fiducial_model'] = True
+                theories.append(theory)
+        return info
 
     def make_initial_point(self):
         self.point = dict(zip(
@@ -80,12 +93,17 @@ class FidModelCalculator():
 
     def get_auxiliary_variables(self):  # TODO this is too specific, maybe?
         theory = self.model.theory["theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
-        theory.must_provide(galaxy_ps={})
+        theory.must_provide(galaxy_ps={}, ap={})
         k = theory.k
         mu = theory.mu
         z = theory.z
         aux = {'k': k, 'mu': mu, 'z': z}
         return aux
+
+    def test_results(self):
+        theory = self.model.theory["theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
+        ap = theory.get_AP_factor()
+        assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
     def save_results(self):
         pickle.dump(self.results, open(self.fname, "wb"))
@@ -102,6 +120,7 @@ class FidModelCalculator():
 
     def get_and_save_results(self):
         self.get_results()
+        self.test_results()
         self.save_results()
         self.save_yaml_files()
 
