@@ -20,10 +20,10 @@ class PowerSpectrumBase(Theory):
     nmu = 10  # number of mu bins
     z_list = [0.25, 0.5, 0.75, 1]  # TODO to change to SPHEREx numbers
     sigz = [0.01, 0.01]  # TODO to change to SPHEREx numbers
-    z_array = np.array(z_list)
-    k_array = np.linspace(0.001, 0.02, nk)
+    z = np.array(z_list)
+    k = np.linspace(0.001, 0.02, nk)
     mu_edges = np.linspace(0, 1, nmu + 1)
-    mu_array = (mu_edges[:-1] + mu_edges[1:]) / 2.0
+    mu = (mu_edges[:-1] + mu_edges[1:]) / 2.0
 
     _delta_c = 1.686
     _k0 = 0.05  # 1/Mpc
@@ -69,6 +69,25 @@ class PowerSpectrumBase(Theory):
                 'fsigma8': {'z': z_list},
                 'sigma8': None,
             }
+        if 'galaxy_transfer' in requirements:
+            return{
+                'Pk_interpolator': spec_Pk,
+                # 'Pk_grid': spec_Pk,
+                'Cl': {'tt': 2500},
+                'H0': None,
+                'angular_diameter_distance': {'z': z_list},
+                'Hubble': {'z': z_list},
+                'omegam': None,
+                'As': None,
+                'ns': None,
+                'fsigma8': {'z': z_list},
+                'sigma8': None,
+            }
+        if 'AP_factor' in requirements:
+            return{
+                'angular_diameter_distance': {'z': z_list},
+                'Hubble': {'z': z_list},
+            }
 
     def get_can_provide_params(self):
         return ['derived_param']
@@ -86,6 +105,12 @@ class PowerSpectrumBase(Theory):
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']
+
+    def get_galaxy_transfer(self):
+        return self._current_state['galaxy_transfer']
+
+    def get_AP_factor(self):
+        return self._current_state['AP_factor']
 
     def _calculate_galaxy_ps(self, state):
         print('entered _calculate_galaxy_ps')
@@ -105,7 +130,7 @@ class PowerSpectrumBase(Theory):
     def _calculate_matter_power(self):
         """ Returns matter_power in a 2-d numpy array of shape (nz, nk)."""
         Pk_interpolator = self.provider.get_Pk_interpolator(nonlinear=False)
-        matter_power = np.array(Pk_interpolator(self.z_list, self.k_array))
+        matter_power = np.array(Pk_interpolator(self.z_list, self.k))
         return matter_power
 
         # TODO: Check robustness of the interpolator (or whatever method adopted)
@@ -142,7 +167,7 @@ class PowerSpectrumBase(Theory):
         # self._calculate_growth_rate_approx()  # time:  1.71661376953125e-05 sec
         # TODO choose best method
         kaiser = (1.0 + f[:, np.newaxis] / bias)[:, :, :, np.newaxis]\
-            * self.mu_array ** 2
+            * self.mu ** 2
         print('==>kaiser.shape', kaiser.shape)
         assert kaiser.shape == (self.n_sample, self.nz, self.nk, self.nmu)
         # TODO turn shape test into unit test
@@ -164,9 +189,9 @@ class PowerSpectrumBase(Theory):
         Sig_perp = self._fraction_recon * self._Sig0 * self._calculate_growth()  # (nz,)
         # might be able to avoid calculating f(z) twice # TODO optimize later
         Sig_para = Sig_perp * (1.0 + self._calculate_growth_rate())  # (nz,)
-        arg = self.k_array[np.newaxis, :, np.newaxis] \
+        arg = self.k[np.newaxis, :, np.newaxis] \
             * ((Sig_perp**2)[:, np.newaxis, np.newaxis]
-               + (self.mu_array**2)[np.newaxis, np.newaxis, :]
+               + (self.mu**2)[np.newaxis, np.newaxis, :]
                * ((Sig_para ** 2)[:, np.newaxis, np.newaxis]
                    - (Sig_perp**2)[:, np.newaxis, np.newaxis])
                )
@@ -187,8 +212,8 @@ class PowerSpectrumBase(Theory):
     def _calculate_rsd_nl(self):  # TODO find a better name
         """Returns the blurring due to redshift error exp(-arg^2/2)
         where arg = (1+z) * sigz * k_parallel/H(z). """
-        k_parallel = self.k_array[:, np.newaxis] \
-            * self.mu_array  # (nk, nmu)
+        k_parallel = self.k[:, np.newaxis] \
+            * self.mu  # (nk, nmu)
         Hubble = self.provider.get_Hubble(self.z_list)
         # fac = Hubble.reshape((self.nz, 1, 1)) / k_parallel
         k_parallel_over_H = k_parallel[np.newaxis, :, :] \
@@ -197,7 +222,7 @@ class PowerSpectrumBase(Theory):
         assert k_parallel_over_H.shape == (self.nz, self.nk, self.nmu)
         print('==>k_parallel_over_H.shape', k_parallel_over_H.shape)
         arg = np.array(self.sigz).reshape(self.n_sample, 1, 1, 1) \
-            * (1.0 + self.z_array.reshape(1, self.nz, 1, 1)) \
+            * (1.0 + self.z.reshape(1, self.nz, 1, 1)) \
             * k_parallel_over_H
         # TODO turn into unit test
         print('==>arg.shape', arg.shape)
@@ -256,19 +281,19 @@ class PowerSpectrumBase(Theory):
         # TODO want to make sure this corresponds to the same as camb module
         # Find out how to get it from camb itself (we might have other parameters
         # like nrun, nrunrun; and possibly customized initial power one day)
-        """Returns 1-d numpy array of initial power spectrum evaluated at self.k_array."""
+        """Returns 1-d numpy array of initial power spectrum evaluated at self.k."""
         k0 = self._k0  # 1/Mpc
         As = self.provider.get_param('As')
         ns = self.provider.get_param('ns')
-        initial_power = (2.0 * np.pi**2) / (self.k_array**3) * \
-            As * (self.k_array / k0)**(ns - 1.0)
+        initial_power = (2.0 * np.pi**2) / (self.k**3) * \
+            As * (self.k / k0)**(ns - 1.0)
         return initial_power
 
     def _calculate_growth_rate_approx(self):
         """Returns f(z) = Omega_m(z)^0.55 in a 1-d numpy array"""
         growth_rate_index = 0.55
         omegam = self.provider.get_param('omegam')
-        f = (omegam * (1.0 + self.z_array) ** 3) ** growth_rate_index
+        f = (omegam * (1.0 + self.z) ** 3) ** growth_rate_index
         return f
 
     def _calculate_sigma8(self):
