@@ -9,7 +9,6 @@ import shutil
 import pathlib
 import yaml
 
-
 # Package name (subject to change)
 package_name = 'spherelikes'
 
@@ -53,13 +52,6 @@ class FidModelCalculator():
         fid_info = yaml_load_file(self.model_yaml_file)
         print('fid_info ', fid_info)
         self.point.update(fid_info)
-        # {'logA': 3.06, 'ns': 0.966, 'omch2': 0.1,
-        # 'ombh2': 0.02, 'tau': 0.07, 'theta_MC_100': 1.0,
-        # 'my_foreground_amp': 1.0,
-        # 'fnl': 1.0,
-        # 'gaussian_bias_1': 1.0,
-        # 'gaussian_bias_2': 1.0,
-        # })
 
     def get_results(self):
 
@@ -130,6 +122,12 @@ def main():
     fid_calculator.get_and_save_results()
     # check: # TODO turn into test?
     fid_calculator.check_load_results()
+
+# TODO separate class and scripting
+# (perhaps put together a script that optionally creates fiducial model first, then runs MCMC)
+# TODO hook output w/ theory calculation, add check if calculating for fiducial model
+# so there is no circular dependence, i.e. AP factor = 1, not loading fiducial model (doesn't exist)
+# TODO add unit test
 
 
 if __name__ == '__main__':
