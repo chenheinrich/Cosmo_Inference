@@ -20,7 +20,7 @@ class LikelihoodBase(Likelihood):
         """
          return dictionary specifying quantities calculated by a theory code are needed
         """
-        return {'A': None, 'tt_sum': None}
+        return {'galaxy_ps': None, 'derived_param': None}
 
     def logp(self, **params_values):
         """
@@ -30,11 +30,11 @@ class LikelihoodBase(Likelihood):
         e.g. here we calculate chi^2  using cls['tt'], H0_theory, my_foreground_amp
         """
         #H0_theory = self.provider.get_param("H0")
-        cls = self.provider.get_A()
-        tt_sum = self.provider.get_param('tt_sum')
+        galaxy_ps = self.provider.get_galaxy_ps()
+        derived_param = self.provider.get_param('derived_param')
 
-        print('====> cls from my_like_class', cls)
-        print('====> tt_sum from my_like_class', tt_sum)
+        print('==>galaxy_ps from my_like_class', galaxy_ps)
+        print('==>derived_param from my_like_class', derived_param)
 
         my_foreground_amp = params_values['my_foreground_amp']
 

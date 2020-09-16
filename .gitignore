@@ -1,5 +1,6 @@
 *__pycache__/
 .vscode
 
-cobaya_test_runs/
+spherelikes/data/models/
 *chains/
+spherelikes/tests/
