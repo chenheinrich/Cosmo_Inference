@@ -1,6 +1,8 @@
-cl_file: ./spherelikes/data/test_file.txt #TODO: need to make this portable
+invcov_path: "./data/covariance/fid.invcov.npy"
+sim_data_path: "./data/sim_data/sim_data.pickle"
+is_fiducial_model: False
 # Aliases for automatic covariance matrix
-aliases: [myOld]
+aliases: [like_ps_base]
 # Speed in evaluations/second (after theory inputs calculated).
 speed: 500
 params:
