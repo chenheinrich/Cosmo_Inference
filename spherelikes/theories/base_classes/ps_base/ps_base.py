@@ -28,8 +28,8 @@ class PowerSpectrumBase(Theory):
         'derived_param': {'derived': True}
     }
 
-    nk = 211  # number of k points (to be changed into bins)
-    nmu = 10  # number of mu bins
+    nk = 21#21  # 211  # number of k points (to be changed into bins)
+    nmu = 5 #5  # number of mu bins
 
     survey_pars_file_name = 'survey_pars_v28_base_cbe.yaml'
 
