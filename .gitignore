@@ -1,6 +1,9 @@
 *__pycache__/
 .vscode
-
-spherelikes/data/models/
+*.png
 *chains/
+
+data/
+spherelikes/data/models/
 spherelikes/tests/
+

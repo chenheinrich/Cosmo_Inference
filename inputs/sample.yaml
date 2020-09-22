@@ -2,7 +2,7 @@ debug: True
 
 likelihood:
   likelihoods.base_classes.ps_base.ps_base.LikelihoodBase:
-    invcov_path: "./data/covariance/fid.invcov"
+    invcov_path: "./data/covariance/fid.invcov.npy"
     sim_data_path: "./data/sim_data/sim_data.pickle"
     is_fiducial_model: False
 
