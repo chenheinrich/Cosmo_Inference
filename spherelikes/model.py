@@ -83,10 +83,9 @@ class ModelCalculator():
         ap = theory.get_AP_factor()
         assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
-    def check_load_results(self):
+    def load_results(self):
         results = pickle.load(open(self.fname, "rb"))
-        # TODO add test to check if the same as written? (may not need)
-        print('results = ', results)
+        return results
 
     def copy_yaml_files(self):
         """Saves a copy of input model yaml file and cobaya sampler yaml file in the output directory."""
@@ -158,8 +157,7 @@ def main():
 
     fid_calculator = FidModelCalculator(args)
     fid_calculator.get_and_save_results()
-    # check: # TODO turn into test?
-    fid_calculator.check_load_results()
+    fid_calculator.load_results()
 
 
 if __name__ == '__main__':

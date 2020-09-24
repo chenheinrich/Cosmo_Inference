@@ -21,8 +21,8 @@ theory:
   theories.base_classes.ps_base.ps_base.PowerSpectrumBase:
     stop_at_error: True
     is_fiducial_model: False # if running sampler, set to false
-    do_test: False
-    do_test_plot: False
+    do_test: True
+    do_test_plot: True
     test_plot_names:
 
 params:
@@ -36,35 +36,35 @@ params:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{1}"
   gaussian_bias_2:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{2}"
   gaussian_bias_3:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{3}"
   gaussian_bias_4:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{4}"
   gaussian_bias_5:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{5}"
   logA:

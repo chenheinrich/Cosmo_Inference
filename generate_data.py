@@ -11,7 +11,7 @@ def main():
 
     calc = ModelCalculator(args)
     results = calc.get_and_save_results()
-    calc.check_load_results()
+    calc.load_results()
 
 
 if __name__ == '__main__':

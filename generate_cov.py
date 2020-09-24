@@ -127,6 +127,7 @@ class CovCalculator():
         return noise
 
     def load_number_density(self):
+        # TODO need to change from h/Mpc to 1/Mpc kind of units
         pars = yaml_load_file(self.args['input_survey_pars'])
         # (nsample, nz)
         # TODO need to do this in a way that's independent of number of samples.
