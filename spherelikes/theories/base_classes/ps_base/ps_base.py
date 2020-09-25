@@ -8,10 +8,9 @@ import pickle
 import matplotlib.pyplot as plt
 import pathlib
 import logging
-from spherelikes import paths
-from spherelikes.log import LoggedError, class_logger
+from spherelikes.utils.log import LoggedError, class_logger
+from spherelikes.utils import constants
 
-package_name = 'spherelikes'
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
 
@@ -29,15 +28,15 @@ class PowerSpectrumBase(Theory):
         'derived_param': {'derived': True}
     }
 
-    nk = 21  # 21  # 211  # number of k points (to be changed into bins)
-    nmu = 5  # 5  # number of mu bins
+    nk = 1  # 21  # 211  # number of k points (to be changed into bins)
+    nmu = 1  # 5  # number of mu bins
 
-    survey_pars_file_name = 'survey_pars_v28_base_cbe.yaml'
+    survey_pars_file_name = 'inputs/survey_pars_v28_base_cbe.yaml'
+    data_dir = 'data/ps_base/'
+    model_name = 'ref'
+    plot_dir = 'plots/'
 
-    model_dir = paths.model_dir
-    test_dir = paths.test_dir
-    model_name = 'model_test'
-    is_fiducial_model = False
+    is_reference_model = False
     do_test = False
     do_test_plot = False
     test_plot_names = None
@@ -52,6 +51,7 @@ class PowerSpectrumBase(Theory):
         self._setup_survey_pars()
         self._setup_results_fid()
         self._setup_tests()
+        print('Done setting up PowerSpectrumBase')
 
     def initialize_with_provider(self, provider):
         """
@@ -61,7 +61,7 @@ class PowerSpectrumBase(Theory):
         self.provider = provider
 
     def _setup_survey_pars(self):
-        path = os.path.join(paths.survey_pars_dir, self.survey_pars_file_name)
+        path = os.path.join(self.survey_pars_file_name)
         pars = yaml_load_file(path)
         self.z = (np.array(pars['zbin_lo']) + np.array(pars['zbin_hi'])) / 2.0
         self.z_list = list(self.z)
@@ -90,7 +90,7 @@ class PowerSpectrumBase(Theory):
 
     def must_provide(self, **requirements):
         z_list = self.z_list
-        k_max = 0.01
+        k_max = 8.0
         nonlinear = (False, True)
         spec_Pk = {
             'z': z_list,
@@ -125,6 +125,7 @@ class PowerSpectrumBase(Theory):
                 'ns': None,
                 'fsigma8': {'z': z_list},
                 'sigma8': None,
+                'CAMBdata': None,
             }
         if 'AP_factor' in requirements:
             return{
@@ -138,16 +139,29 @@ class PowerSpectrumBase(Theory):
     def calculate(self, state, want_derived=True, **params_values_dict):
 
         nonlinear = False
-        state['matter_power'] = self._calculate_matter_power(
+
+        self.logger.debug('Calculating k and mu actual using AP factors.')
+        self.k_actual_perp, self.k_actual_para, self.k_actual = self._calc_k_actual()
+        self.mu_actual = self._calc_mu_actual()
+
+        print('Calculating matter power')
+        state['matter_power'] = self._calc_matter_power(
             nonlinear=nonlinear)
-        state['galaxy_transfer'] = self._calculate_galaxy_transfer(
+
+        print('Calculating galaxy transfer')
+        state['galaxy_transfer'] = self._calc_galaxy_transfer(
             **params_values_dict)
-        state['AP_factor'] = self._calculate_AP_factor()
-        state['AP_factor'] = np.ones(self.nz)
-        state['galaxy_ps'] = self._calculate_galaxy_ps(state)
+
+        print('Calculating AP factor')
+        state['AP_factor'] = self._calc_AP_factor()
+
+        print('Calculating galaxy_ps')
+        state['galaxy_ps'] = self._calc_galaxy_ps(state)
+
         # TODO placeholder for any derived paramter from this module
         state['derived'] = {'derived_param': 1.0}
 
+        print('Running tests')
         self.run_tests(params_values_dict, state)
 
     def get_galaxy_ps(self):
@@ -159,9 +173,39 @@ class PowerSpectrumBase(Theory):
     def get_AP_factor(self):
         return self._current_state['AP_factor']
 
+    def _calc_k_actual(self):
+        """Returns a tuple of three 3-d numpy arrays of shape (nz, nk, nmu) for
+        (k_perp, k_para, k) using AP factors:
+            k_perp = k_perp|ref * D_A(z)|ref / D_A(z),
+            k_para = k_para|ref * (1/H(z))|ref / (1/H(z)),
+        where
+            k// = mu * k,
+            kperp = sqrt(k^2  - k//^2) = k sqrt(1 - mu^2).
+        """
+        k_perp_ref = self.k[:, np.newaxis] * \
+            np.sqrt(1. - (self.mu**2)[np.newaxis, :])
+        k_para_ref = self.k[:, np.newaxis] * self.mu[np.newaxis, :]
+
+        ap_perp, ap_para = self._calc_AP_factors_perp_and_para()
+
+        k_perp = k_perp_ref[np.newaxis, :, :] * \
+            ap_perp[:, np.newaxis, np.newaxis]
+        k_para = k_para_ref[np.newaxis, :, :] * \
+            ap_para[:, np.newaxis, np.newaxis]
+
+        k = np.sqrt(k_perp ** 2 + k_para ** 2)
+
+        return k_perp, k_para, k
+
+    def _calc_mu_actual(self):
+        """Returns a 3d numpy array of shape (nz, nk, nmu) for the actual mu.
+        """
+        return self.k_actual_para / self.k_actual
+
     def _setup_results_fid(self):
-        self.logger.info('is_fiducial_model = ', self.is_fiducial_model)
-        if self.is_fiducial_model is True:
+        self.logger.info('is_reference_model = {}'.format(
+            self.is_reference_model))
+        if self.is_reference_model is True:
             self.logger.info(
                 '... calculating instead of loading fiducial results.')
         else:
@@ -169,36 +213,38 @@ class PowerSpectrumBase(Theory):
             self._load_results_fid()
 
     def _setup_tests(self):
-        self._setup_test_dir()
+        self._setup_plot_dir()
 
-    def _setup_test_dir(self):
+    def _setup_plot_dir(self):
         pathlib.Path(
-            self.test_dir).mkdir(parents=True, exist_ok=True)
+            self.plot_dir).mkdir(parents=True, exist_ok=True)
 
     def _make_path_fid(self):
-        self.model_dir = os.path.join(self.model_dir, self.model_name)
         self.fname_fid = os.path.join(
-            self.model_dir, self.model_name + '.pickle')
+            self.data_dir, self.model_name + '.pickle')
 
     def _load_results_fid(self):
         self.results_fid = pickle.load(open(self.fname_fid, "rb"))
 
     def _get_var_fid(self, name_of_variable):
         # TODO want to document structure of results later
-        if name_of_variable not in ['Hubble', 'angular_diameter_distance']:
+        if self.is_reference_model is True:
+            raise NotImplementedError
+        elif name_of_variable not in ['Hubble', 'angular_diameter_distance']:
             msg = "_get_var_fid: name_of_variable can only be: Hubble, angular_diameter_distance."
             raise ValueError(msg)
-        try:
-            self._check_z_fid()
-        except ValueError as e:
-            raise LoggedError(self.logger, e)
         else:
-            var = self.results_fid[name_of_variable]
-            assert var.size == self.results_fid['aux']['z'].size, (
-                '{}.size = {}, expected {}'.format(name_of_variable,
-                                                   var.size, self.results_fid['aux']['z'].size))
-        # TODO write unit test to check against runing get_fid_model.py
-            return var
+            try:
+                self._check_z_fid()
+            except ValueError as e:
+                raise LoggedError(self.logger, e)
+            else:
+                var = self.results_fid[name_of_variable]
+                msg = '{}.size = {}, expected {}'.format(
+                    name_of_variable, var.size, self.results_fid['aux']['z'].size)
+                assert var.size == self.results_fid['aux']['z'].size, (msg)
+                # TODO write unit test to check against runing get_fid_model.py
+                return var
 
     def _check_z_fid(self):
         z_fid = self.results_fid['aux']['z']
@@ -209,7 +255,7 @@ class PowerSpectrumBase(Theory):
                     do not have the same redshift values: z = {} vs z_fid = {}.'
                 .format(self.z, z_fid))
 
-    def _calculate_galaxy_ps(self, state):
+    def _calc_galaxy_ps(self, state):
         """Returns 4-d numpy array of shape (n_ps, nz, nk, nmu) for the galaxy power spectra.
 
         Note: n_ps is the number of unique auto- and cross- power spectra bewteen nsample of
@@ -221,24 +267,32 @@ class PowerSpectrumBase(Theory):
         jj = 0
         for j1 in range(self.nsample):
             for j2 in range(j1, self.nsample):
-                galaxy_ps[jj] = state['AP_factor'].reshape((self.nz, 1, 1)) \
-                    * state['matter_power'].reshape((self.nz, self.nk, 1)) \
+                galaxy_ps[jj] = state['AP_factor'][:, np.newaxis, np.newaxis] \
+                    * state['matter_power'] \
                     * state['galaxy_transfer'][j1, :, :, :] \
                     * state['galaxy_transfer'][j2, :, :, :]
                 jj = jj + 1
+        assert jj == self.nps
         return galaxy_ps
 
-    def _calculate_matter_power(self, nonlinear=False):
-        """ Returns 2-d numpy array of shape (nz, nk) for the matter power spectrum.
+    def _calc_matter_power(self, nonlinear=False):
+        """ Returns 3-d numpy array of shape (nz, nk, nmu) for the matter power spectrum.
         Default is linear matter power."""
 
         Pk_interpolator = self.provider.get_Pk_interpolator(
             nonlinear=nonlinear)
-        matter_power = np.exp(np.array(
-            Pk_interpolator(self.z_list, np.log(self.k))))
+
+        matter_power = np.zeros_like(self.k_actual)
+        # for every fixed z and fixed mu, there is an array of k scaled by AP factors.
+        for iz in range(self.nz):
+            for imu in range(self.nmu):
+                a = Pk_interpolator(self.z_list[iz], np.log(
+                    self.k_actual[iz, :, imu]))
+                matter_power[iz, :, imu] = np.exp(a)
+        assert matter_power.shape == (self.nz, self.nk, self.nmu)
         return matter_power
 
-    def _calculate_matter_power_from_grid(self):
+    def _calc_matter_power_from_grid(self):
         """ Returns 2-d numpy array of shape (nz, nk) for the matter power spectrum."""
         Pk_grid = self.provider.get_Pk_grid(
             nonlinear=False)  # returns (k, z, Pk)
@@ -249,43 +303,57 @@ class PowerSpectrumBase(Theory):
         # add test to check
         return matter_power
 
-    def _calculate_galaxy_transfer(self, **params_values_dict):
+    def _calc_galaxy_transfer(self, **params_values_dict):
         """Returns 4-d numpy array of shape (nsample, nz, nk, mu) for the galaxy transfer functions."""
+
         # TODO need to apply nl damping to wiggles and not to broadband
-        bias = self._calculate_galaxy_bias(
-            **params_values_dict)  # (nsample, nz, nk)
-        kaiser = self._calculate_rsd_kaiser(bias)  # (nsample, nz, nk, mu)
-        galaxy_transfer = bias[:, :, :, np.newaxis] * kaiser * \
-            self._calculate_fog()
+
+        bias = self._calc_galaxy_bias(**params_values_dict)
+        print('bias.shape', bias.shape)
+        print('Calculating kaiser')
+        kaiser = self._calc_rsd_kaiser(bias)
+
+        print('Calculating fog')
+        fog = self._calc_fog()
+
+        galaxy_transfer = bias * kaiser * fog
         return galaxy_transfer
 
-    def _calculate_AP_factor(self):
-        """Returns 1-d numpy array of shape (nz,) for the Alcock-Pacynzski factors."""
-
-        if self.is_fiducial_model is True:
-            ap = np.ones(self.nz)
+    def _calc_AP_factors_perp_and_para(self):
+        """Returns a tuple with two 1d numpy arrays: (DA(z)|fid / DA(z), H(z)/H(z)|fid).
+        """
+        if self.is_reference_model is True:
+            ap_perp = np.ones(self.nz)
+            ap_para = np.ones(self.nz)
         else:
             DA = self.provider.get_angular_diameter_distance(self.z_list)
             Hubble = self.provider.get_Hubble(self.z_list)
             Hubble_fid = self._get_var_fid('Hubble')
             DA_fid = self._get_var_fid('angular_diameter_distance')
-            ap = (DA_fid / DA) ** 2 * (Hubble / Hubble_fid)
+            ap_perp = DA_fid / DA
+            ap_para = Hubble / Hubble_fid
+        return (ap_perp, ap_para)
+
+    def _calc_AP_factor(self):
+        """Returns 1-d numpy array of shape (nz,) for the Alcock-Pacynzski factors."""
+        ap_perp, ap_para = self._calc_AP_factors_perp_and_para()
+        ap = ap_perp ** 2 * (ap_para)
         return ap
 
-    def _calculate_rsd_kaiser(self, bias):
+    def _calc_rsd_kaiser(self, bias):
         """Returns a 4-d numpy array of shape (nsample, nz, nk, nmu) for RSD Kaiser factor.
 
         Note: we return one factor of
             kaiser = (1 + f(z)/b_j(k,z) * mu^2)
         for the galaxy density, not power spectrum.
         """
-        f = self._calculate_growth_rate()
-        kaiser = (1.0 + f[:, np.newaxis] / bias)[:, :, :, np.newaxis]\
-            * self.mu ** 2
+        f = self._calc_growth_rate()
+        kaiser = 1.0 + f[np.newaxis, :, np.newaxis, np.newaxis] / bias \
+            * (self.mu_actual ** 2)[np.newaxis, :, :, :]
         assert kaiser.shape == (self.nsample, self.nz, self.nk, self.nmu)
         return kaiser
 
-    def _calculate_nl_damping(self):
+    def _calc_nl_damping(self):
         """Return 3-d numpy array of shape (nz, nk, nmu) for the non-linear damping.
 
         Note: This is the factor for the galaxy density (not power spectrum), so
@@ -299,10 +367,10 @@ class PowerSpectrumBase(Theory):
         # 11 Mpc/h for sigma8 = 0.8 at present day (assume h = 0.68)
         self._Sig0 = 11.0 / 0.68
 
-        sig0_scaled = self._Sig0 / 0.8 * self._calculate_sigma8()
+        sig0_scaled = self._Sig0 / 0.8 * self._calc_sigma8()
 
         Sig_perp = (1.0 - self._fraction_recon) * sig0_scaled
-        Sig_para = Sig_perp * (1.0 + self._calculate_growth_rate())
+        Sig_para = Sig_perp * (1.0 + self._calc_growth_rate())
 
         arg = self.k[np.newaxis, :, np.newaxis] \
             * ((Sig_perp**2)[:, np.newaxis, np.newaxis]
@@ -316,7 +384,7 @@ class PowerSpectrumBase(Theory):
         return ans
 
     # TODO not completed - might delete
-    def _calculate_growth(self, norm_kind='z=0'):
+    def _calc_growth(self, norm_kind='z=0'):
         """Returns a 1-d numpy array for growth D(z) normalized to unity at z = 0 by default.
 
         Note: use norm_kind='matter_domination' to get D(z) normalized to 1/(1+z) at matter domination."""
@@ -338,80 +406,97 @@ class PowerSpectrumBase(Theory):
             D = D / current_D_high_z * wanted_D_high_z
         return D
 
-    def _calculate_fog(self):  # TODO find a better name
+    def _calc_fog(self):  # TODO find a better name
         """Returns 4-d numpy array of shape (nsample, nz, nk, nmu) for the blurring
         due to redshift error exp(-arg^2/2) where arg = (1+z) * sigz * k_parallel * c /H(z). """
-        k_parallel = self.k[:, np.newaxis] * self.mu
+
+        k_parallel = self.k[:, np.newaxis] * \
+            self.mu[np.newaxis, :]  # this would have been reference k w/ new hubble
+
         Hubble = self.provider.get_Hubble(self.z_list)
-        c_in_km_per_sec = 299792.458  # TODO refactor in a constant.py file
-        arg = self.sigz.reshape(self.nsample, self.nz, 1, 1) \
-            * (1.0 + self.z.reshape(1, self.nz, 1, 1)) \
-            * k_parallel[np.newaxis, np.newaxis, :, :]\
-            * c_in_km_per_sec  \
+        arg = self.sigz[:, :, np.newaxis, np.newaxis] \
+            * (1.0 + self.z[np.newaxis, :, np.newaxis, np.newaxis]) \
+            * self.k_actual_para[np.newaxis, :, :, :] \
+            * constants.c_in_km_per_sec  \
             / Hubble[np.newaxis, :, np.newaxis, np.newaxis]
+
+        if (self.do_test) and (not self.is_reference_model) == True:
+            Hubble_ref = self._get_var_fid('Hubble')
+            arg_ref = self.sigz.reshape(self.nsample, self.nz, 1, 1) \
+                * (1.0 + self.z.reshape(1, self.nz, 1, 1)) \
+                * k_parallel[np.newaxis, np.newaxis, :, :]\
+                * constants.c_in_km_per_sec  \
+                / Hubble_ref[np.newaxis, :, np.newaxis, np.newaxis]
+            assert np.allclose(arg_ref, arg)
         # TODO make unit test
         # expect suppression at k ~ 0.076 1/Mpc for H = 75km/s/Mpc at z = 0.25 w/ sigma_z = 0.003
         assert arg.shape == (self.nsample, self.nz, self.nk, self.nmu)
+
         ans = np.exp(- arg ** 2 / 2.0)
         return ans
 
-    def _calculate_galaxy_bias(self, **params_values_dict):
-        """Returns galaxy bias in a 3-d numpy array of shape (nsample, nz, nk)."""
-        gaussian_bias_per_sample = self._calculate_gaussian_bias_array(
-            **params_values_dict)
-        gaussian_bias_per_sample = gaussian_bias_per_sample[:, np.newaxis]
-        alpha = self._calculate_alpha()
-        galaxy_bias = np.array([
-            gaussian_bias_per_sample[j]
-            + 2.0 * params_values_dict['fnl']
-            * (gaussian_bias_per_sample[j] - 1.0) * self._delta_c / alpha
-            for j in range(self.nsample)
-        ])
-        msg = ('galaxy_bias.shape = {}, expected \
-            (self.nsample, self.nz, self.nk) = ({}, {}, {}) '
-               .format(galaxy_bias.shape, self.nsample, self.nz, self.nk))
-        assert galaxy_bias.shape == (self.nsample, self.nz, self.nk), msg
+    def _calc_galaxy_bias(self, **params_values_dict):
+        """Returns galaxy bias in a 4-d numpy array of shape (nsample, nz, nk, nmu)."""
+
+        gaussian_bias_per_sample = self._calc_gaussian_bias_array(
+            **params_values_dict)[:, np.newaxis, np.newaxis, np.newaxis]
+
+        alpha = self._calc_alpha()[np.newaxis, :, :, :]
+
+        galaxy_bias = gaussian_bias_per_sample \
+            + 2.0 * params_values_dict['fnl'] * self._delta_c\
+            * (gaussian_bias_per_sample - 1.0) / alpha
+
+        expected_shape = (self.nsample, self.nz, self.nk, self.nmu)
+        msg = ('galaxy_bias.shape = {}, expected ({})'
+               .format(galaxy_bias.shape, expected_shape))
+        assert galaxy_bias.shape == expected_shape, msg
+
         return galaxy_bias
 
-    def _calculate_gaussian_bias_array(self, **params_values_dict):
-        """"Returns a 1-d numpy array of gaussian galaxy bias, for each galaxy sample.
+    def _calc_gaussian_bias_array(self, **params_values_dict):
+        """"Returns a 1-d numpy array of shape (nsample, 1) for gaussian galaxy bias,
+        one for each galaxy sample.
         """
         keys = ['gaussian_bias_%s' % (i) for i in range(1, self.nsample + 1)]
         gaussian_bias = np.array([params_values_dict[key] for key in keys])
         assert gaussian_bias.shape == (self.nsample, )
         return gaussian_bias
 
-    def _calculate_alpha(self):
-        """Returns alpha as 2-d numpy array with shape (nz, nk) """
-        initial_power = self._calculate_initial_power()
-        initial_power = np.transpose(initial_power[:, np.newaxis])
-        alpha = (5.0 / 3.0) * \
-            np.sqrt(self._calculate_matter_power() /
-                    self._calculate_initial_power())
-        assert alpha.shape == (self.nz, self.nk)
+    def _calc_alpha(self):
+        """Returns alpha as 3-d numpy array with shape (nz, nk, nmu) """
+        initial_power = self._calc_initial_power()
+        alpha = (5.0 / 3.0) \
+            * np.sqrt(self._calc_matter_power() / initial_power)
+        assert alpha.shape == (self.nz, self.nk, self.nmu)
         return alpha
 
-    def _calculate_initial_power(self):
+    def _calc_initial_power(self):
         # TODO want to make sure this corresponds to the same as camb module
         # Find out how to get it from camb itself (we might have other parameters
         # like nrun, nrunrun; and possibly customized initial power one day)
-        """Returns 1-d numpy array of initial power spectrum evaluated at self.k."""
+        """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum
+        evaluated at self.k_actual. 
+
+        Note: There is a z and mu dependence because the k_actual at which we 
+        need to evaluate the initial power is different for different z and mu.
+        """
         k0 = self._k0  # 1/Mpc
         As = self.provider.get_param('As')
         ns = self.provider.get_param('ns')
-        initial_power = (2.0 * np.pi**2) / (self.k**3) * \
-            As * (self.k / k0)**(ns - 1.0)
+        initial_power = (2.0 * np.pi**2) / (self.k_actual**3) * \
+            As * (self.k_actual / k0)**(ns - 1.0)
         return initial_power
 
-    def _calculate_sigma8(self):
+    def _calc_sigma8(self):
         sigma8 = np.flip(
             self.provider.get_CAMBdata().get_sigma8()
         )
         return sigma8
 
-    def _calculate_growth_rate(self):
+    def _calc_growth_rate(self):
         """Returns f(z) from camb"""
-        sigma8 = self._calculate_sigma8()
+        sigma8 = self._calc_sigma8()
         fsigma8 = self.provider.get_fsigma8(self.z_list)
         f = fsigma8 / sigma8
         return f
@@ -427,17 +512,17 @@ class PowerSpectrumBase(Theory):
         if names is None:
             names = [
                 'Hubble',
-                # 'angular_diameter_distance',
-                # 'matter_power',
+                'angular_diameter_distance',
+                'matter_power',
                 # 'matter_power_from_grid',
                 # 'galaxy_ps',
-                # 'gaussian_bias',
-                # 'alpha',
-                # 'bias',
-                # 'growth_rate',
-                # 'sigma8',
-                # 'galaxy_transfer_components',
-                # 'galaxy_transfer'
+                'gaussian_bias',
+                'alpha',
+                'bias',
+                'growth_rate',
+                'sigma8',
+                'galaxy_transfer_components',
+                'galaxy_transfer',
             ]
         plotter = Plotter(self, params_values_dict, state)
         plotter.make_plots(names)
@@ -451,6 +536,7 @@ class Plotter():
         self.z = self.theory.z
         self.k = self.theory.k
         self.mu = self.theory.mu
+        self.sigz = self.theory.sigz
         self.nz = self.theory.nz
         self.nk = self.theory.nk
         self.nmu = self.theory.nmu
@@ -473,7 +559,7 @@ class Plotter():
     def plot_angular_diameter_distance(self):
         y1 = self.theory.provider.get_angular_diameter_distance(self.z)
         y_list = [y1]
-        if self.theory.is_fiducial_model is False:
+        if self.theory.is_reference_model is False:
             y2 = self.theory._get_var_fid('angular_diameter_distance')
             y_list.append(y2)
         self.plot_1D('z', y_list, '$D_A(z)$', 'angular_diameter_distance',
@@ -482,14 +568,14 @@ class Plotter():
     def plot_Hubble(self):
         y1 = self.theory.provider.get_Hubble(self.z)
         y_list = [y1]
-        if self.theory.is_fiducial_model is False:
+        if self.theory.is_reference_model is False:
             y2 = self.theory._get_var_fid('Hubble')
             y_list.append(y2)
         self.plot_1D('z', y_list, '$H(z)$', 'Hubble',
                      legend=['current model', 'fid. model'])
 
     def plot_alpha(self):
-        data = self.theory._calculate_alpha()
+        data = self.theory._calc_alpha()
         axis_names = ['z', 'k']
         ylatex = '$\\alpha(k)$'
         yname = 'alpha'
@@ -497,7 +583,7 @@ class Plotter():
         self.plot_2D(axis_names, data, ylatex, yname, plot_type=plot_type)
 
     def plot_growth(self):
-        y_list = [self.theory._calculate_growth()]
+        y_list = [self.theory._calc_growth()]
         axis_name = 'a'
         ylatex = '$D(a)$'
         yname = 'growth'
@@ -506,7 +592,7 @@ class Plotter():
                      plot_type=plot_type)
 
     def plot_sigma8(self):
-        y_list = [self.theory._calculate_sigma8()]
+        y_list = [self.theory._calc_sigma8()]
         axis_name = 'z'
         ylatex = '$\sigma_8(z)$'
         yname = 'sigma8'
@@ -516,8 +602,8 @@ class Plotter():
 
     def plot_matter_power(self):
 
-        data_nl = self.theory._calculate_matter_power(nonlinear=True)
-        data_lin = self.theory._calculate_matter_power(nonlinear=False)
+        data_nl = self.theory._calc_matter_power(nonlinear=True)
+        data_lin = self.theory._calc_matter_power(nonlinear=False)
 
         axis_names = ['z', 'k']
         plot_type = 'loglog'
@@ -531,7 +617,7 @@ class Plotter():
         self.plot_2D(axis_names, data_lin, ylatex, yname, plot_type=plot_type)
 
     def plot_matter_power_from_grid(self):
-        data = self.theory._calculate_matter_power_from_grid()
+        data = self.theory._calc_matter_power_from_grid()
         axis_names = ['z', 'k']
         ylatex = '$P_m(z,k)$ from grid'
         yname = 'matter_power_from_grid'
@@ -539,7 +625,7 @@ class Plotter():
         self.plot_2D(axis_names, data, ylatex, yname, plot_type=plot_type)
 
     def plot_galaxy_transfer(self):
-        data = self.theory._calculate_galaxy_transfer(
+        data = self.theory._calc_galaxy_transfer(
             **self.params_values_dict)
         axis_names = ['sample', 'z', 'k', 'mu']
         yname = 'galaxy_transfer'
@@ -557,7 +643,7 @@ class Plotter():
                              yname_in, plot_type=plot_type)
 
     def plot_gaussian_bias(self):
-        y_list = [self.theory._calculate_gaussian_bias_array(
+        y_list = [self.theory._calc_gaussian_bias_array(
             **self.params_values_dict)]
         axis_name = 'sample'
         ylatex = '$b_{Gauss}$'
@@ -568,7 +654,7 @@ class Plotter():
 
     def plot_bias(self):
         isample = 0
-        y_list = self.theory._calculate_galaxy_bias(
+        y_list = self.theory._calc_galaxy_bias(
             **self.params_values_dict)[isample, :, :]
         axis_name = ['z', 'k']
         ylatex = '$b_g(z, k)$'
@@ -579,7 +665,7 @@ class Plotter():
 
     def plot_growth_rate(self):
         isample = 0
-        y_list = [self.theory._calculate_growth_rate()]
+        y_list = [self.theory._calc_growth_rate()]
         axis_name = 'z'
         ylatex = '$f(z)$'
         yname = 'growth_rate'
@@ -589,14 +675,13 @@ class Plotter():
                      plot_type=plot_type, ylim=ylim)
 
     def plot_galaxy_transfer_components(self):
-        matter_power_lin = self.theory._calculate_matter_power(
-            nonlinear=False)[np.newaxis, :, :, np.newaxis]
-        bias = self.theory._calculate_galaxy_bias(**self.params_values_dict)
-        kaiser = self.theory._calculate_rsd_kaiser(
+        matter_power_lin = self.theory._calc_matter_power(
+            nonlinear=False)[np.newaxis, :, :, :]
+        bias = self.theory._calc_galaxy_bias(**self.params_values_dict)
+        kaiser = self.theory._calc_rsd_kaiser(
             bias)  # (nsample, nz, nk, mu)
-        bias = bias[:, :, :, np.newaxis]  # (nsample, nz, nk)
-        nl_damping = self.theory._calculate_nl_damping()[np.newaxis, :, :, :]
-        fog = self.theory._calculate_fog()
+        nl_damping = self.theory._calc_nl_damping()[np.newaxis, :, :, :]
+        fog = self.theory._calc_fog()
 
         axis_names = ['ps', 'z', 'k', 'mu']
         yname = 'galaxy_ps'
@@ -626,12 +711,18 @@ class Plotter():
                     data_in = galaxy_ps_steps[istep][ips, iz, :, :]
                     ylatex = 'Making $P_g(k, \mu)$ step %s: %s' % (
                         istep, dict_steps[istep])
+
+                    if istep == 3:
+                        ylim = [1e-5, 1e10]
+                    else:
+                        ylim = None
+
                     if istep == 0:
                         self.plot_1D('k', [data_in[:, 0]], ylatex,
-                                     yname_in, plot_type=plot_type)
+                                     yname_in, plot_type=plot_type, ylim=ylim)
                     else:
                         self.plot_2D(axis_names_in, data_in, ylatex,
-                                     yname_in, plot_type=plot_type)
+                                     yname_in, plot_type=plot_type, ylim=ylim)
 
         components = [kaiser, fog]
         ynames = ['kaiser', 'fog']
@@ -649,8 +740,26 @@ class Plotter():
                     self.plot_2D(axis_names_in, data_in, ylatex,
                                  yname_in, plot_type=plot_type, ylim=ylim)
 
+                    # Print out expected suppression at a k close to 0.2 to compare with plot by eye
+                    if self.theory.is_reference_model is False:  # test not implemented when running fiducial model
+                        if (ips == 0):
+                            isample = 0
+                            self.predict_fog(isample, iz)
+
+    def predict_fog(self, isample, iz):
+        idx = np.min(np.where(self.k >= 0.2)[0])
+        k_ref = self.k[idx]
+        mu_ref = self.mu[3]
+        Hubble_ref = self.theory._get_var_fid('Hubble')
+        arg = self.sigz[isample, iz] * \
+            (1.0 + self.z[iz]) * k_ref * mu_ref * \
+            constants.c_in_km_per_sec / Hubble_ref[iz]
+        fog = np.sqrt(np.exp(-arg**2))
+        self.logger.info('expect fog = {} for k_ref = {}, mu_ref = {}, iz = {}'.format(
+            fog, k_ref, mu_ref, iz))
+
     def plot_galaxy_ps(self):
-        data = self.galaxy_ps  # self.theory._calculate_galaxy_ps()
+        data = self.galaxy_ps
         axis_names = ['ps', 'z', 'k', 'mu']
         yname = 'galaxy_ps'
         plot_type = 'loglog'
@@ -777,7 +886,7 @@ class Plotter():
         ax.legend(legend)
 
         plot_name = 'plot_%s_vs_%s.png' % (yname, dimension)
-        plot_name = os.path.join(self.theory.test_dir, plot_name)
+        plot_name = os.path.join(self.theory.plot_dir, plot_name)
         fig.savefig(plot_name)
         self.logger.info('Saved plot = {}'.format(plot_name))
         plt.close()

@@ -50,9 +50,12 @@ class CovCalculator():
                 block = self.get_block(ips1, ips2)
                 self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]\
                     = block
-                # Note: if covriance expression is no longer symmetric in ips1<-->ips2, remove this.
-                self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]\
-                    = block
+
+                # TODO add instead a test that covariance is symmetric under ips1<-->ips2
+                # Note: if covariance expression is no longer symmetric in ips1<-->ips2, remove this
+                # and change ips2 range.
+                #self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]\
+                #    = block
 
         self.block_size = block_size
 
@@ -61,6 +64,7 @@ class CovCalculator():
     def get_and_save_invcov(self):
         self.get_cov()
         self.get_invcov()
+        self.do_inv_test(self.cov, self.invcov)
         self.save()
 
     def save(self, fn=None):
@@ -78,26 +82,28 @@ class CovCalculator():
 
         print(np.linalg.det(cov0))
         inv = np.linalg.inv(cov0)
-        self.get_inv_test(cov0, inv)
+        self.do_inv_test(cov0, inv)
 
-    def get_inv_test(self, mat, invmat, threshold=1e-3):
+    def do_inv_test(self, mat, invmat, threshold=1e-3):
         id0 = np.diag(np.ones(mat.shape[0]))
         id1 = np.matmul(mat, invmat)
         id2 = np.matmul(invmat, mat)
         ind_big1 = np.where(id1 - id0 > threshold)
         ind_big2 = np.where(id2 - id0 > threshold)
-        print(ind_big1)
-        print(ind_big2)
+        print(
+            'inv test mat * invmat did not pass for indices {} at tolerance = {}'.format(ind_big1, threshold))
+        print(
+            'inv test invmat * mat did not pass for indices {} at tolerance = {}'.format(ind_big2, threshold))
         for i in range(ind_big1[0].size):
             x = ind_big1[0][i]
             y = ind_big1[1][i]
-            print('(id1 - id0)[{},{}] = {}'.format(x,
-                                                   y, id1[x, y] - id0[x, y]))
+            print('(id1 - id0)[{},{}] = {}'
+                  .format(x, y, id1[x, y] - id0[x, y]))
         for i in range(ind_big2[0].size):
             x = ind_big2[0][i]
             y = ind_big2[1][i]
-            print('(id2 - id0)[{},{}] = {}'.format(x,
-                                                   y, id2[x, y] - id0[x, y]))
+            print('(id2 - id0)[{},{}] = {}'
+                  .format(x, y, id2[x, y] - id0[x, y]))
 
     def get_invcov(self, rescale=1.0):
         try:
@@ -115,25 +121,23 @@ class CovCalculator():
             noise = np.array([1. / self.number_density[a, iz]
                               * np.ones((self.nk, self.nmu))
                               for iz in range(self.nz)])
+            assert noise.shape == (self.nz, self.nk, self.nmu)
         else:
             noise = np.zeros((self.nz, self.nk, self.nmu))
-        print('noise.shape = {}'.format(noise.shape))
-        # TODO turn into test:
-        assert noise.shape == (self.nz, self.nk, self.nmu)
-        print('a = {}, b = {}, noise = {}'.format(a, b, noise))
-        # TODO turn into test:
-        # get_noise(1, 1)[0,0,0] == 8.13008130e+01
-        # get_noise(1, 1)[-1,0,0] == 1.47275405e+06
         return noise
+
+    def test_get_noise(self):  # TODO use for unit test later
+        assert self.get_noise(1, 1)[0, 0, 0] == 8.13008130e+01
+        assert self.get_noise(1, 1)[-1, 0, 0] == 1.47275405e+06
 
     def load_number_density(self):
         # TODO need to change from h/Mpc to 1/Mpc kind of units
+        h = self.data['H0'] / 100.0
         pars = yaml_load_file(self.args['input_survey_pars'])
         # (nsample, nz)
         # TODO need to do this in a way that's independent of number of samples.
-        self.number_density = np.array(
+        self.number_density = h * np.array(
             [pars['numdens1'], pars['numdens2'], pars['numdens3'], pars['numdens4'], pars['numdens5']])
-        print('self.number_density = {}'.format(self.number_density))
 
     def get_galaxy_ps(self, a, b):
         ips = self.dict_ips_from_sample_pair['%i,%i' % (a, b)]
@@ -145,21 +149,25 @@ class CovCalculator():
         return ps
 
     def get_block(self, ips1, ips2):
+        """Returns a Cov[P_{1}, P_{2}] where ips1, ips2 are integer indices
+        for the galaxy power spectra.
+        """
         (a, b) = self.dict_sample_pair_from_ips['%i' % ips1]
         (c, d) = self.dict_sample_pair_from_ips['%i' % ips2]
         cov = self.get_observed_ps(a, c) * self.get_observed_ps(b, d) \
             + self.get_observed_ps(a, d) * self.get_observed_ps(b, c)
         array = np.ravel(cov)
-        print('array.size = {}, expect {}'.format(
-            array.size, np.prod(self.shape[1:])))
+        msg = 'array.size = {}, expect {}'.format(
+            array.size, np.prod(self.shape[1:]))
         block = np.diag(array)
+        assert array.size == np.prod(self.shape[1:]), (msg)
         print('block.shape = {}'.format(block.shape))
-
         return block
 
+    # TODO to turn into a unit test later
     def test_block(self):
-
-        # nsample = (-1 + np.sqrt(1 + 8 * self.nps))/2.0 # put in utils later
+        """Randomly draw a block Cov[P_{axb}, P_{cxd}] where a, b, c, d are galaxy sample indices."""
+        # nsample = (-1 + np.sqrt(1 + 8 * self.nps))/2.0 # TODO use this and put in utils later
         nsample = 5
         a = np.random.randint(nsample)
         b = np.random.randint(nsample)
@@ -212,32 +220,36 @@ class CovCalculator():
                 ips = ips + 1
 
     def get_data_1d(self):
+        """Flatten the 4d numpy array self.galaxy_ps into 1d data vector, 
+        to facilitate the computation of the covariance matrix."""
         self.data_1d = self.galaxy_ps.ravel()
-        print('self.data_1d.shape = {}'.format(self.data_1d.shape))
-        assert self.data_1d.size == np.prod(self.galaxy_ps.shape), \
-            ('self.data_1d.size = {}, expect {}'
-                .format(self.data_1d.size, np.prod(self.galaxy_ps.shape)))
+        msg = 'self.data_1d.size = {}, expect {}'\
+            .format(self.data_1d.size, np.prod(self.galaxy_ps.shape))
+        assert self.data_1d.size == np.prod(self.galaxy_ps.shape), (msg)
         return self.data_1d
 
     def plot_mat(self, mat, plot_name=None):
+        """Plot input 2d matrix mat and save in self.output_dir w/ input plot_name."""
         fig, ax = plt.subplots()
         mat1 = np.ma.masked_where(mat <= 0, mat)
-        # print('np.where(mat<=0)'np.where(mat<=0))
         cs = ax.imshow(mat1, norm=LogNorm(), cmap='RdBu')
         cbar = fig.colorbar(cs)
         if plot_name is None:
-            plot_name = os.path.join(self.args['output_dir'], 'plot_mat.png')
+            plot_name = os.path.join(self.output_dir, 'plot_mat.png')
         fig.savefig(plot_name)
         print('Saved plot: {}'.format(plot_name))
 
 
 def main():
+
+    CWD = os.getcwd()
     args = {
         'model_name': 'covariance_debug',
-        'model_yaml_file': './inputs/sample_fid_model.yaml',
-        'cobaya_yaml_file': './inputs/sample.yaml',
+        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
         'input_survey_pars': './inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': './data/covariance/',
+        'output_dir': CWD + '/data/ps_base/',
+        'is_reference_model': False
     }
 
     model_calc = ModelCalculator(args)
@@ -246,19 +258,14 @@ def main():
     cov_calc = CovCalculator(results, args)
     cov_calc.get_and_save_invcov()
 
-    cov_calc.test_block()  # TODO turn into unit test
-
-    # TODO use to test later
-    # for n in range(cov_calc.nps):
-    #    print('n = ', n)
-    #    cov_calc.do_test_cov_block_nxn(n)
-
-    # for exponent in [0,9]:
-    #    rescale = 10**(-exponent)
-    #    print('rescale = ', rescale)
-    #    invcov = np.linalg.inv(cov * rescale)
-    #    cov_calc.get_inv_test(cov * rescale, invcov, threshold=1e-3)
-
 
 if __name__ == '__main__':
+
+    """Computes and saves covariance matrix and its inverse, using an input
+    fiducial cosmology. 
+
+    Note: we set is_reference_model = False automatically in this script since
+    we are interested in using galaxy_ps with AP effects in it.
+    """
+
     main()

@@ -1,6 +1,6 @@
 invcov_path: "./data/covariance/fid.invcov.npy"
 sim_data_path: "./data/sim_data/sim_data.pickle"
-is_fiducial_model: False
+is_reference_model: False
 # Aliases for automatic covariance matrix
 aliases: [like_ps_base]
 # Speed in evaluations/second (after theory inputs calculated).
