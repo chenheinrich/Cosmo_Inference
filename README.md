@@ -1,4 +1,4 @@
-# Spherex Simulated Likelihood Analysis
+# SPHEREx Simulated Likelihood Analysis
 
 This is a python package for the [SPHEREx](https://spherex.caltech.edu/) simulated likelihood anaysis. 
 It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/index.html) to run.
