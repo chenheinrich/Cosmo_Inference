@@ -1,7 +1,3 @@
-from cobaya.yaml import yaml_load_file
-from cobaya.yaml import yaml_dump
-from cobaya.model import get_model
-from cobaya.tools import sort_cosmetic
 import pickle
 import os
 import sys
@@ -9,6 +5,12 @@ import shutil
 import pathlib
 import yaml
 import numpy as np
+from collections import namedtuple
+
+from cobaya.yaml import yaml_load_file
+from cobaya.yaml import yaml_dump
+from cobaya.model import get_model
+from cobaya.tools import sort_cosmetic
 
 
 class ModelCalculator():
@@ -17,8 +19,14 @@ class ModelCalculator():
 
     def __init__(self, args):
 
-        for key in args:
-            setattr(self, key, args[key])
+        model_args = namedtuple('ModelArgs', sorted(args))
+        self.args = model_args(**args)
+
+        self.model_name = self.args.model_name
+        self.model_yaml_file = self.args.model_yaml_file
+        self.cobaya_yaml_file = self.args.cobaya_yaml_file
+        self.output_dir = self.args.output_dir
+        self.is_reference_model = self.args.is_reference_model
 
         self.setup_paths()
         self.setup_model()
@@ -47,7 +55,8 @@ class ModelCalculator():
         - results['logposterior'] gives the log posterior.
         """
 
-        # Cosmological observables requested this way always correspond to the last set of parameters with which the likelihood was evaluated.
+        # Cobaya: Cosmological observables requested this way always correspond
+        # to the last set of parameters with which the likelihood was evaluated.
         self.logposterior = self.model.logposterior(self.point)
 
         aux = self._get_auxiliary_variables()
@@ -60,14 +69,18 @@ class ModelCalculator():
         Hubble = theory1.get_Hubble(redshifts)
         angular_diameter_distance = theory1.get_angular_diameter_distance(
             redshifts)
+
         galaxy_ps = self.model.provider.get_galaxy_ps()
+
+        H0 = theory1.get_param('H0')
 
         self.results = {
             'aux': aux,
             'Hubble': Hubble,
             'angular_diameter_distance': angular_diameter_distance,
             'galaxy_ps': galaxy_ps,
-            'logposterior': self.logposterior
+            'logposterior': self.logposterior,
+            'H0': H0,
         }
 
         return self.results
@@ -83,28 +96,27 @@ class ModelCalculator():
         ap = theory.get_AP_factor()
         assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
-    def check_load_results(self):
+    def load_results(self):
         results = pickle.load(open(self.fname, "rb"))
-        # TODO add test to check if the same as written? (may not need)
-        print('results = ', results)
+        return results
 
     def copy_yaml_files(self):
         """Saves a copy of input model yaml file and cobaya sampler yaml file in the output directory."""
         yaml_path = os.path.join(
-            self.output_dir, self.model_name + '_pars.input.yaml'
+            self.output_dir, self.model_name + '.cosmo.yaml'
         )
         shutil.copy(self.model_yaml_file, yaml_path)
         print('Copied over input model yaml file to %s.' % yaml_path)
 
         yaml_path = os.path.join(
-            self.output_dir, self.model_name + '_model.input.yaml'
+            self.output_dir, self.model_name + '.cobaya.yaml'
         )
         shutil.copy(self.cobaya_yaml_file, yaml_path)
         print('Saved upated cobaya yaml file to %s.' % yaml_path)
 
     def _make_model(self):
         info = yaml_load_file(self.cobaya_yaml_file)
-        info = self._set_is_fiducial_model(info)
+        info = self._set_is_reference_model(info)
         self.model = get_model(info)
 
     def _make_initial_pars(self):
@@ -118,16 +130,17 @@ class ModelCalculator():
         print('fid_info ', fid_info)
         self.point.update(fid_info)
 
-    def _set_is_fiducial_model(self, info):
-        key_to_set = 'is_fiducial_model'
+    def _set_is_reference_model(self, info):
+        key_to_set = 'is_reference_model'
         components = []
         for category in ['theory', 'likelihood']:
             for component in info[category].keys():
                 if key_to_set in info[category][component].keys():
-                    info[category][component]['is_fiducial_model'] = True
+                    info[category][component]['is_reference_model'] = self.is_reference_model
                     components.append(category + ':, ' + component)
-        print("Found components with key 'is_fiducial_model': {}".format(components))
-        print('... Overwritten key is_fiducial_model = True for these components.')
+        print("Found components with key 'is_reference_model': {}".format(components))
+        print('... Overwritten key is_reference_model = {} for these components.'.format(
+            self.is_reference_model))
         return info
 
     # TODO need a more general interface here
@@ -151,15 +164,14 @@ def main():
 
     args = {
         'model_name': 'model_debug',
-        'model_yaml_file': './inputs/sample_fid_model.yaml',
-        'cobaya_yaml_file': './inputs/sample.yaml',
-        'output_dir': './data/',
+        'model_yaml_file': './inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_yaml_file': './inputs/cobaya_pars/ps_base.yaml',
+        'output_dir': './data/debug',
     }
 
     fid_calculator = FidModelCalculator(args)
     fid_calculator.get_and_save_results()
-    # check: # TODO turn into test?
-    fid_calculator.check_load_results()
+    fid_calculator.load_results()
 
 
 if __name__ == '__main__':

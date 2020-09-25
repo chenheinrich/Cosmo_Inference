@@ -2,8 +2,7 @@
 .vscode
 *.png
 *chains/
+*pytest_cache
 
+plots/
 data/
-spherelikes/data/models/
-spherelikes/plots/
-spherelikes/tests/

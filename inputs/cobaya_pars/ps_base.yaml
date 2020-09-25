@@ -1,10 +1,18 @@
 debug: True
 
+packages_path: "/Users/chenhe/Research/Shared/Cobaya/cosmo"
+
+sampler:
+  #evaluate:
+  mcmc:
+
+output: chains/ps_base/ps_base
+
 likelihood:
   likelihoods.base_classes.ps_base.ps_base.LikelihoodBase:
-    invcov_path: "./data/covariance/fid.invcov.npy"
-    sim_data_path: "./data/sim_data/sim_data.pickle"
-    is_fiducial_model: False
+    invcov_path: "./data/ps_base/fid.invcov.npy"
+    sim_data_path: "./data/ps_base/sim_data.pickle"
+    is_reference_model: False
 
 theory:
   camb:
@@ -18,11 +26,19 @@ theory:
         - 20
         - 100
       WantTransfer: True
+
   theories.base_classes.ps_base.ps_base.PowerSpectrumBase:
     stop_at_error: True
-    is_fiducial_model: False # if running sampler, set to false
+    survey_pars_file_name: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
+    data_dir: "./data/ps_base/"
+    model_name: "ref"
+
+    nk: 21 # 21  # 211  # number of k points (to be changed into bins)
+    nmu: 5 # 5  # number of mu bins
+
+    is_reference_model: False # if running sampler, set to false
     do_test: False
-    do_test_plot: False
+    do_test_plot: True
     test_plot_names:
 
 params:
@@ -36,35 +52,35 @@ params:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{1}"
   gaussian_bias_2:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{2}"
   gaussian_bias_3:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{3}"
   gaussian_bias_4:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{4}"
   gaussian_bias_5:
     prior:
       min: 0.8
       max: 2.0
-    ref: 1.1
+    ref: 1.0
     propose: 0.1
     latex: "b_g^{5}"
   logA:
@@ -178,11 +194,3 @@ params:
     latex: '{\rm{Age}}/\mathrm{Gyr}'
   rdrag:
     latex: r_\mathrm{drag}
-
-packages_path: "/Users/chenhe/Research/Shared/Cobaya/cosmo"
-
-sampler:
-  evaluate:
-  #mcmc:
-
-output: chains/sample/sample

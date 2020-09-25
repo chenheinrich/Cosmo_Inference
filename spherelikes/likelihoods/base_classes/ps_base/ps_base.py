@@ -38,7 +38,7 @@ class LikelihoodBase(Likelihood):
         galaxy_ps = self.provider.get_galaxy_ps()
         derived_param = self.provider.get_param('derived_param')
         my_foreground_amp = params_values['my_foreground_amp']
-        if self.is_fiducial_model is False:
+        if self.is_reference_model is False:
             delta = self.data - self.get_sample()
             # TODO turn into official error handling
             print('delta.shape = {}'.format(delta.shape))
@@ -50,16 +50,16 @@ class LikelihoodBase(Likelihood):
             chi2 = np.matmul(delta.ravel(), tmp)
             print('chi2 = {}'.format(chi2))
         else:
-            print('is_fiducial_model = True == > return chi2=0.')
+            print('is_reference_model = True == > return chi2=0.')
             chi2 = 0.0
         return -chi2 / 2
 
     def setup(self):
-        if self.is_fiducial_model is False:
+        if self.is_reference_model is False:
             self.invcov = self.load_invcov()
             self.data = self.load_data()
         else:
-            print('is_fiducial_model = True ==> Not loading fiducial inverse covariance and simulated data vector.')
+            print('is_reference_model = True ==> Not loading fiducial inverse covariance and simulated data vector.')
         print('Done setting up')
 
     def load_invcov(self):
