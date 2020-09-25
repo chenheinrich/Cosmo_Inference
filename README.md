@@ -1,6 +1,6 @@
-# SphereLikes
+# Spherex Simulated Likelihood Analysis
 
-SphereLikes is a python package for the [SPHEREx](https://spherex.caltech.edu/) simulated likelihood anaysis. 
+This is a python package for the [SPHEREx](https://spherex.caltech.edu/) simulated likelihood anaysis. 
 It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/index.html) to run.
 
 ## Install Requirements
@@ -32,8 +32,10 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
 2. Run a sample cobaya run (must be from the root of this directory):
 
-    `python run.py`
+    `python scripts/run_cobaya.py`
 
-Use `-f` to force delete existing sample chains when running a second time:
+Use `-f` to force delete existing sample chains when running a second time and `-d` to run in debug mode:
 
-    `python run.py -f` 
+    `python run.py -f -d` 
+
+
