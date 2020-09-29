@@ -6,13 +6,13 @@ sampler:
   #evaluate:
   mcmc:
 
-output: chains/ps_base/ps_base
+output: chains/ps_base/ps_base_debug
 
 likelihood:
   likelihoods.base_classes.ps_base.ps_base.LikelihoodBase:
+    is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
     invcov_path: "./data/ps_base/fid.invcov.npy"
     sim_data_path: "./data/ps_base/sim_data.pickle"
-    is_reference_model: False
 
 theory:
   camb:
@@ -29,6 +29,8 @@ theory:
 
   theories.base_classes.ps_base.ps_base.PowerSpectrumBase:
     stop_at_error: True
+
+    is_reference_model: False # if calculating reference model for AP, set to True
     survey_pars_file_name: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
     data_dir: "./data/ps_base/"
     model_name: "ref"
@@ -36,7 +38,6 @@ theory:
     nk: 21 # 21  # 211  # number of k points (to be changed into bins)
     nmu: 5 # 5  # number of mu bins
 
-    is_reference_model: False # if running sampler, set to false
     do_test: False
     do_test_plot: True
     test_plot_names:

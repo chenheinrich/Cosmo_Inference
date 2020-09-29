@@ -27,6 +27,7 @@ class ModelCalculator():
         self.cobaya_yaml_file = self.args.cobaya_yaml_file
         self.output_dir = self.args.output_dir
         self.is_reference_model = self.args.is_reference_model
+        self.is_reference_likelihood = self.args.is_reference_likelihood
 
         self.setup_paths()
         self.setup_model()
@@ -116,7 +117,7 @@ class ModelCalculator():
 
     def _make_model(self):
         info = yaml_load_file(self.cobaya_yaml_file)
-        info = self._set_is_reference_model(info)
+        info = self._set_is_reference(info)
         self.model = get_model(info)
 
     def _make_initial_pars(self):
@@ -130,17 +131,27 @@ class ModelCalculator():
         print('fid_info ', fid_info)
         self.point.update(fid_info)
 
-    def _set_is_reference_model(self, info):
-        key_to_set = 'is_reference_model'
+    def _set_is_reference(self, info):
+        info = self._overwrite_key_in_categories_with_value(
+            info, 'is_reference_model', ['theory'], self.is_reference_model)
+        info = self._overwrite_key_in_categories_with_value(
+            info, 'is_reference_likelihood', ['likelihood'], self.is_reference_likelihood)
+        return info
+
+    def _overwrite_key_in_categories_with_value(self, info, key_to_set, list_categories, value):
+
         components = []
-        for category in ['theory', 'likelihood']:
+        for category in list_categories:
             for component in info[category].keys():
                 if key_to_set in info[category][component].keys():
-                    info[category][component]['is_reference_model'] = self.is_reference_model
+                    info[category][component][key_to_set] = value
                     components.append(category + ':, ' + component)
-        print("Found components with key 'is_reference_model': {}".format(components))
-        print('... Overwritten key is_reference_model = {} for these components.'.format(
-            self.is_reference_model))
+
+        print("Found components with key {} in category {}: {}".format(
+            key_to_set, category, components))
+        print('... Overwritten key {} = {} for these components.'.format(
+            key_to_set, value))
+
         return info
 
     # TODO need a more general interface here

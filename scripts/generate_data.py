@@ -9,6 +9,10 @@ def main():
 
     Note: we set is_reference_model = False automatically in this script since
     we are interested in getting galaxy_ps data vector with AP effects in it.
+
+    Note: You can also disable the likelihood calculation to not load elements 
+    yet to be calculated (e.g. inverse covariance and simulated data vectors) 
+    by setting is_reference_likelihood = True.
     """
 
     CWD = os.getcwd()
@@ -17,8 +21,10 @@ def main():
         'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
         'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
         'output_dir': CWD + '/data/ps_base/',
-        'is_reference_model': False
     }
+
+    args['is_reference_model'] = False
+    args['is_reference_likelihood'] = True
 
     calc = ModelCalculator(args)
     results = calc.get_and_save_results()

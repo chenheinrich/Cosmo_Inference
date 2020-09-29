@@ -8,6 +8,7 @@ import pickle
 import matplotlib.pyplot as plt
 import pathlib
 import logging
+
 from spherelikes.utils.log import LoggedError, class_logger
 from spherelikes.utils import constants
 
@@ -224,7 +225,14 @@ class PowerSpectrumBase(Theory):
             self.data_dir, self.model_name + '.pickle')
 
     def _load_results_fid(self):
-        self.results_fid = pickle.load(open(self.fname_fid, "rb"))
+        try:
+            self.results_fid = pickle.load(open(self.fname_fid, "rb"))
+        except FileNotFoundError as e:
+            raise LoggedError(
+                self.logger,
+                '%s. \n' % e
+                + 'Reference results needed by AP effects do not exist! '
+                + 'You must run generate_ref.py first to make reference model.')
 
     def _get_var_fid(self, name_of_variable):
         # TODO want to document structure of results later

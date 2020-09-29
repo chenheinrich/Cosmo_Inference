@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import sys
 import os
+
 from cobaya.yaml import yaml_load_file
 
 from spherelikes.model import ModelCalculator
@@ -18,10 +19,11 @@ class CovCalculator():
         self.nsample = self.data['aux']['nsample']
         self.make_dict()
         self.load_number_density()
-        print(self.dict_ips_from_sample_pair['0,1'], 'expect 1')
-        print(self.dict_ips_from_sample_pair['1,1'], 'expect 5')
-        print(self.dict_sample_pair_from_ips['5'], 'expect (1, 1)')
-        print(self.dict_sample_pair_from_ips['1'], 'expect (0, 1)')
+        # TODO turn into unit tests
+        assert self.dict_ips_from_sample_pair['0,1'] == 1
+        assert self.dict_ips_from_sample_pair['1,1'] == self.nsample
+        assert self.dict_sample_pair_from_ips['%s' % self.nsample] == (1, 1)
+        assert self.dict_sample_pair_from_ips['1'] == (0, 1)
 
     def get_cov(self):
         """Returns the covariance matrix for all power spectra between different 
@@ -51,15 +53,24 @@ class CovCalculator():
                 self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]\
                     = block
 
-                # TODO add instead a test that covariance is symmetric under ips1<-->ips2
-                # Note: if covariance expression is no longer symmetric in ips1<-->ips2, remove this
-                # and change ips2 range.
-                #self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]\
-                #    = block
-
         self.block_size = block_size
 
         return self.cov
+
+    def test_cov_is_symmetric_exchanging_ips1_and_ips2(self):
+        # TODO turn into unit test that covariance is symmetric under ips1<-->ips2
+        # Note: if covariance expression is no longer symmetric in ips1<-->ips2, remove test
+        ips1 = np.random.randint()
+        ips2 = np.random.randint()
+        self.get_cov()
+
+        block_size = np.prod(self.shape[1:])
+        ind1 = ips1 * block_size
+        ind2 = ips2 * block_size
+
+        block12 = self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]
+        block21 = self.cov[ind2:(ind2 + block_size), ind1:(ind1 + block_size)]
+        assert np.allclose(block12 == block12)
 
     def get_and_save_invcov(self):
         self.get_cov()
@@ -75,12 +86,16 @@ class CovCalculator():
         print('Saved covariance matrix: {}'.format(fn))
         print('Saved inverse covariance matrix: {}'.format(fn_invcov))
 
-    def do_test_cov_block_nxn(self, n):
-        cov0 = self.cov[:2 * self.block_size, :2 * self.block_size]
+    def do_test_cov_block_is_invertible(self, nps):
+        # TODO turn into unit test
+        """Plot a block of the covariance matrix, invert it
+        and check precision."""
+        cov0 = self.cov[:nps * self.block_size, :nps * self.block_size]
         cov0 = cov0 * 1e-9
-        self.plot_mat(cov0, plot_name='plot_block_%ix%i.png' % (n, n))
+        self.plot_mat(
+            cov0, plot_name='plot_cov_block_%i_ps_x_%i_ps.png' % (nps, nps))
 
-        print(np.linalg.det(cov0))
+        print('determinant = {}'.format(np.linalg.det(cov0)))
         inv = np.linalg.inv(cov0)
         self.do_inv_test(cov0, inv)
 
@@ -131,10 +146,10 @@ class CovCalculator():
         assert self.get_noise(1, 1)[-1, 0, 0] == 1.47275405e+06
 
     def load_number_density(self):
-        # TODO need to change from h/Mpc to 1/Mpc kind of units
+        """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
+        expecting number density in input_survey_pars are given in h/Mpc."""
         h = self.data['H0'] / 100.0
         pars = yaml_load_file(self.args['input_survey_pars'])
-        # (nsample, nz)
         # TODO need to do this in a way that's independent of number of samples.
         self.number_density = h * np.array(
             [pars['numdens1'], pars['numdens2'], pars['numdens3'], pars['numdens4'], pars['numdens5']])
@@ -165,7 +180,7 @@ class CovCalculator():
         return block
 
     # TODO to turn into a unit test later
-    def test_block(self):
+    def test_cov_block_constructed_correctly(self):
         """Randomly draw a block Cov[P_{axb}, P_{cxd}] where a, b, c, d are galaxy sample indices."""
         # nsample = (-1 + np.sqrt(1 + 8 * self.nps))/2.0 # TODO use this and put in utils later
         nsample = 5
@@ -197,7 +212,8 @@ class CovCalculator():
         print(msg)
         assert block_entry == expected, (msg)
 
-        self.plot_mat(block, plot_name='plot_block.png')
+        self.plot_mat(
+            block, plot_name='plot_block_%i_%i_x_%i_%i.png' % (a, b, c, d))
 
     def make_dict(self):
         """Creates two dictionaries to map between power spectrum index and galaxy sample pairs.
@@ -208,34 +224,46 @@ class CovCalculator():
         In general, the power spectrum index ips is mapped to (j1, j2) the galaxy sample indices,
         where j1 < j2, while both (j1, j2) and (j2, j1) are mapped to the same power spectrum index.
         """
+
         self.dict_ips_from_sample_pair = {}
         self.dict_sample_pair_from_ips = {}
+
         ips = 0
         for j1 in range(self.nsample):
             for j2 in range(j1, self.nsample):
+
                 self.dict_sample_pair_from_ips['%i' % ips] = (j1, j2)
                 self.dict_ips_from_sample_pair['%i,%i' % (j1, j2)] = ips
                 self.dict_ips_from_sample_pair['%i,%i' % (j2, j1)] = ips
+
                 print('(j1, j2) = ({}, {}), ips = {}'.format(j1, j2, ips))
+
                 ips = ips + 1
 
     def get_data_1d(self):
         """Flatten the 4d numpy array self.galaxy_ps into 1d data vector, 
         to facilitate the computation of the covariance matrix."""
+
         self.data_1d = self.galaxy_ps.ravel()
+
         msg = 'self.data_1d.size = {}, expect {}'\
             .format(self.data_1d.size, np.prod(self.galaxy_ps.shape))
         assert self.data_1d.size == np.prod(self.galaxy_ps.shape), (msg)
+
         return self.data_1d
 
     def plot_mat(self, mat, plot_name=None):
         """Plot input 2d matrix mat and save in self.output_dir w/ input plot_name."""
-        fig, ax = plt.subplots()
+
         mat1 = np.ma.masked_where(mat <= 0, mat)
+
+        fig, ax = plt.subplots()
         cs = ax.imshow(mat1, norm=LogNorm(), cmap='RdBu')
         cbar = fig.colorbar(cs)
+
         if plot_name is None:
             plot_name = os.path.join(self.output_dir, 'plot_mat.png')
+
         fig.savefig(plot_name)
         print('Saved plot: {}'.format(plot_name))
 
@@ -249,8 +277,10 @@ def main():
         'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
         'input_survey_pars': './inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
         'output_dir': CWD + '/data/ps_base/',
-        'is_reference_model': False
     }
+
+    args['is_reference_model'] = True
+    args['is_reference_likelihood'] = True
 
     model_calc = ModelCalculator(args)
     results = model_calc.get_results()
@@ -262,10 +292,16 @@ def main():
 if __name__ == '__main__':
 
     """Computes and saves covariance matrix and its inverse, using an input
-    fiducial cosmology. 
+    fiducial cosmology (need to be the same as reference cosmollogy for AP).
 
-    Note: we set is_reference_model = False automatically in this script since
-    we are interested in using galaxy_ps with AP effects in it.
+    Usage: python scripts/generate_covariance.py
+
+    Note: We set is_reference_model = True automatically in this script to 
+    avoid calculating AP effects and bypass likelihood calculations. 
+
+    Note: You can also disable the likelihood calculation to not load elements 
+    yet to be calculated (e.g. inverse covariance and simulated data vectors) 
+    by setting is_reference_likelihood = True.
     """
 
     main()
