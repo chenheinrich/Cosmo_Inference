@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import sys
 import os
+import copy
 
 from cobaya.yaml import yaml_load_file
 
@@ -20,10 +21,14 @@ class CovCalculator():
         self.make_dict()
         self.load_number_density()
         # TODO turn into unit tests
-        assert self.dict_ips_from_sample_pair['0,1'] == 1
-        assert self.dict_ips_from_sample_pair['1,1'] == self.nsample
-        assert self.dict_sample_pair_from_ips['%s' % self.nsample] == (1, 1)
-        assert self.dict_sample_pair_from_ips['1'] == (0, 1)
+        assert self.dict_ips_from_sample_pair['0,0'] == 0
+        assert self.dict_sample_pair_from_ips['0'] == (0, 0)
+        if self.nsample > 1:
+            assert self.dict_ips_from_sample_pair['0,1'] == 1
+            assert self.dict_ips_from_sample_pair['1,1'] == self.nsample
+            assert self.dict_sample_pair_from_ips['%s' % self.nsample] == (
+                1, 1)
+            assert self.dict_sample_pair_from_ips['1'] == (0, 1)
 
     def get_cov(self):
         """Returns the covariance matrix for all power spectra between different 
@@ -79,8 +84,9 @@ class CovCalculator():
         self.save()
 
     def save(self, fn=None):
-        fn = os.path.join(self.args['output_dir'], 'fid.covmat')
-        fn_invcov = os.path.join(self.args['output_dir'], 'fid.invcov')
+        fn = os.path.join(self.args['output_dir'], 'cov.npy')
+        fn_invcov = os.path.join(
+            self.args['output_dir'], 'invcov.npy')
         np.save(fn, self.cov)
         np.save(fn_invcov, self.invcov)
         print('Saved covariance matrix: {}'.format(fn))
@@ -268,29 +274,7 @@ class CovCalculator():
         print('Saved plot: {}'.format(plot_name))
 
 
-def main():
-
-    CWD = os.getcwd()
-    args = {
-        'model_name': 'covariance_debug',
-        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
-        'input_survey_pars': './inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': CWD + '/data/ps_base/',
-    }
-
-    args['is_reference_model'] = True
-    args['is_reference_likelihood'] = True
-
-    model_calc = ModelCalculator(args)
-    results = model_calc.get_results()
-
-    cov_calc = CovCalculator(results, args)
-    cov_calc.get_and_save_invcov()
-
-
-if __name__ == '__main__':
-
+def generate_covariance(args_in):
     """Computes and saves covariance matrix and its inverse, using an input
     fiducial cosmology (need to be the same as reference cosmollogy for AP).
 
@@ -304,4 +288,30 @@ if __name__ == '__main__':
     by setting is_reference_likelihood = True.
     """
 
-    main()
+    args = copy.deepcopy(args_in)
+
+    if args['model_name'] is None:
+        args['model_name'] = 'covariance'
+
+    args['is_reference_model'] = True
+    args['is_reference_likelihood'] = True
+
+    model_calc = ModelCalculator(args)
+    results = model_calc.get_results()
+
+    cov_calc = CovCalculator(results, args)
+    cov_calc.get_and_save_invcov()
+
+
+if __name__ == '__main__':
+
+    CWD = os.getcwd()
+    args = {
+        'model_name': None,
+        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base_minimal.yaml',
+        'input_survey_pars': './inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
+        'output_dir': CWD + '/data/ps_base_minimal/',
+        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumSingleTracer"
+    }
+    generate_covariance(args)

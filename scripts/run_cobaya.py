@@ -2,10 +2,12 @@ from cobaya.run import run
 from cobaya.yaml import yaml_load_file
 import sys
 
-info = yaml_load_file("./inputs/cobaya_pars/ps_base.yaml")
+if __name__ == '__main__':
 
-for k, v in {"-f": "force", "-r": "resume", "-d": "debug"}.items():
-    if k in sys.argv:
-        info[v] = True
+    info = yaml_load_file("./inputs/cobaya_pars/ps_base_minimal.yaml")
 
-updated_info, sampler = run(info)
+    for k, v in {"-f": "force", "-r": "resume", "-d": "debug"}.items():
+        if k in sys.argv:
+            info[v] = True
+
+    updated_info, sampler = run(info)

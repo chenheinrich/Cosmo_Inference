@@ -1,8 +1,10 @@
-from spherelikes.model import ModelCalculator
 import os
+import copy
+
+from spherelikes.model import ModelCalculator
 
 
-def main():
+def generate_data(args_in):
     """Computes and saves simulated data vector, which could have a different 
     cosmology than the fiducial cosmology used in the covariance matrix or the
     reference cosmology for AP effects. 
@@ -15,13 +17,10 @@ def main():
     by setting is_reference_likelihood = True.
     """
 
-    CWD = os.getcwd()
-    args = {
-        'model_name': 'sim_data',
-        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
-        'output_dir': CWD + '/data/ps_base/',
-    }
+    args = copy.deepcopy(args_in)
+
+    if args['model_name'] is None:
+        args['model_name'] = 'sim_data'
 
     args['is_reference_model'] = False
     args['is_reference_likelihood'] = True
@@ -30,6 +29,18 @@ def main():
     results = calc.get_and_save_results()
     # TODO add nuisance model in the future, going through the likelihood
 
+    return results
+
 
 if __name__ == '__main__':
-    main()
+
+    CWD = os.getcwd()
+    args = {
+        'model_name': None,
+        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base_minimal.yaml',
+        'output_dir': CWD + '/data/ps_base_minimal/',
+        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumSingleTracer"
+    }
+
+    generate_data(args)
