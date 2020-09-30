@@ -32,9 +32,9 @@ if not os.path.exists(invcov_path):
     # TODO additional checks that some criterias are satisfied?
 print('Skip making inverse covariance. Found invcov file at\n    {}'.format(invcov_path))
 
-# generate simulated data vector
+# generate simulated data vector w/ fnl = 1.0
+args['model_yaml_file'] = CWD + '/inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
 generate_data(args)
-
 
 for k, v in {"-f": "force", "-r": "resume", "-d": "debug"}.items():
     if k in sys.argv:
