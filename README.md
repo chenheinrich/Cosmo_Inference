@@ -39,19 +39,14 @@ https://cobaya.readthedocs.io/en/latest/installation_cosmo.html)
 
 ## Put `spherelikes` package on your path (This won't be needed after we make it pip installable)
 
-You have two options now.
+    `pip install setuptools`
+    `pip install -e . [--user]`
 
-Option A - do the following manually:
+if you have venv activated and do not have administrative permission:
 
-    `LIKE_PATH=\$(git rev-parse --show-toplevel)/spherelikes/
+    `venv/bin/pip3.7 install -e .`
 
-    export PYTHONPATH=$PYTHONPATH:$LIKE_PATH`
-
-Option B - if your bashrc file is always sourced automatically:
-
-    `bash setup.sh`
-
-Test success with `python -c 'import spherelikes'.
+Test with `python -c "import spherelikes"`
 
 ## Run a sample cobaya run (must be from the root of this directory):
 
