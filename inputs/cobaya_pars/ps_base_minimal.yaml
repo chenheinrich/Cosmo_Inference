@@ -3,8 +3,9 @@ debug: True
 packages_path: "/Users/chenhe/Research/Shared/Cobaya/cosmo"
 
 sampler:
-  #evaluate:
   mcmc:
+    learn_proposal: True
+    max_tries: 100
 
 output: chains/ps_base_minimal/ps_base_minimal
 
@@ -47,22 +48,46 @@ params:
     prior:
       min: 0
       max: 5
-    ref: 1.0
-    propose: 0.1
-  gaussian_bias_1: 1.1
-  gaussian_bias_2: 1.1
-  gaussian_bias_3: 1.1
-  gaussian_bias_4: 1.1
-  gaussian_bias_5: 1.1
+    ref:
+      dist: norm
+      loc: 3.0
+      scale: 0.5
+    propose: 0.00001
+    latex: "f_{\rm NL}"
+  gaussian_bias_1:
+    value: 1.1
+    latex: "b_g^{1}"
+  gaussian_bias_2:
+    value: 1.1
+    latex: "b_g^{2}"
+  gaussian_bias_3:
+    value: 1.1
+    latex: "b_g^{3}"
+  gaussian_bias_4:
+    value: 1.1
+    latex: "b_g^{4}"
+  gaussian_bias_5:
+    value: 1.1
+    latex: "b_g^{5}"
   my_foreground_amp: 1.0
   logA:
     value: 3.0447
+    #prior:
+    #  min: 1.61
+    #  max: 3.91
+    #ref:
+    #  dist: norm
+    #  loc: 3.05
+    #  scale: 0.001
+    #proposal: 0.001
     latex: \log(10^{10} A_\mathrm{s})
     drop: true
   As:
     value: "lambda logA: 1e-10*np.exp(logA)"
     latex: A_\mathrm{s}
-  ns: 0.96589
+  ns:
+    value: 0.96589
+    latex: n_\mathrm{s}
   theta_MC_100:
     value: 1.040920
     latex: 100\theta_\mathrm{MC}
@@ -75,8 +100,12 @@ params:
     latex: H_0
     min: 20
     max: 100
-  ombh2: 0.022377
-  omch2: 0.12010
+  ombh2:
+    value: 0.022377
+    latex: \Omega_\mathrm{b} h^2
+  omch2:
+    value: 0.12010
+    latex: \Omega_\mathrm{c} h^2
   omegam:
     latex: \Omega_\mathrm{m}
   omegamh2:
@@ -92,7 +121,9 @@ params:
   DHBBN:
     derived: "lambda DH: 10**5*DH"
     latex: 10^5 \mathrm{D}/\mathrm{H}
-  tau: 0.0543
+  tau:
+    value: 0.0543
+    latex: \tau_\mathrm{reio}
   zre:
     latex: z_\mathrm{re}
   sigma8:
