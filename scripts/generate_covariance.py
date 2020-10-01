@@ -18,8 +18,17 @@ class CovCalculator():
         self.args = args
         self.galaxy_ps = self.data['galaxy_ps']
         self.nsample = self.data['aux']['nsample']
+        self.dk = self.data['aux']['dk']
+        self.dmu = self.data['aux']['dmu']
+        self.k = self.data['aux']['k']
+        self.z = self.data['aux']['z']
+        self.nz = self.z.size
+        self.nk = self.k.size
         self.make_dict()
-        self.load_number_density()
+        self.survey_pars = yaml_load_file(self.args['input_survey_pars'])
+        # TODO make this more flexible (put in survey parameter file?)
+        self.fsky = 0.75
+        self.load_number_density()  # needs self.survey_pars above
         # TODO turn into unit tests
         assert self.dict_ips_from_sample_pair['0,0'] == 0
         assert self.dict_sample_pair_from_ips['0'] == (0, 0)
@@ -31,14 +40,14 @@ class CovCalculator():
             assert self.dict_sample_pair_from_ips['1'] == (0, 1)
 
     def get_cov(self):
-        """Returns the covariance matrix for all power spectra between different 
-        galaxy samples, assuming it is diagonal in z, k and mu. 
+        """Returns the covariance matrix for all power spectra between different
+        galaxy samples, assuming it is diagonal in z, k and mu.
 
         We are also assuming that the covariance is symmetric under j1j2 <--> j1'j2':
-            Cov[P_{j1, j2} P{j1', j2'}] = Cov[P_{j1', j2'} P{j1, j2}] 
-        where j1, j2, j1', j2' are indices of the galaxy samples forming the 
+            Cov[P_{j1, j2} P{j1', j2'}] = Cov[P_{j1', j2'} P{j1, j2}]
+        where j1, j2, j1', j2' are indices of the galaxy samples forming the
         power spectra, and the z, k, mu dependence in P_{j1, j2}(z, k, mu) have been
-        suppressed here for reasons mentioned above. 
+        suppressed here for reasons mentioned above.
         """
         # Careful: Do not change elements in self.data_1d, it would modify self.data
         # from outside of this class since it is created w/ np.ravel().
@@ -155,10 +164,17 @@ class CovCalculator():
         """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
         expecting number density in input_survey_pars are given in h/Mpc."""
         h = self.data['H0'] / 100.0
-        pars = yaml_load_file(self.args['input_survey_pars'])
-        # TODO need to do this in a way that's independent of number of samples.
-        self.number_density = h * np.array(
-            [pars['numdens1'], pars['numdens2'], pars['numdens3'], pars['numdens4'], pars['numdens5']])
+        self.number_density = np.zeros((self.nsample, self.nz))
+        for isample in range(self.nsample):
+            self.number_density[isample, :] = h * \
+                np.array(self.survey_pars['numdens%s' % (isample + 1)])
+
+    # TODO turn into unit test
+    def test_load_number_density(self):
+        isample = np.random.randint()
+        iz = np.random.randint()
+        assert self.number_density[isample, iz] \
+            == self.survey_pars['numdens%s' % (isample + 1)][iz]
 
     def get_galaxy_ps(self, a, b):
         ips = self.dict_ips_from_sample_pair['%i,%i' % (a, b)]
@@ -169,21 +185,65 @@ class CovCalculator():
         ps = self.get_galaxy_ps(a, b) + self.get_noise(a, b)
         return ps
 
+    def get_survey_volume_array(self):
+        """Returns 1d numpy array of shape (nz, ) for the volume of the 
+        redshift bins.
+
+        Note: The calculation is approximate: We do not integrate dV over
+        dz, but instead integrate dchi and use the bin center for the area.
+        """
+        # TODO might want to have more finely integrated volume
+        # this would require getting comoving_radial_distance from camb
+        # at more redshift values.
+        # Might want to decouple this from requirements in theory module
+        # where this is requested for now.
+        d_lo = self.data['comoving_radial_distance_lo']
+        d_hi = self.data['comoving_radial_distance_hi']
+        d_mid = self.data['comoving_radial_distance']
+        dist = d_mid
+        V = (4.0 * np.pi) * dist**2 * (d_hi - d_lo)
+        return V
+
+    def __make_nmodes(self):
+        """Returns a 3d numpy array of shape (nz, nk, nmu) for Nmodes
+        needed in a Cov[P_{j1, j2} P{j1', j2'}] block of the covariance,
+        where Cov = (2 / Nmodes) * (P + 1/n)^2, and
+        Nmodes = Vsurvey * (2 pi k^2 dk dmu)/ (2 pi)^3.
+        """
+        # (nk, nmu)
+        nmodes_k_mu = (self.k**2 * self.dk)[:, np.newaxis] * \
+            self.dmu[np.newaxis, :] / (2.0 * np.pi) ** 2
+        # (nz, )
+        volume_array = self.get_survey_volume_array()
+        assert volume_array.size == self.nz
+        nmodes_z_k_mu = volume_array[:, np.newaxis, np.newaxis]\
+            * nmodes_k_mu[np.newaxis, :, :]
+        self.__nmodes = np.diag(nmodes_z_k_mu.ravel())
+        return None
+
+    def get_nmodes(self, fsky=1.0):
+        if not hasattr(self, 'nmodes'):
+            self.__make_nmodes()
+        return self.__nmodes * fsky
+
     def get_block(self, ips1, ips2):
         """Returns a Cov[P_{1}, P_{2}] where ips1, ips2 are integer indices
         for the galaxy power spectra.
         """
+
         (a, b) = self.dict_sample_pair_from_ips['%i' % ips1]
         (c, d) = self.dict_sample_pair_from_ips['%i' % ips2]
-        cov = self.get_observed_ps(a, c) * self.get_observed_ps(b, d) \
-            + self.get_observed_ps(a, d) * self.get_observed_ps(b, c)
+        cov = self.get_observed_ps(a, c) * self.get_observed_ps(b, d)
+        + self.get_observed_ps(a, d) * self.get_observed_ps(b, c)
         array = np.ravel(cov)
         msg = 'array.size = {}, expect {}'.format(
             array.size, np.prod(self.shape[1:]))
         block = np.diag(array)
         assert array.size == np.prod(self.shape[1:]), (msg)
         print('block.shape = {}'.format(block.shape))
-        return block
+        nmodes = self.get_nmodes(fsky=self.fsky)
+        assert nmodes.shape == block.shape
+        return block / nmodes * 2.0
 
     # TODO to turn into a unit test later
     def test_cov_block_constructed_correctly(self):
@@ -224,8 +284,8 @@ class CovCalculator():
     def make_dict(self):
         """Creates two dictionaries to map between power spectrum index and galaxy sample pairs.
 
-        Note: For example, (j1, j2) = (0,1) is mapped to ips = 0, (1,1) is mapped to ips = 5 
-        if there are 5 different galaxy samples. 
+        Note: For example, (j1, j2) = (0,1) is mapped to ips = 0, (1,1) is mapped to ips = 5
+        if there are 5 different galaxy samples.
 
         In general, the power spectrum index ips is mapped to (j1, j2) the galaxy sample indices,
         where j1 < j2, while both (j1, j2) and (j2, j1) are mapped to the same power spectrum index.
@@ -247,7 +307,7 @@ class CovCalculator():
                 ips = ips + 1
 
     def get_data_1d(self):
-        """Flatten the 4d numpy array self.galaxy_ps into 1d data vector, 
+        """Flatten the 4d numpy array self.galaxy_ps into 1d data vector,
         to facilitate the computation of the covariance matrix."""
 
         self.data_1d = self.galaxy_ps.ravel()
@@ -280,11 +340,11 @@ def generate_covariance(args_in):
 
     Usage: python scripts/generate_covariance.py
 
-    Note: We set is_reference_model = True automatically in this script to 
-    avoid calculating AP effects and bypass likelihood calculations. 
+    Note: We set is_reference_model = True automatically in this script to
+    avoid calculating AP effects and bypass likelihood calculations.
 
-    Note: You can also disable the likelihood calculation to not load elements 
-    yet to be calculated (e.g. inverse covariance and simulated data vectors) 
+    Note: You can also disable the likelihood calculation to not load elements
+    yet to be calculated (e.g. inverse covariance and simulated data vectors)
     by setting is_reference_likelihood = True.
     """
 

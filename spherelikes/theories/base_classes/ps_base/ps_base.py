@@ -61,26 +61,41 @@ class PowerSpectrumBase(Theory):
         """
         self.provider = provider
 
+    def get_dk(self, k):
+        """Return dk array.
+
+        Note: This assumes that k is uniformly spaced in log space. 
+        It computes dk by taking the difference in linear space between the
+        log bin-centers, assuming that the first and last bin are only half 
+        the usual log bin size."""
+
+        logk = np.log(k)
+        logk_mid = (logk[:-1] + logk[1:]) / 2
+        dk = np.zeros(k.size)
+        dk[1:-1] = np.exp(logk_mid)[1:] - np.exp(logk_mid)[0:-1]
+        dk[0] = np.exp(logk_mid[0]) - np.exp(logk[0])
+        dk[-1] = np.exp(logk[-1]) - np.exp(logk_mid[-1])
+        return dk
+
     def _setup_survey_pars(self):
+        """kmin and kmax preserved, dk calcula"""
         path = os.path.join(self.survey_pars_file_name)
         pars = yaml_load_file(path)
-        self.z = (np.array(pars['zbin_lo']) + np.array(pars['zbin_hi'])) / 2.0
+        self.z_lo = np.array(pars['zbin_lo'])
+        self.z_hi = np.array(pars['zbin_hi'])
+        self.z = (self.z_lo + self.z_hi) / 2.0
         self.z_list = list(self.z)
         self.sigz = np.array(pars['sigz_over_one_plus_z'])[:, np.newaxis] \
             * (1.0 + self.z[np.newaxis, :])
         self.nsample = len(pars['sigz_over_one_plus_z'])
         self.nz = self.z.size
         self.k = np.logspace(np.log10(1e-5), np.log10(5.0), self.nk)
+        self.dk = self.get_dk(self.k)
         self.mu_edges = np.linspace(0, 1, self.nmu + 1)
         self.mu = (self.mu_edges[:-1] + self.mu_edges[1:]) / 2.0
-        # self._add_z_zero()
-
-    def _add_z_zero(self):
-        nz = self.nz
-        self.z = np.hstack((0, self.z))
-        self.z_list = list(self.z)
-        self.nz = self.z.size
-        assert self.nz == nz + 1
+        self.dmu = self.mu_edges[1:] - self.mu_edges[:-1]
+        assert self.mu.size == self.dmu.size, ('mu and dmu not the same size: {}, {}'.format(
+            self.mu.size, self.dmu.size))
 
     def get_requirements(self):
         """
@@ -91,6 +106,7 @@ class PowerSpectrumBase(Theory):
 
     def must_provide(self, **requirements):
         z_list = self.z_list
+        z_more = np.hstack((self.z_lo, self.z_hi, self.z))
         k_max = 8.0
         nonlinear = (False, True)
         spec_Pk = {
@@ -106,6 +122,7 @@ class PowerSpectrumBase(Theory):
                 'H0': None,
                 'angular_diameter_distance': {'z': z_list},
                 'Hubble': {'z': z_list},
+                'comoving_radial_distance': {'z': z_more},
                 'omegam': None,
                 'As': None,
                 'ns': None,
