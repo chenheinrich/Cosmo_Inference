@@ -93,7 +93,7 @@ class ModelCalculator():
 
     def test_results(self):
         # TODO how to not make this specific?
-        theory = self.model.theory["theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
+        theory = self.model.theory["spherelikes.theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
         ap = theory.get_AP_factor()
         assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
@@ -160,7 +160,7 @@ class ModelCalculator():
         """
         # TODO (long term) how to not reference the particular theory?
         # maybe have an inheritance structure here? (not sure ...)
-        theory = self.model.theory["theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
+        theory = self.model.theory["spherelikes.theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
         theory.must_provide(galaxy_ps={}, ap={})
         k = theory.k
         mu = theory.mu
