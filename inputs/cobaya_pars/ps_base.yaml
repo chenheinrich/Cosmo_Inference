@@ -1,6 +1,6 @@
 debug: True
 
-packages_path: "/Users/chenhe/Research/Shared/Cobaya/cosmo"
+packages_path: "./cosmo"
 
 sampler:
   #evaluate:

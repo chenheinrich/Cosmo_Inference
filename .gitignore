@@ -3,6 +3,10 @@
 *.png
 *chains/
 *pytest_cache
+*.pyc
+venv
+cosmo
+demo*
 
 plots/
 data/
