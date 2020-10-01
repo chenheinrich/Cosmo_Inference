@@ -37,7 +37,7 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 (For more information on cosmology packages for Cobaya, see
 https://cobaya.readthedocs.io/en/latest/installation_cosmo.html)
 
-## Put `spherelikes` package on your path (This won't be needed after we make it pip installable)
+## Pip install `spherelikes` package in editable mode (This will be included automatically in requirements.txt once published.)
 
     `pip install setuptools`
     `pip install -e . [--user]`
