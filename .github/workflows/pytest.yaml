@@ -17,7 +17,7 @@ jobs:
           python -m pip install --upgrade pip
           sh ./scripts/get_mpich.sh
           CFLAGS+=-I./mpich/include
-          LDFLAGS+=-L./mpich/lib -Wl,-rpath,./mpich/lib
+          LDFLAGS+=-L./mpich/lib
           LDLIBS+=-lmpi
           python -m pip install "mpi4py>=3" --upgrade --no-binary :all:
           pip install -r requirements.txt

@@ -49,7 +49,7 @@ params:
       max: 5
     ref: 1.0
     propose: 0.1
-    latex: "f_{\rm NL}"
+    latex: "f_{\rm{NL}}"
   gaussian_bias_1:
     prior:
       min: 0.8
