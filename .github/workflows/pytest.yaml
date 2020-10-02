@@ -15,6 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install "mpi4py>=3" --upgrade --no-binary :all:
           pip install -r requirements.txt
           COSMO_PATH=\$(git rev-parse --show-toplevel)/cosmo
           cobaya-install cosmo -p \$COSMO_PATH

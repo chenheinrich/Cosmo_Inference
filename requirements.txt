@@ -46,5 +46,6 @@ testpath==0.4.4
 tornado==6.0.4
 traitlets==4.3.3
 webencodings==0.5.1
+wheel==0.35.1
 wget==3.2
 zipp==3.1.0
