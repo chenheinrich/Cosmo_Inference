@@ -7,6 +7,8 @@
 .vscode
 venv
 cosmo
+*.DS_Store
+docker_interactive
 
 # User generated files
 *chains/

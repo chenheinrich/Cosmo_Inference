@@ -14,7 +14,7 @@ def input_args():
         'model_name': None,
         'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
         'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/unit_test_ps_base.yaml',
-        'input_survey_pars': './inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
+        'input_survey_pars': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
         'output_dir': CWD + '/data/unit_test/ps_base_minimal/',
         'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase"
     }

@@ -15,16 +15,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          sh ./scripts/get_mpich.sh
-          CFLAGS+=-I./mpich/include
-          LDFLAGS+=-L./mpich/lib
-          LDLIBS+=-lmpi
-          python -m pip install "mpi4py>=3" --upgrade --no-binary :all:
+          apt-get install -y \
+              openmpi-bin \
+              openmpi-common \
+              libopenmpi-dev \
+              libopenblas-dev \
+              liblapack-dev \
+              gfortran \
+              git 
+          git clone https://github.com/CobayaSampler/cobaya.git && \
+          pip install -e cobaya --upgrade 
+          cobaya-install cosmo -p ./cosmo 
           pip install -r requirements.txt
-          COSMO_PATH=\$(git rev-parse --show-toplevel)/cosmo
-          cobaya-install cosmo -p \$COSMO_PATH
-          pip install setuptools
-          pip install -e . 
+          pip install -e .
           pip install pytest
           pip install pytest-cov
       - name: Run tests
