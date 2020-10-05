@@ -39,15 +39,18 @@ def cov_calc(input_args):
     return cov_calc
 
 
+@pytest.mark.ci
 def test_dictionaries(cov_calc):
     cov_calc.test_dictionaries_are_constructed_correctly()
 
 
+@pytest.mark.ci
 def test_cov_is_symmetric_exchanging_ips1_and_ips2(cov_calc):
     cov_calc.get_cov()
     cov_calc.test_cov_is_symmetric_exchanging_ips1_and_ips2()
 
 
+@pytest.mark.ci
 def test_get_noise(cov_calc):
     cov_calc.test_get_noise()
 

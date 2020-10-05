@@ -32,4 +32,4 @@ jobs:
           pip install pytest-cov
       - name: Run tests
         run: |
-          pytest ./scripts/ -v
+          pytest ./scripts/ -v -m ci

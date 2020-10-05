@@ -21,6 +21,6 @@ RUN pip3 install -r code/requirements.txt && \
     python3 -c "import spherelikes"
 
 RUN cd code 
-    #pytest scripts/
+    pytest ./scripts/ -v -m ci
     #cobaya-run sample_planck.yaml -f
     #python3 scripts/run_cobaya.py -f
