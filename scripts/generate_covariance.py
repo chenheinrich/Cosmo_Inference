@@ -394,7 +394,7 @@ if __name__ == '__main__':
         'model_name': None,
         'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
         'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base_minimal.yaml',
-        'input_survey_pars': './inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
+        'input_survey_pars': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
         'output_dir': CWD + '/data/ps_base_minimal/',
         'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumSingleTracer"
     }

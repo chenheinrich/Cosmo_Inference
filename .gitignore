@@ -15,7 +15,8 @@ docker_interactive
 *.png
 demo*
 plots/
-data/
+*.npy
+data/unit_test
 
 # Distribution / packaging
 .Python
