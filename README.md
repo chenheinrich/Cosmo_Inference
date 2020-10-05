@@ -3,7 +3,7 @@
 This is a python package for the [SPHEREx](https://spherex.caltech.edu/) simulated likelihood anaysis.
 It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/index.html) to run.
 
-## Install Requirements
+## Before you start
 
 1. Clone the repository:
 
@@ -23,11 +23,13 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
    `source venv/bin/activate`
 
-3. Install requirements (add `--user` if you're on a cluster):
+## Install Requirements
+
+1. Install requirements (add `--user` if you're on a cluster):
 
    `pip3 install -r SphereLikes/requirements.txt [--user]`
 
-4. Install Cobaya. You may skip to the rest of this section if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
+2. Install Cobaya. You may skip to the rest of this section if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
 
    `git clone https://github.com/CobayaSampler/cobaya.git`
    `pip3 install -e cobaya --upgrade`
@@ -36,7 +38,7 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
    If you have trouble, follow instructions here to install cobaya manually: https://cobaya.readthedocs.io/en/latest/installation.html#making-sure-that-cobaya-is-installed
 
-5. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`).
+3. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`).
 
    Also, MPI installation is optional but highly recommended (follow instructions [here](https://cobaya.readthedocs.io/en/latest/installation.html).
 
