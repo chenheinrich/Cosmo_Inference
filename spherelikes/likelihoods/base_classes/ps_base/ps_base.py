@@ -83,7 +83,7 @@ class LikelihoodBase(Likelihood):
             return invcov
         except FileNotFoundError as e:
             msg = '%s \n' % e \
-                + 'Inverse covariance matrix does not exist. Run generate_covariance.py first.'
+                + 'Inverse covariance matrix does not exist. Run python scripts/generate_covariance.py first.'
             raise LoggedError(self.logger, msg)
 
     def load_simulated_data(self):
@@ -92,7 +92,7 @@ class LikelihoodBase(Likelihood):
             return results['galaxy_ps']
         except FileNotFoundError as e:
             msg = '%s' % e + '\n Simulated data vector does not exist.' \
-                + '\n Run generate_data.py first.'
+                + '\n Run python scripts/generate_data.py first.'
             raise LoggedError(self.logger, msg)
 
     def get_sampled_data(self):

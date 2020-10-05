@@ -64,8 +64,6 @@ class ModelCalculator():
         redshifts = aux['z']
 
         theory1 = self.model.theory["camb"]
-        theory1.must_provide(
-            Hubble={"z": redshifts}, angular_diameter_distance={"z": redshifts})
 
         Hubble = theory1.get_Hubble(redshifts)
         angular_diameter_distance = theory1.get_angular_diameter_distance(
@@ -75,10 +73,22 @@ class ModelCalculator():
 
         H0 = theory1.get_param('H0')
 
+        self.survey_pars = yaml_load_file(self.args.input_survey_pars)
+        z_lo = np.array(self.survey_pars['zbin_lo'])
+        z_hi = np.array(self.survey_pars['zbin_hi'])
+        z_mid = 0.5 * (z_lo + z_hi)
+
+        d_lo = theory1.get_comoving_radial_distance(z_lo)
+        d_hi = theory1.get_comoving_radial_distance(z_hi)
+        d_mid = theory1.get_comoving_radial_distance(z_mid)
+
         self.results = {
             'aux': aux,
             'Hubble': Hubble,
             'angular_diameter_distance': angular_diameter_distance,
+            'comoving_radial_distance': d_mid,
+            'comoving_radial_distance_lo': d_lo,
+            'comoving_radial_distance_hi': d_hi,
             'galaxy_ps': galaxy_ps,
             'logposterior': self.logposterior,
             'H0': H0,
@@ -93,7 +103,7 @@ class ModelCalculator():
 
     def test_results(self):
         # TODO how to not make this specific?
-        theory = self.model.theory["theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
+        theory = self.model.theory["spherelikes.theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
         ap = theory.get_AP_factor()
         assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
@@ -160,14 +170,17 @@ class ModelCalculator():
         """
         # TODO (long term) how to not reference the particular theory?
         # maybe have an inheritance structure here? (not sure ...)
-        theory = self.model.theory["theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
+        theory = self.model.theory["spherelikes.theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
         theory.must_provide(galaxy_ps={}, ap={})
         k = theory.k
         mu = theory.mu
         z = theory.z
         nsample = theory.nsample
         nps = theory.nps
-        aux = {'k': k, 'mu': mu, 'z': z, 'nsample': nsample, 'nps': nps}
+        dk = theory.dk
+        dmu = theory.dmu
+        aux = {'k': k, 'mu': mu, 'z': z, 'nsample': nsample,
+               'nps': nps, 'dk': dk, 'dmu': dmu}
         return aux
 
 
