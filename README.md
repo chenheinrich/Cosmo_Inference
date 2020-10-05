@@ -25,7 +25,9 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
 ## Install Requirements
 
-1. Install Cobaya. You may skip to step 3 if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
+You may skip to step 3 if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
+
+1. Install Cobaya. 
 
    `git clone https://github.com/CobayaSampler/cobaya.git`
    
