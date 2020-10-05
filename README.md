@@ -64,4 +64,4 @@ You should be able to run
 
 You may add `-f` to force delete any existing sample chains you created with this command when running a second time and `-d` to run in debug mode.
 
-You may need to run `generate_covariance.py` first to generate the covariance matrix. 
+You may need to run `python3 scripts/generate_covariance.py` first to generate the covariance matrix. 
