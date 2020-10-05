@@ -3,9 +3,13 @@
 This is a python package for the [SPHEREx](https://spherex.caltech.edu/) simulated likelihood anaysis.
 It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/index.html) to run.
 
-## Install Requirements
+## Before you start
 
-1. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/):
+1. Clone the repository:
+
+   `git clone https://github.com/chenheinrich/SphereLikes.git`
+
+2. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/) before installing the dependencies:
 
    `conda create -n <yourenvname> python=3.7 anaconda`
 
@@ -13,38 +17,42 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
    or
 
-   `pip install pipenv [--user]`
-   `cd SphereLikes`
+   `pip3 install pipenv [--user]`
+
    `virtualenv venv`
+
    `source venv/bin/activate`
 
-2. Install requirements within this environment (add `--user` on a cluster):
+## Install Requirements
 
-   `pip install -r requirements.txt [--user]`
+You may skip to step 3 if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
 
-3. Test that cobaya is properly installed:
+1. Install Cobaya. 
 
-   `python -c "import cobaya"`
+   `git clone https://github.com/CobayaSampler/cobaya.git`
+   
+   `pip3 install -e cobaya --upgrade`
 
-   If you have trouble, follow instructions here to install cobaya manually: https://cobaya.readthedocs.io/en/latest/installation.html#making-sure-that-cobaya-is-installed
+   To test the installation: `python3 -c "import cobaya"`. If you have trouble, follow instructions here to install cobaya manually: https://cobaya.readthedocs.io/en/latest/installation.html#making-sure-that-cobaya-is-installed
 
-4. Install cosmology packages that comes with cobaya including camb and the planck likelihoods:
+2. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`). Also, MPI installation is optional but highly recommended (follow instructions [here](https://cobaya.readthedocs.io/en/latest/installation.html)).
 
-   `COSMO_PATH=\$(git rev-parse --show-toplevel)/cosmo
+   Install cosmological packages in Cobaya, replacing <path_to_packages> with the path of your choice, e.g. `./cosmo`. This means you will have cobaya, cosmo and SphereLikes on the same level.
 
-   cobaya-install cosmo -p \$COSMO_PATH`
+   `cobaya-install cosmo -p <path_to_packages>`
 
-(For more information on cosmology packages for Cobaya, see
-https://cobaya.readthedocs.io/en/latest/installation_cosmo.html)
+3. Install other requirements (add `--user` if you're on a cluster):
 
-## Pip install `spherelikes` package in editable mode (This will be included automatically in requirements.txt once published.)
+   `pip3 install -r SphereLikes/requirements.txt [--user]`
+   
+   
+## Pip install `spherelikes` package in editable mode
 
-    `pip install setuptools`
-    `pip install -e . [--user]`
+    `pip3 install -e SphereLikes [--user]`
 
-if you have venv activated and do not have administrative permission:
+if you have venv activated and do not have administrative permission, give explicit path for pip in your environment, e.g.:
 
-    `venv/bin/pip3.7 install -e .`
+    `venv/bin/pip3.7 install -e SphereLikes`
 
 Test with `python -c "import spherelikes"`
 
@@ -52,19 +60,8 @@ Test with `python -c "import spherelikes"`
 
 You should be able to run
 
-    `python scripts/run_cobaya.py`
+    `python3 scripts/run_cobaya.py -f`
 
-Use `-f` to force delete existing sample chains when running a second time; use `-d` to run in debug mode:
+You may add `-f` to force delete any existing sample chains you created with this command when running a second time and `-d` to run in debug mode.
 
-    `python scripts/run_cobaya.py -f -d`
-
-### Some tips if you need to install planck likelihood by hand
-
-You might want to put this in your ~/.bashrc:
-`source ./cosmo/code/planck/code/plc_3.0/plc-3.01/bin/clik_profile.sh`
-
-To test installation:
-`cd ./cosmo/data/planck_2018/baseline/plc_3.0/hi_l/plik`
-`clik_example_C plik_rd12_HM_v22b_TTTEEE.clik/`
-
-Run `cobaya-install cosmo -p \$COSMO_PATH` to make sure you get an "already installed" message.
+You may need to run `python3 scripts/generate_covariance.py` first to generate the covariance matrix. 

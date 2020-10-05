@@ -7,13 +7,16 @@
 .vscode
 venv
 cosmo
+*.DS_Store
+docker_interactive
 
 # User generated files
 *chains/
 *.png
 demo*
 plots/
-data/
+*.npy
+data/unit_test
 
 # Distribution / packaging
 .Python
