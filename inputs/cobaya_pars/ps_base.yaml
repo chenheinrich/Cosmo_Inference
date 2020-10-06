@@ -1,6 +1,6 @@
 debug: True
 
-packages_path: "./cosmo"
+#packages_path: "./cosmo"
 
 sampler:
   #evaluate:

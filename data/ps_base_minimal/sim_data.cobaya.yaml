@@ -5,9 +5,9 @@ debug: True
 sampler:
   mcmc:
     learn_proposal: True
-    max_tries: 100
+    max_tries: 40
 
-output: chains/ps_base_minimal/ps_base_minimal
+output: chains/ps_base_minimal/ps_base_minimal_5bias
 
 likelihood:
   spherelikes.likelihoods.base_classes.ps_base.ps_base.LikelihoodBase:
@@ -52,22 +52,57 @@ params:
       dist: norm
       loc: 3.0
       scale: 0.5
-    propose: 0.001
+    propose: 0.00001
     latex: "f_{\rm{NL}}"
   gaussian_bias_1:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.1
+      scale: 0.1
+    propose: 0.1
     latex: "b_g^{1}"
   gaussian_bias_2:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.1
+      scale: 0.1
+    propose: 0.1
     latex: "b_g^{2}"
   gaussian_bias_3:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.1
+      scale: 0.1
+    propose: 0.1
     latex: "b_g^{3}"
   gaussian_bias_4:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.1
+      scale: 0.1
+    propose: 0.1
     latex: "b_g^{4}"
   gaussian_bias_5:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.1
+      scale: 0.1
+    propose: 0.1
     latex: "b_g^{5}"
   my_foreground_amp: 1.0
   logA:

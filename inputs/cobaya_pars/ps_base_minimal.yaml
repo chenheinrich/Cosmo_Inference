@@ -4,13 +4,14 @@ debug: True
 
 sampler:
   mcmc:
-    learn_proposal: True
-    max_tries: 40
+    learn_proposal: False
+    max_tries: 100
 
-output: chains/ps_base_minimal/ps_base_minimal
+output: chains/ps_base_minimal/ps_base_minimal_5bias
 
 likelihood:
   spherelikes.likelihoods.base_classes.ps_base.ps_base.LikelihoodBase:
+    stop_at_error: True
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
     invcov_path: "./data/ps_base_minimal/invcov.npy"
     sim_data_path: "./data/ps_base_minimal/sim_data.pickle"
@@ -52,32 +53,67 @@ params:
       dist: norm
       loc: 3.0
       scale: 0.5
-    propose: 0.00001
+    propose: 0.001 #0.00001
     latex: "f_{\rm{NL}}"
   gaussian_bias_1:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.5
+    propose: 0.0001
     latex: "b_g^{1}"
   gaussian_bias_2:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.5
+    propose: 0.0001
     latex: "b_g^{2}"
   gaussian_bias_3:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.5
+    propose: 0.0001
     latex: "b_g^{3}"
   gaussian_bias_4:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.5
+    propose: 0.0001
     latex: "b_g^{4}"
   gaussian_bias_5:
-    value: 1.1
+    prior:
+      min: 0.8
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.5
+    propose: 0.0001
     latex: "b_g^{5}"
   my_foreground_amp: 1.0
   logA:
     #value: 3.0447
     prior:
-      #  min: 1.61
-      #  max: 3.91
-      dist: norm
-      loc: 3.045
-      scale: 0.016
+      min: 1.61
+      max: 3.91
+      #dist: norm
+      #loc: 3.045
+      #scale: 0.016
     ref:
       dist: norm
       loc: 3.05
@@ -91,11 +127,11 @@ params:
   ns:
     #value: 0.96589
     prior:
-      #  min: 0.8
-      #  max: 1.2
-      dist: norm
-      loc: 0.964
-      scale: 0.004
+      min: 0.8
+      max: 1.2
+      #dist: norm
+      #loc: 0.964
+      #scale: 0.004
     ref:
       dist: norm
       loc: 0.965
