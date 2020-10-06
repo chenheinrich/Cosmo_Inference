@@ -47,13 +47,15 @@ You may skip to step 3 if you already have Cobaya and its cosmological packages 
 
     `pip3 install -r SphereLikes/requirements.txt [--user]`
 
-## Pip install `spherelikes` package in editable mode
+## Pip install `spherelikes` package 
 
-    `pip3 install -e SphereLikes [--user]`
+Install in editable mode for now:
+
+`pip3 install -e SphereLikes [--user]`
 
 if you have venv activated and do not have administrative permission, give explicit path for pip in your environment, e.g.:
 
-    `venv/bin/pip3.7 install -e SphereLikes`
+`venv/bin/pip3.7 install -e SphereLikes`
 
 Test with `python -c "import spherelikes"`
 
