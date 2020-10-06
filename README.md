@@ -69,6 +69,6 @@ You should be able to run:
 
 to generate data needed for running MCMC chains: covariance matrix, reference cosmology and simulated data.
 
-To run chains (in debug mode add `-d` and to force removing existing chains add `-f`):
+Then you can run chains (in debug mode add `-d` and to force removing existing chains add `-f`):
 
 `python3 scripts/run_chains.py ./inputs/simulated_chains_pars/sim.yaml -f -d`
