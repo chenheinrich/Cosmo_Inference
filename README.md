@@ -7,21 +7,21 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
 1. Clone the repository:
 
-   `git clone https://github.com/chenheinrich/SphereLikes.git`
-
+    `git clone https://github.com/chenheinrich/SphereLikes.git`
+    
 2. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/) before installing the dependencies:
 
-   `conda create -n <yourenvname> python=3.7 anaconda`
+    `conda create -n <yourenvname> python=3.7 anaconda`
 
-   `source activate <yourenvname>`
+    `source activate <yourenvname>`
 
    or
 
-   `pip3 install pipenv [--user]`
+    `pip3 install pipenv [--user]`
 
-   `virtualenv venv`
+    `virtualenv venv`
 
-   `source venv/bin/activate`
+    `source venv/bin/activate`
 
 ## Install Requirements
 
@@ -29,21 +29,23 @@ You may skip to step 3 if you already have Cobaya and its cosmological packages 
 
 1. Install Cobaya.
 
-   `git clone https://github.com/CobayaSampler/cobaya.git`
+    `git clone https://github.com/CobayaSampler/cobaya.git`
 
-   `pip3 install -e cobaya --upgrade`
+    `pip3 install -e cobaya --upgrade`
 
    To test the installation: `python3 -c "import cobaya"`. If you have trouble, follow instructions here to install cobaya manually: https://cobaya.readthedocs.io/en/latest/installation.html#making-sure-that-cobaya-is-installed
 
 2. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`). Also, MPI installation is optional but highly recommended (follow instructions [here](https://cobaya.readthedocs.io/en/latest/installation.html)).
 
-   Install cosmological packages in Cobaya, replacing <path_to_packages> with the path of your choice, e.g. `./cosmo`. This means you will have cobaya, cosmo and SphereLikes on the same level.
+   Install cosmological packages in Cobaya, replacing `<path_to_packages>` with the path of your choice, e.g. `./cosmo`. This means you will have `cobaya`, `cosmo` and `SphereLikes` on the same level.
 
-   `cobaya-install cosmo -p <path_to_packages>`
+    `cobaya-install cosmo -p <path_to_packages>`
+
+   If Planck likelihood installation fails, follow instructions [here](cosmo/code/planck/code).
 
 3. Install other requirements (add `--user` if you're on a cluster):
 
-   `pip3 install -r SphereLikes/requirements.txt [--user]`
+    `pip3 install -r SphereLikes/requirements.txt [--user]`
 
 ## Pip install `spherelikes` package in editable mode
 
@@ -57,12 +59,14 @@ Test with `python -c "import spherelikes"`
 
 ## Run a sample cobaya run (must be from the root of this directory):
 
-You should be able to run
+You should be able to run:
 
-    `python3 scripts/prep_chains.py`
+   `cd SphereLikes`
+   
+   `python3 scripts/prep_chains.py ./inputs/simulated_chains_pars/sim.yaml`
 
 to generate data needed for running MCMC chains: covariance matrix, reference cosmology and simulated data.
 
 To run chains (in debug mode add `-d` and to force removing existing chains add `-f`):
 
-`python3 scripts/run_chains.py -f -d`
+`python3 scripts/run_chains.py ./inputs/simulated_chains_pars/sim.yaml -f -d`
