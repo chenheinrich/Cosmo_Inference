@@ -27,10 +27,10 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
 You may skip to step 3 if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
 
-1. Install Cobaya. 
+1. Install Cobaya.
 
    `git clone https://github.com/CobayaSampler/cobaya.git`
-   
+
    `pip3 install -e cobaya --upgrade`
 
    To test the installation: `python3 -c "import cobaya"`. If you have trouble, follow instructions here to install cobaya manually: https://cobaya.readthedocs.io/en/latest/installation.html#making-sure-that-cobaya-is-installed
@@ -44,8 +44,7 @@ You may skip to step 3 if you already have Cobaya and its cosmological packages 
 3. Install other requirements (add `--user` if you're on a cluster):
 
    `pip3 install -r SphereLikes/requirements.txt [--user]`
-   
-   
+
 ## Pip install `spherelikes` package in editable mode
 
     `pip3 install -e SphereLikes [--user]`
@@ -60,8 +59,10 @@ Test with `python -c "import spherelikes"`
 
 You should be able to run
 
-    `python3 scripts/run_cobaya.py -f`
+    `python3 scripts/prep_chains.py`
 
-You may add `-f` to force delete any existing sample chains you created with this command when running a second time and `-d` to run in debug mode.
+to generate data needed for running MCMC chains: covariance matrix, reference cosmology and simulated data.
 
-You may need to run `python3 scripts/generate_covariance.py` first to generate the covariance matrix. 
+To run chains (in debug mode add `-d` and to force removing existing chains add `-f`):
+
+`python3 scripts/run_chains.py -f -d`

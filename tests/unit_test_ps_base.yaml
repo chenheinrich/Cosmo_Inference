@@ -5,15 +5,15 @@ debug: True
 sampler:
   mcmc:
     learn_proposal: True
-    max_tries: 100
+    max_tries: 40
 
-output: chains/ps_base_minimal/ps_base_minimal
+output: chains/unit_test/ps_base/ps_base
 
 likelihood:
   spherelikes.likelihoods.base_classes.ps_base.ps_base.LikelihoodBase:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
-    invcov_path: "./data/ps_base_minimal/invcov.npy"
-    sim_data_path: "./data/ps_base_minimal/sim_data.pickle"
+    invcov_path: "./data/unit_test/ps_base/invcov.npy"
+    sim_data_path: "./data/unit_test/ps_base/sim_data.pickle"
 
 theory:
   camb:
@@ -33,7 +33,7 @@ theory:
 
     is_reference_model: False # if calculating reference model for AP, set to True
     survey_pars_file_name: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
-    data_dir: "./data/ps_base_minimal/"
+    data_dir: "./data/unit_test/"
     model_name: "ref"
 
     nk: 21 # 21  # 211  # number of k points (to be changed into bins)
@@ -44,31 +44,6 @@ theory:
     test_plot_names:
 
 params:
-  fnl:
-    prior:
-      min: 0
-      max: 5
-    ref:
-      dist: norm
-      loc: 3.0
-      scale: 0.5
-    propose: 0.00001
-    latex: "f_{\rm NL}"
-  gaussian_bias_1:
-    value: 1.1
-    latex: "b_g^{1}"
-  gaussian_bias_2:
-    value: 1.1
-    latex: "b_g^{2}"
-  gaussian_bias_3:
-    value: 1.1
-    latex: "b_g^{3}"
-  gaussian_bias_4:
-    value: 1.1
-    latex: "b_g^{4}"
-  gaussian_bias_5:
-    value: 1.1
-    latex: "b_g^{5}"
   my_foreground_amp: 1.0
   logA:
     #value: 3.0447

@@ -12,6 +12,7 @@ docker_interactive
 
 # User generated files
 *chains/
+data/
 *.png
 demo*
 plots/
