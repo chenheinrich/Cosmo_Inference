@@ -16,18 +16,34 @@ logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
 
 
+def get_params(nsample, nz):
+    base_params = {
+        'fnl': {'prior': {'min': 0, 'max': 5},
+                'ref': {'dist': 'norm', 'loc': 1.0, 'scale': 0.5},
+                'propose': 0.001,
+                'latex': 'f_{\rm{NL}}'
+                },
+        'derived_param': {'derived': True},
+    }
+    biases = {}
+    for isample in range(nsample):
+        for iz in range(nz):
+            key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
+            value = {'prior': {'min': 0.8, 'max': 2.0},
+                     'ref': {'dist': 'norm', 'loc': 1.1, 'scale': 0.2},
+                     'propose': 0.001,
+                     'latex': 'b_g^{%i}(z_{%i})' % (isample + 1, iz + 1)
+                     }
+            biases[key] = value
+    params = {**base_params, **biases}
+    return params
+
+
 class PowerSpectrumBase(Theory):
 
-    params = {
-        'fnl': {'prior': {'min': 0, 'max': 5}, 'propose': 0.1, 'ref': 1.0},
-        'gaussian_bias_1': {'prior': {'min': 0.8, 'max': 2.0}, 'propose': 0.1, 'ref': 1.0, 'latex': 'b_g^{1}'},
-        'gaussian_bias_2': {'prior': {'min': 0.8, 'max': 2.0}, 'propose': 0.1, 'ref': 1.0, 'latex': 'b_g^{2}'},
-        'gaussian_bias_3': {'prior': {'min': 0.8, 'max': 2.0}, 'propose': 0.1, 'ref': 1.0, 'latex': 'b_g^{2}'},
-        'gaussian_bias_4': {'prior': {'min': 0.8, 'max': 2.0}, 'propose': 0.1, 'ref': 1.0, 'latex': 'b_g^{2}'},
-        'gaussian_bias_5': {'prior': {'min': 0.8, 'max': 2.0}, 'propose': 0.1, 'ref': 1.0, 'latex': 'b_g^{2}'},
-        # TODO how to make this variable number of bins?
-        'derived_param': {'derived': True}
-    }
+    nsample = 5
+    nz = 11
+    params = get_params(nsample, nz)
 
     nk = 1  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 1  # 5  # number of mu bins
@@ -447,8 +463,8 @@ class PowerSpectrumBase(Theory):
 
         if (self.do_test) and (not self.is_reference_model) == True:
             Hubble_ref = self._get_var_fid('Hubble')
-            arg_ref = self.sigz.reshape(self.nsample, self.nz, 1, 1) \
-                * (1.0 + self.z.reshape(1, self.nz, 1, 1)) \
+            arg_ref = self.sigz[self.nsample, self.nz, np.newaxis, np.newaxis] \
+                * (1.0 + self.z[np.newaxis, self.nz, np.newaxis, np.newaxis]) \
                 * k_parallel[np.newaxis, np.newaxis, :, :]\
                 * constants.c_in_km_per_sec  \
                 / Hubble_ref[np.newaxis, :, np.newaxis, np.newaxis]
@@ -463,14 +479,14 @@ class PowerSpectrumBase(Theory):
     def _calc_galaxy_bias(self, **params_values_dict):
         """Returns galaxy bias in a 4-d numpy array of shape (nsample, nz, nk, nmu)."""
 
-        gaussian_bias_per_sample = self._calc_gaussian_bias_array(
-            **params_values_dict)[:, np.newaxis, np.newaxis, np.newaxis]
+        gaussian_bias = self._calc_gaussian_bias_array(
+            **params_values_dict)[:, :, np.newaxis, np.newaxis]
 
         alpha = self._calc_alpha()[np.newaxis, :, :, :]
 
-        galaxy_bias = gaussian_bias_per_sample \
+        galaxy_bias = gaussian_bias \
             + 2.0 * params_values_dict['fnl'] * self._delta_c\
-            * (gaussian_bias_per_sample - 1.0) / alpha
+            * (gaussian_bias - 1.0) / alpha
 
         expected_shape = (self.nsample, self.nz, self.nk, self.nmu)
         msg = ('galaxy_bias.shape = {}, expected ({})'
@@ -483,9 +499,11 @@ class PowerSpectrumBase(Theory):
         """"Returns a 1-d numpy array of shape (nsample, 1) for gaussian galaxy bias,
         one for each galaxy sample.
         """
-        keys = ['gaussian_bias_%s' % (i) for i in range(1, self.nsample + 1)]
-        gaussian_bias = np.array([params_values_dict[key] for key in keys])
-        assert gaussian_bias.shape == (self.nsample, )
+        gaussian_bias = np.zeros((self.nsample, self.nz))
+        for isample in range(self.nsample):
+            for iz in range(self.nz):
+                key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
+                gaussian_bias[isample, iz] = params_values_dict[key]
         return gaussian_bias
 
     def _calc_alpha(self):
