@@ -11,47 +11,44 @@ import logging
 
 from spherelikes.utils.log import LoggedError, class_logger
 from spherelikes.utils import constants
+from spherelikes.params import get_bias_params_for_survey_file, get_nsample_and_nz_for_survey_file
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
 
 
-def get_params(nsample, nz):
+def get_base_params():
     base_params = {
         'fnl': {'prior': {'min': 0, 'max': 5},
                 'ref': {'dist': 'norm', 'loc': 1.0, 'scale': 0.5},
                 'propose': 0.001,
-                'latex': 'f_{\rm{NL}}'
+                'latex': 'f_{\rm{NL}}',
                 },
         'derived_param': {'derived': True},
     }
-    biases = {}
-    for isample in range(nsample):
-        for iz in range(nz):
-            key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
-            value = {'prior': {'min': 0.8, 'max': 2.0},
-                     'ref': {'dist': 'norm', 'loc': 1.1, 'scale': 0.2},
-                     'propose': 0.001,
-                     'latex': 'b_g^{%i}(z_{%i})' % (isample + 1, iz + 1)
-                     }
-            biases[key] = value
-    params = {**base_params, **biases}
-    return params
+    return base_params
 
+def get_params_for_survey_file(survey_par_file, fix_to_default=False):
+
+    base_params = get_base_params()
+    bias_params = get_bias_params_for_survey_file(survey_par_file, fix_to_default=fix_to_default)
+
+    base_params.update(bias_params)
+    return base_params
+    
 
 class PowerSpectrumBase(Theory):
 
-    nsample = 5
-    nz = 11
-    params = get_params(nsample, nz)
-
-    nk = 1  # 21  # 211  # number of k points (to be changed into bins)
-    nmu = 1  # 5  # number of mu bins
-
-    survey_pars_file_name = 'inputs/survey_pars_v28_base_cbe.yaml'
+    survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
     data_dir = 'data/ps_base/'
     model_name = 'ref'
     plot_dir = 'plots/'
+
+    nsample, nz = get_nsample_and_nz_for_survey_file(survey_par_file)
+    params = get_params_for_survey_file(survey_par_file, fix_to_default=False)
+
+    nk = 1  # 21  # 211  # number of k points (to be changed into bins)
+    nmu = 1  # 5  # number of mu bins
 
     is_reference_model = False
     do_test = False
@@ -95,7 +92,7 @@ class PowerSpectrumBase(Theory):
 
     def _setup_survey_pars(self):
         """kmin and kmax preserved, dk calcula"""
-        path = os.path.join(self.survey_pars_file_name)
+        path = os.path.join(self.survey_par_file)
         pars = yaml_load_file(path)
         self.z_lo = np.array(pars['zbin_lo'])
         self.z_hi = np.array(pars['zbin_hi'])

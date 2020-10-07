@@ -38,7 +38,7 @@ class CovCalculator():
 
         self.make_dict()
 
-        self.survey_pars = yaml_load_file(self.args['input_survey_pars'])
+        self.survey_pars = yaml_load_file(self.args['survey_par_file'])
         self.load_number_density()  # needs self.survey_pars
 
     def make_dict(self):
@@ -68,7 +68,7 @@ class CovCalculator():
 
     def load_number_density(self):
         """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
-        expecting number density in input_survey_pars are given in h/Mpc."""
+        expecting number density in survey_par_file are given in h/Mpc."""
         h = self.data['H0'] / 100.0
         self.number_density = np.zeros((self.nsample, self.nz))
         for isample in range(self.nsample):
@@ -373,14 +373,15 @@ def generate_covariance(args_in):
     args = copy.deepcopy(args_in)
 
     if args['model_name'] is None:
-        args['model_name'] = 'covariance'
+        args['model_name'] = 'cov_data'
 
     args['is_reference_model'] = True
     args['is_reference_likelihood'] = True
 
     model_calc = ModelCalculator(args)
-    results = model_calc.get_results()
+    results = model_calc.get_and_save_results()
 
+    sys.exit()
     cov_calc = CovCalculator(results, args)
     cov_calc.get_and_save_invcov()
 
@@ -392,10 +393,10 @@ if __name__ == '__main__':
     CWD = os.getcwd()
     args = {
         'model_name': None,
-        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base_minimal.yaml',
-        'input_survey_pars': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': CWD + '/data/ps_base_minimal/',
-        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumSingleTracer"
+        'cosmo_par_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_par_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
+        'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
+        'output_dir': CWD + '/data/ps_base/',
+        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase"
     }
     generate_covariance(args)

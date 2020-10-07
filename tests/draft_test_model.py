@@ -9,8 +9,8 @@ def model_calc():
     """Returns a ModelCalculator instance with sample arguments above."""
     args = {
         'model_name': 'test_model',
-        'model_yaml_file': './inputs/sample_fid_model.yaml',
-        'cobaya_yaml_file': './inputs/sample.yaml',
+        'cosmo_par_file': './inputs/sample_fid_model.yaml',
+        'cobaya_par_file': './inputs/sample.yaml',
         'output_dir': './data/test_model/',
     }
     model_calc = ModelCalculator(args)
@@ -20,8 +20,8 @@ def model_calc():
 def test_model_calc_get_save_and_load_results():
     args = {
         'model_name': 'test_model',
-        'model_yaml_file': './inputs/sample_fid_model.yaml',
-        'cobaya_yaml_file': './inputs/sample.yaml',
+        'cosmo_par_file': './inputs/sample_fid_model.yaml',
+        'cobaya_par_file': './inputs/sample.yaml',
         'output_dir': './data/test_model/',
     }
     model_calc = ModelCalculator(args)
