@@ -1,4 +1,4 @@
-invcov_path: "./data/covariance/fid.invcov.npy"
+invcov_path: "./data/covariance/invcov.npy"
 sim_data_path: "./data/sim_data/sim_data.pickle"
 is_reference_likelihood: True
 # Aliases for automatic covariance matrix
@@ -7,13 +7,5 @@ aliases: [like_ps_base]
 speed: 500
 params:
   my_foreground_amp:
-    prior:
-      dist: uniform
-      min: 0
-      max: 100
-    ref:
-      dist: norm
-      loc: 153
-      scale: 27
-    proposal: 27
+    value: 1.0
     latex: A^{f}_{\rm{mine}}

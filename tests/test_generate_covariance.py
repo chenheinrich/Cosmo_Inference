@@ -4,7 +4,7 @@ import copy
 
 from spherelikes.model import ModelCalculator
 
-from generate_covariance import generate_covariance, CovCalculator
+from scripts.generate_covariance import generate_covariance, CovCalculator
 
 
 @pytest.fixture
@@ -12,11 +12,13 @@ def input_args():
     CWD = os.getcwd()
     args = {
         'model_name': None,
-        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/unit_test_ps_base.yaml',
-        'input_survey_pars': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': CWD + '/data/unit_test/ps_base_minimal/',
-        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase"
+        'cosmo_par_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_par_file': CWD + '/tests/unit_test_ps_base.yaml',
+        'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
+        'output_dir': CWD + '/data/unit_test/ps_base/',
+        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase",
+        'overwrite_covariance': False,
+        'fix_default_bias': True,
     }
     return args
 
@@ -39,18 +41,18 @@ def cov_calc(input_args):
     return cov_calc
 
 
-@pytest.mark.ci
+@pytest.mark.short
 def test_dictionaries(cov_calc):
     cov_calc.test_dictionaries_are_constructed_correctly()
 
 
-@pytest.mark.ci
+@pytest.mark.short
 def test_cov_is_symmetric_exchanging_ips1_and_ips2(cov_calc):
     cov_calc.get_cov()
     cov_calc.test_cov_is_symmetric_exchanging_ips1_and_ips2()
 
 
-@pytest.mark.ci
+@pytest.mark.short
 def test_get_noise(cov_calc):
     cov_calc.test_get_noise()
 

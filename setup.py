@@ -9,8 +9,7 @@ setup(
     author_email='chenhe@caltech.edu',
     license='BSD 2-clause',
     packages=['spherelikes'],
-    install_requires=['mpi4py>=2.0',
-                      'numpy',
+    install_requires=['numpy',
                       ],
 
     # TODO double check license

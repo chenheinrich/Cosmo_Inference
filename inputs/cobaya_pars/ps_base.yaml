@@ -1,17 +1,16 @@
 debug: True
 
-packages_path: "./cosmo"
-
 sampler:
   #evaluate:
   mcmc:
+    max_tries: 10000000
 
-output: chains/ps_base/ps_base_debug
+output: chains/ps_base/ps_base
 
 likelihood:
   spherelikes.likelihoods.base_classes.ps_base.ps_base.LikelihoodBase:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
-    invcov_path: "./data/ps_base/fid.invcov.npy"
+    invcov_path: "./data/ps_base/invcov.npy"
     sim_data_path: "./data/ps_base/sim_data.pickle"
 
 theory:
@@ -31,7 +30,7 @@ theory:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True
-    survey_pars_file_name: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
+    survey_par_file: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
     data_dir: "./data/ps_base/"
     model_name: "ref"
 
@@ -47,52 +46,21 @@ params:
     prior:
       min: 0
       max: 5
-    ref: 1.0
-    propose: 0.1
-    latex: "f_{\rm{NL}}"
-  gaussian_bias_1:
-    prior:
-      min: 0.8
-      max: 2.0
-    ref: 1.0
-    propose: 0.1
-    latex: "b_g^{1}"
-  gaussian_bias_2:
-    prior:
-      min: 0.8
-      max: 2.0
-    ref: 1.0
-    propose: 0.1
-    latex: "b_g^{2}"
-  gaussian_bias_3:
-    prior:
-      min: 0.8
-      max: 2.0
-    ref: 1.0
-    propose: 0.1
-    latex: "b_g^{3}"
-  gaussian_bias_4:
-    prior:
-      min: 0.8
-      max: 2.0
-    ref: 1.0
-    propose: 0.1
-    latex: "b_g^{4}"
-  gaussian_bias_5:
-    prior:
-      min: 0.8
-      max: 2.0
-    ref: 1.0
-    propose: 0.1
-    latex: "b_g^{5}"
+    ref:
+      dist: norm
+      loc: 3.0
+      scale: 0.5
+    propose: 0.001
+    latex: f_{\rm{NL}}
   logA:
     prior:
-      min: 1.61
-      max: 3.91
+      dist: norm
+      loc: 3.045
+      scale: 0.016
     ref:
       dist: norm
       loc: 3.05
-      scale: 0.001
+      scale: 0.0001
     proposal: 0.001
     latex: \log(10^{10} A_\mathrm{s})
     drop: true
@@ -101,8 +69,9 @@ params:
     latex: A_\mathrm{s}
   ns:
     prior:
-      min: 0.8
-      max: 1.2
+      dist: norm
+      loc: 0.965
+      scale: 0.004
     ref:
       dist: norm
       loc: 0.965
@@ -111,12 +80,13 @@ params:
     latex: n_\mathrm{s}
   theta_MC_100:
     prior:
-      min: 0.5
-      max: 10
+      dist: norm
+      loc: 1.0409
+      scale: 0.0003
     ref:
       dist: norm
-      loc: 1.04109
-      scale: 0.0004
+      loc: 1.0409
+      scale: 0.00003
     proposal: 0.0002
     latex: 100\theta_\mathrm{MC}
     drop: true
@@ -130,22 +100,24 @@ params:
     max: 100
   ombh2:
     prior:
-      min: 0.005
-      max: 0.1
+      dist: norm
+      loc: 0.0224
+      scale: 0.00015
     ref:
       dist: norm
       loc: 0.0224
-      scale: 0.0001
+      scale: 0.00001
     proposal: 0.0001
     latex: \Omega_\mathrm{b} h^2
   omch2:
     prior:
-      min: 0.001
-      max: 0.99
+      dist: norm
+      loc: 0.12
+      scale: 0.0014
     ref:
       dist: norm
       loc: 0.12
-      scale: 0.001
+      scale: 0.0001
     proposal: 0.0005
     latex: \Omega_\mathrm{c} h^2
   omegam:
@@ -165,12 +137,13 @@ params:
     latex: 10^5 \mathrm{D}/\mathrm{H}
   tau:
     prior:
-      min: 0.01
-      max: 0.2
-    ref:
       dist: norm
       loc: 0.055
       scale: 0.006
+    ref:
+      dist: norm
+      loc: 0.055
+      scale: 0.0006
     proposal: 0.003
     latex: \tau_\mathrm{reio}
   zre:
