@@ -8,11 +8,11 @@ if __name__ == '__main__':
 
     """
     Example usage:
-        python3 scripts/run_chains.py ./inputs/simulated_chains_pars/sim.yaml -d -f
+        python3 scripts/run_chains.py ./inputs/chains_pars/sim.yaml -d -f
     """
 
     args = yaml_load_file(sys.argv[1])
-    info = yaml_load_file(args['cobaya_yaml_file'])
+    info = yaml_load_file(args['cobaya_par_file'])
 
     for k, v in {"-f": "force", "-r": "resume", "-d": "debug"}.items():
         if k in sys.argv:

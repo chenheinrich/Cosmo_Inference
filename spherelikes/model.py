@@ -7,11 +7,12 @@ import yaml
 import numpy as np
 from collections import namedtuple
 
-from cobaya.yaml import yaml_load_file
+from cobaya.yaml import yaml_load_file, yaml_dump_file
 from cobaya.yaml import yaml_dump
 from cobaya.model import get_model
 from cobaya.tools import sort_cosmetic
 
+from spherelikes.params import get_bias_params_for_survey_file
 
 class ModelCalculator():
 
@@ -23,11 +24,13 @@ class ModelCalculator():
         self.args = model_args(**args)
 
         self.model_name = self.args.model_name
-        self.model_yaml_file = self.args.model_yaml_file
-        self.cobaya_yaml_file = self.args.cobaya_yaml_file
+        self.cosmo_par_file = self.args.cosmo_par_file
+        self.cobaya_par_file = self.args.cobaya_par_file
+        self.survey_par_file = self.args.survey_par_file
         self.output_dir = self.args.output_dir
         self.is_reference_model = self.args.is_reference_model
         self.is_reference_likelihood = self.args.is_reference_likelihood
+        self.fix_default_bias = self.args.fix_default_bias
 
         self.setup_paths()
         self.setup_model()
@@ -43,9 +46,10 @@ class ModelCalculator():
         self._update_pars()
 
     def get_and_save_results(self):
-        self.get_results()
+        results = self.get_results()
         self.test_results()
         self.save_results()
+        return results
 
     def get_results(self):
         """Returns a dictionary of cosmological results and auxiliary quantities.
@@ -73,7 +77,7 @@ class ModelCalculator():
 
         H0 = theory1.get_param('H0')
 
-        self.survey_pars = yaml_load_file(self.args.input_survey_pars)
+        self.survey_pars = yaml_load_file(self.args.survey_par_file)
         z_lo = np.array(self.survey_pars['zbin_lo'])
         z_hi = np.array(self.survey_pars['zbin_hi'])
         z_mid = 0.5 * (z_lo + z_hi)
@@ -116,17 +120,27 @@ class ModelCalculator():
         yaml_path = os.path.join(
             self.output_dir, self.model_name + '.cosmo.yaml'
         )
-        shutil.copy(self.model_yaml_file, yaml_path)
+        shutil.copy(self.cosmo_par_file, yaml_path)
         print('Copied over input model yaml file to %s.' % yaml_path)
 
         yaml_path = os.path.join(
             self.output_dir, self.model_name + '.cobaya.yaml'
         )
-        shutil.copy(self.cobaya_yaml_file, yaml_path)
+        shutil.copy(self.cobaya_par_file, yaml_path)
         print('Saved upated cobaya yaml file to %s.' % yaml_path)
 
+        yaml_path = os.path.join(
+            self.output_dir, self.model_name + '.chains.yaml'
+        )
+        try:
+            yaml_dump_file(yaml_path, self.args._asdict())
+        except OSError as e:
+            os.remove(yaml_path)
+            print('Warning: you are overwriting file at {}'.format(yaml_path))
+            yaml_dump_file(yaml_path, self.args._asdict())
+
     def _make_model(self):
-        info = yaml_load_file(self.cobaya_yaml_file)
+        info = yaml_load_file(self.cobaya_par_file)
         info = self._set_is_reference(info)
         self.model = get_model(info)
 
@@ -137,9 +151,16 @@ class ModelCalculator():
         ))
 
     def _update_pars(self):
-        fid_info = yaml_load_file(self.model_yaml_file)
+        fid_info = yaml_load_file(self.cosmo_par_file)
         print('fid_info ', fid_info)
         self.point.update(fid_info)
+        if self.fix_default_bias is True:
+            bias_params = get_bias_params_for_survey_file(\
+                self.survey_par_file, \
+                fix_to_default=self.fix_default_bias,\
+                include_latex=False)
+            print('bias_params', bias_params)
+            self.point.update(bias_params)
 
     def _set_is_reference(self, info):
         info = self._overwrite_key_in_categories_with_value(
@@ -188,9 +209,11 @@ def main():
 
     args = {
         'model_name': 'model_debug',
-        'model_yaml_file': './inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_yaml_file': './inputs/cobaya_pars/ps_base.yaml',
+        'cosmo_par_file': './inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_par_file': './inputs/cobaya_pars/ps_base.yaml',
+        'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
         'output_dir': './data/debug',
+        'fix_default_bias': True,
     }
 
     fid_calculator = FidModelCalculator(args)

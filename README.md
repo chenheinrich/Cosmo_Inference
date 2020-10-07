@@ -65,10 +65,10 @@ You should be able to run:
 
    `cd SphereLikes`
    
-   `python3 scripts/prep_chains.py ./inputs/simulated_chains_pars/sim.yaml`
+   `python3 scripts/prep_chains.py ./inputs/chains_pars/ps_base.yaml`
 
 to generate data needed for running MCMC chains: covariance matrix, reference cosmology and simulated data.
 
 Then you can run chains (in debug mode add `-d` and to force removing existing chains add `-f`):
 
-`python3 scripts/run_chains.py ./inputs/simulated_chains_pars/sim.yaml -f -d`
+`python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml -f -d`

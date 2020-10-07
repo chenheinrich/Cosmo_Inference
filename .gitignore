@@ -18,6 +18,8 @@ demo*
 plots/
 *.npy
 data/unit_test
+job/
+out/
 
 # Distribution / packaging
 .Python

@@ -34,10 +34,10 @@ if __name__ == '__main__':
     CWD = os.getcwd()
     args = {
         'model_name': 'ref',
-        'model_yaml_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_yaml_file': CWD + '/inputs/cobaya_pars/ps_base_minimal.yaml',
-        'input_survey_pars': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': CWD + '/data/ps_base_minimal/',
-        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumSingleTracer"
+        'cosmo_par_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_par_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
+        'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
+        'output_dir': CWD + '/data/ps_base/',
+        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase"
     }
     generate_ref(args)

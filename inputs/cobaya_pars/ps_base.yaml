@@ -3,6 +3,7 @@ debug: True
 sampler:
   #evaluate:
   mcmc:
+    max_tries: 10000000
 
 output: chains/ps_base/ps_base
 
@@ -29,7 +30,7 @@ theory:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True
-    survey_pars_file_name: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
+    survey_par_file: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
     data_dir: "./data/ps_base/"
     model_name: "ref"
 
