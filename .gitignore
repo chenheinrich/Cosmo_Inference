@@ -12,14 +12,14 @@ docker_interactive
 
 # User generated files
 *chains/
-data/
 *.png
 demo*
 plots/
 *.npy
 data/unit_test
-job/
-out/
+analysis/inputs
+analysis/plots
+data/
 
 # Distribution / packaging
 .Python
