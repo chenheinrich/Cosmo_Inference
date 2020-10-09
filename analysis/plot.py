@@ -31,10 +31,12 @@ class ChainPlotter():
 
         self.params_base = ['fnl', 'logA']
         # TODO might want to put this somewhere central
-        self.params_lcdm = ['fnl', 'logA', 'ns', 'theta_MC_100', 'ombh2', 'omch2', 'tau'] 
+        self.params_lcdm = ['fnl', 'logA', 'ns', 'nrun', 'theta_MC_100', 'ombh2', 'omch2', 'tau'] 
         self.params_bias = self.get_params_bias(range(self.nsample), range(self.nz))
         self.params_sys = []
         self.params = self.params_lcdm + self.params_bias + self.params_sys
+        #TODO ini the fuure could check this against input_params in root + 'updated.yaml', input
+        # params_sys for those under likelihood; and params_bias for those under spherelikes.theories
 
         self.survey_par_file = getattr(PowerSpectrumBase, 'survey_par_file')
         self.bias_default_values = self.get_bias_default_values()
