@@ -50,6 +50,10 @@ class PowerSpectrumBase(Theory):
     nk = 1  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 1  # 5  # number of mu bins
 
+    h = 0.68
+    kmin = 1e-3 * h # in 1/Mpc
+    kmax = 0.2 * h # in 1/Mpc
+
     is_reference_model = False
     do_test = False
     do_test_plot = False
@@ -101,7 +105,7 @@ class PowerSpectrumBase(Theory):
             * (1.0 + self.z[np.newaxis, :])
         self.nsample = len(pars['sigz_over_one_plus_z'])
         self.nz = self.z.size
-        self.k = np.logspace(np.log10(1e-5), np.log10(5.0), self.nk)
+        self.k = np.logspace(np.log10(self.kmin), np.log10(self.kmax), self.nk)
         self.dk = self.get_dk(self.k)
         self.mu_edges = np.linspace(0, 1, self.nmu + 1)
         self.mu = (self.mu_edges[:-1] + self.mu_edges[1:]) / 2.0

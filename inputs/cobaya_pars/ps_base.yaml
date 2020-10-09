@@ -37,6 +37,9 @@ theory:
     nk: 21 # 21  # 211  # number of k points (to be changed into bins)
     nmu: 5 # 5  # number of mu bins
 
+    kmin: 0.0007 # equivalent to 0.001 h/Mpc
+    kmax: 0.14 # equivalent to 0.02 h/Mpc
+
     do_test: False
     do_test_plot: True
     test_plot_names:
