@@ -20,6 +20,8 @@ data/unit_test
 analysis/inputs
 analysis/plots
 data/
+job/
+out/
 
 # Distribution / packaging
 .Python
