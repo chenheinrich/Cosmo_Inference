@@ -6,8 +6,14 @@ from cobaya.yaml import yaml_load_file
 # so we can change survey par file format in the future, and don't need to change
 # how the information is being served to the other classes.
 
-def get_bias_params_for_survey_file(survey_par_file, fix_to_default=False, include_latex=True):
+def get_bias_params_for_survey_file(survey_par_file, \
+    fix_to_default=False, include_latex=True,
+    prior_name=None):
     
+    prior_name = (prior_name or 'uniform')
+    print(prior_name)
+    sys.exit()
+
     bias_default = get_bias_default_for_survey_file(survey_par_file)
     nsample, nz = get_nsample_and_nz_for_survey_file(survey_par_file)
     
@@ -24,6 +30,12 @@ def get_bias_params_for_survey_file(survey_par_file, fix_to_default=False, inclu
             
             scale = default_value * fractional_delta
             scale_ref = scale/10.0
+
+            if prior_name == 'uniform':
+                delta = 1.0
+                prior = {'min': max(0.5, default_value - delta), 'max': default_value + delta}
+            elif prior_name == 'tight_prior':
+                prior = {'dist': 'norm', 'loc': default_value, 'scale': scale}
             
             if fix_to_default is True:
                 if include_latex is True:
@@ -33,7 +45,7 @@ def get_bias_params_for_survey_file(survey_par_file, fix_to_default=False, inclu
                 else: 
                     value = default_value
             else:
-                value = {'prior': {'dist': 'norm', 'loc': default_value, 'scale': scale},
+                value = {'prior': prior,
                         'ref': {'dist': 'norm', 'loc': default_value, 'scale': scale_ref},
                         'propose': scale_ref,
                         'latex': latex,

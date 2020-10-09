@@ -1,6 +1,7 @@
 # Fiducial model: planck 2018 baseline 2.5 (base plikHM TTTEEE lowl lowE)
 "logA": 3.0447
 "ns": 0.96589
+"nrun": 0.0
 "omch2": 0.12010
 "ombh2": 0.022377
 "tau": 0.0543

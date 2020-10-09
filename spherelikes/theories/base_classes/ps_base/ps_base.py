@@ -56,7 +56,6 @@ class PowerSpectrumBase(Theory):
     test_plot_names = None
 
     _delta_c = 1.686
-    _k0 = 0.05  # 1/Mpc
     _fraction_recon = 0.  # 0 for fully damped, no recon; 1 for fully reconstructed, no damping
 
     def initialize(self):
@@ -513,19 +512,25 @@ class PowerSpectrumBase(Theory):
 
     def _calc_initial_power(self):
         # TODO want to make sure this corresponds to the same as camb module
-        # Find out how to get it from camb itself (we might have other parameters
-        # like nrun, nrunrun; and possibly customized initial power one day)
-        """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum
-        evaluated at self.k_actual. 
+        """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum 
+        evaluated at self.k_actual:
+
+        initial_power = (2pi^2)/k^3 * P,
+        where ln P = ln A_s + (n_s -1) * ln(k/k_0_scalar) + n_{run}/2 * ln(k/k_0_scalar)^2 
 
         Note: There is a z and mu dependence because the k_actual at which we 
         need to evaluate the initial power is different for different z and mu.
         """
-        k0 = self._k0  # 1/Mpc
+        k_pivot = 0.05  # 1/Mpc 
         As = self.provider.get_param('As')
         ns = self.provider.get_param('ns')
-        initial_power = (2.0 * np.pi**2) / (self.k_actual**3) * \
-            As * (self.k_actual / k0)**(ns - 1.0)
+        nrun = self.provider.get_param('nrun')
+        
+        lnk = np.log(self.k_actual / k_pivot)
+        initial_power = np.log(As) + (ns - 1.0) * lnk  \
+            + 0.5 * nrun * lnk ** 2 
+        initial_power = (2.0 * np.pi**2) / (self.k_actual**3) * np.exp(initial_power)
+
         return initial_power
 
     def _calc_sigma8(self):
