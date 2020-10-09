@@ -25,13 +25,17 @@ class ChainPlotter():
         self.data_cosmo_par_file = self.args['data_cosmo_par_file']
         self.chain_dir = self.args['chain_dir']
         self.roots = self.args['roots']
-        self.plot_dir = self.args['plot_dir']
+
+        if self.chain_dir[-1] == '/':
+            chain_dir = self.chain_dir[:-1]
+        base_name = os.path.basename(chain_dir)
+        self.plot_dir = os.path.join(self.args['plot_dir'], base_name, self.roots[0])
         self.nsample = self.args['nsample']
         self.nz = self.args['nz']
 
         self.params_base = ['fnl', 'logA']
         # TODO might want to put this somewhere central
-        self.params_lcdm = ['fnl', 'logA', 'ns', 'nrun', 'theta_MC_100', 'ombh2', 'omch2', 'tau'] 
+        self.params_lcdm = ['fnl', 'logA', 'ns', 'nrun', 'theta_MC_100', 'ombh2', 'omch2', 'omegak', 'tau'] 
         self.params_bias = self.get_params_bias(range(self.nsample), range(self.nz))
         self.params_sys = []
         self.params = self.params_lcdm + self.params_bias + self.params_sys
@@ -42,6 +46,9 @@ class ChainPlotter():
         self.bias_default_values = self.get_bias_default_values()
         self.lcdm_sim_values = yaml_load_file(self.data_cosmo_par_file) 
         self.sim_values = dict(self.bias_default_values, **self.lcdm_sim_values) #TODO add sys params in the future
+
+        self.priors = self.get_priors()
+
 
     def get_params_bias(self, isamples, izs):
         names = []
@@ -90,7 +97,30 @@ class ChainPlotter():
 
         for param in params:
             ax = g.get_axes_for_params(param)
-            g.add_x_marker(marker=self.sim_values[param], ax=ax, ls='--')
+            g.add_x_marker(marker=self.sim_values[param], \
+                ax=ax, ls='-', color = 'red')
+
+        for param in params:
+
+            ax = g.get_axes_for_params(param)
+
+            prior_dict = self.priors[param]['prior']
+
+            if 'dist' in prior_dict.keys():
+
+                if prior_dict['dist'] == 'norm':
+                    center = prior_dict['loc'] 
+                    sigma = prior_dict['scale'] 
+                    g.add_x_bands(center, sigma, ax=ax, alpha1 = 0.25, alpha2 = 0.2)
+                else:
+                    raise NotImplementedError
+
+            elif 'min' in prior_dict.keys():
+                xmin = prior_dict['min'] 
+                xmax = prior_dict['max'] 
+                center = (xmin + xmax)/2.0
+                sigma = (xmax - xmin)/2.0
+                g.add_x_bands(center, sigma, ax=ax, alpha1 = 0.5, alpha2 = 0)
 
         g.export(plot_name)
         self.logger.info('Saved plot: {}'.format(plot_name))
@@ -101,6 +131,14 @@ class ChainPlotter():
             self.survey_par_file, fix_to_default=True, include_latex=False)
         return default_values
 
+    def get_priors(self):
+        """Get priors applied when running chains"""
+        updated_yaml_file = os.path.join(self.chain_dir, self.roots[0] + '.updated.yaml')
+        info = yaml_load_file(updated_yaml_file)
+        params_info = info['params']
+        return params_info
+
+
 if __name__ == '__main__':
     """Example usage: python3 -m analysis.plot ./analysis/inputs/ps_base.yaml"""
 
@@ -109,4 +147,4 @@ if __name__ == '__main__':
     args = yaml_load_file(config_file)
 
     plotter = ChainPlotter(args)
-    plotter.plot_triangles()
+    plotter.plot_1d()
