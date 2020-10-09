@@ -37,25 +37,31 @@ You may skip to step 3 if you already have Cobaya and its cosmological packages 
 
 2. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`). Also, MPI installation is optional but highly recommended (follow instructions [here](https://cobaya.readthedocs.io/en/latest/installation.html)).
 
-   Install cosmological packages in Cobaya, replacing `<path_to_packages>` with the path of your choice, e.g. `./cosmo`. This means you will have `cobaya`, `cosmo` and `SphereLikes` on the same level.
+   Install cosmological packages in Cobaya, replacing `<path_to_packages>` with the path of your choice, e.g. `./cosmo`. This means you will have `cobaya`, `cosmo` and `SphereLikes` on the same level. 
 
     `cobaya-install cosmo -p <path_to_packages>`
+    
+    You may also decide to only install camb (the only one needed for now) and skip the rest:
+    
+    `cobaya-install camb -p <path_to_packages>`
 
    If Planck likelihood installation fails, follow instructions [here](cosmo/code/planck/code).
 
 3. Install other requirements (add `--user` if you're on a cluster):
 
-    `pip3 install -r SphereLikes/requirements.txt [--user]`
+    `cd SphereLikes`
+
+    `pip3 install -r requirements.txt [--user]`
 
 ## Pip install `spherelikes` package 
 
 Install in editable mode for now:
 
-`pip3 install -e SphereLikes [--user]`
+`pip3 install -e . [--user]`
 
 if you have venv activated and do not have administrative permission, give explicit path for pip in your environment, e.g.:
 
-`venv/bin/pip3.7 install -e SphereLikes`
+`venv/bin/pip3.7 install -e .`
 
 Test with `python -c "import spherelikes"`
 
@@ -63,8 +69,6 @@ Test with `python -c "import spherelikes"`
 
 You should be able to run:
 
-   `cd SphereLikes`
-   
    `python3 scripts/prep_chains.py ./inputs/chains_pars/ps_base.yaml`
 
 to generate data needed for running MCMC chains: covariance matrix, reference cosmology and simulated data.

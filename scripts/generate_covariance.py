@@ -381,7 +381,6 @@ def generate_covariance(args_in):
     model_calc = ModelCalculator(args)
     results = model_calc.get_and_save_results()
 
-    sys.exit()
     cov_calc = CovCalculator(results, args)
     cov_calc.get_and_save_invcov()
 
