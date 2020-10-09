@@ -11,8 +11,7 @@ def get_bias_params_for_survey_file(survey_par_file, \
     prior_name=None):
     
     prior_name = (prior_name or 'uniform')
-    print(prior_name)
-    sys.exit()
+    print('prior_name =',prior_name)
 
     bias_default = get_bias_default_for_survey_file(survey_par_file)
     nsample, nz = get_nsample_and_nz_for_survey_file(survey_par_file)
