@@ -77,6 +77,17 @@ params:
       scale: 0.004
     proposal: 0.002
     latex: n_\mathrm{s}
+  nrun:
+    prior:
+      dist: norm
+      loc: 0.0
+      scale: 0.008
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.004
+    proposal: 0.001
+    latex: \rm{d}n_\rm{s}/\rm{d\,ln\,} k
   theta_MC_100:
     prior:
       dist: norm
