@@ -51,19 +51,18 @@ params:
       max: 5
     ref:
       dist: norm
-      loc: 3.0
-      scale: 0.5
+      loc: 1.0
+      scale: 0.1
     propose: 0.001
     latex: f_{\rm{NL}}
   logA:
     prior:
-      dist: norm
-      loc: 3.045
-      scale: 0.016
+      min: 1.61
+      max: 3.91
     ref:
       dist: norm
-      loc: 3.05
-      scale: 0.0001
+      loc: 3.0447
+      scale: 0.01
     proposal: 0.001
     latex: \log(10^{10} A_\mathrm{s})
     drop: true
@@ -72,36 +71,33 @@ params:
     latex: A_\mathrm{s}
   ns:
     prior:
-      dist: norm
-      loc: 0.965
-      scale: 0.004
+      min: 0.8
+      max: 1.2
     ref:
       dist: norm
       loc: 0.965
-      scale: 0.004
-    proposal: 0.002
+      scale: 0.005
+    proposal: 0.0001
     latex: n_\mathrm{s}
   nrun:
     prior:
-      dist: norm
-      loc: 0.0
-      scale: 0.008
+      min: -0.1 
+      max: 0.1
     ref:
       dist: norm
       loc: 0.0
-      scale: 0.004
-    proposal: 0.001
-    latex: \rm{d}n_\rm{s}/\rm{d\,ln\,} k
+      scale: 0.001
+    proposal: 0.0001
+    latex: \rm{d}n_s/\rm{d\,ln\,} k
   theta_MC_100:
     prior:
-      dist: norm
-      loc: 1.0409
-      scale: 0.0003
+      min: 0.5
+      max: 10
     ref:
       dist: norm
-      loc: 1.0409
-      scale: 0.00003
-    proposal: 0.0002
+      loc: 1.041
+      scale: 0.0003
+    proposal: 0.00003
     latex: 100\theta_\mathrm{MC}
     drop: true
     renames: theta
@@ -114,24 +110,22 @@ params:
     max: 100
   ombh2:
     prior:
-      dist: norm
-      loc: 0.0224
-      scale: 0.00015
+      min: 0.005
+      max: 0.05
     ref:
       dist: norm
       loc: 0.0224
-      scale: 0.00001
+      scale: 0.0001
     proposal: 0.0001
     latex: \Omega_\mathrm{b} h^2
   omch2:
     prior:
-      dist: norm
-      loc: 0.12
-      scale: 0.0014
+      min: 0.001
+      max: 0.99
     ref:
       dist: norm
       loc: 0.12
-      scale: 0.0001
+      scale: 0.001
     proposal: 0.0005
     latex: \Omega_\mathrm{c} h^2
   omegam:
@@ -140,6 +134,16 @@ params:
     derived: "lambda omegam, H0: omegam*(H0/100)**2"
     latex: \Omega_\mathrm{m} h^2
   mnu: 0.06
+  omegak:
+    prior:
+      min: -0.1
+      max: 0.1
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.0001
+    proposal: 0.00001
+    latex: \Omega_\mathrm{K}
   omega_de:
     latex: \Omega_\Lambda
   YHe:
@@ -152,13 +156,13 @@ params:
   tau:
     prior:
       dist: norm
-      loc: 0.055
-      scale: 0.006
+      loc: 0.0544
+      scale: 0.008
     ref:
       dist: norm
-      loc: 0.055
-      scale: 0.0006
-    proposal: 0.003
+      loc: 0.0544
+      scale: 0.008
+    proposal: 0.001
     latex: \tau_\mathrm{reio}
   zre:
     latex: z_\mathrm{re}
