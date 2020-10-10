@@ -109,7 +109,8 @@ class ModelCalculator():
         # TODO how to not make this specific?
         theory = self.model.theory["spherelikes.theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
         ap = theory.get_AP_factor()
-        assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
+        if self.is_reference_model is True:
+            assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
     def load_results(self):
         results = pickle.load(open(self.fname, "rb"))

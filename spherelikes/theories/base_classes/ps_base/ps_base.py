@@ -50,13 +50,16 @@ class PowerSpectrumBase(Theory):
     nk = 1  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 1  # 5  # number of mu bins
 
+    h = 0.68
+    kmin = 1e-3 * h # in 1/Mpc
+    kmax = 0.2 * h # in 1/Mpc
+
     is_reference_model = False
     do_test = False
     do_test_plot = False
     test_plot_names = None
 
     _delta_c = 1.686
-    _k0 = 0.05  # 1/Mpc
     _fraction_recon = 0.  # 0 for fully damped, no recon; 1 for fully reconstructed, no damping
 
     def initialize(self):
@@ -102,13 +105,14 @@ class PowerSpectrumBase(Theory):
             * (1.0 + self.z[np.newaxis, :])
         self.nsample = len(pars['sigz_over_one_plus_z'])
         self.nz = self.z.size
-        self.k = np.logspace(np.log10(1e-5), np.log10(5.0), self.nk)
+        self.k = np.logspace(np.log10(self.kmin), np.log10(self.kmax), self.nk)
         self.dk = self.get_dk(self.k)
         self.mu_edges = np.linspace(0, 1, self.nmu + 1)
         self.mu = (self.mu_edges[:-1] + self.mu_edges[1:]) / 2.0
         self.dmu = self.mu_edges[1:] - self.mu_edges[:-1]
         assert self.mu.size == self.dmu.size, ('mu and dmu not the same size: {}, {}'.format(
             self.mu.size, self.dmu.size))
+        self.nps = int(self.nsample * (self.nsample + 1) / 2)
 
     def get_requirements(self):
         """
@@ -300,7 +304,7 @@ class PowerSpectrumBase(Theory):
         galaxy samples:
             n_ps = nsample * (nsample + 1) / 2.
         """
-        self.nps = int(self.nsample * (self.nsample + 1) / 2)
+        
         galaxy_ps = np.zeros((self.nps, self.nz, self.nk, self.nmu))
         jj = 0
         for j1 in range(self.nsample):
@@ -513,19 +517,25 @@ class PowerSpectrumBase(Theory):
 
     def _calc_initial_power(self):
         # TODO want to make sure this corresponds to the same as camb module
-        # Find out how to get it from camb itself (we might have other parameters
-        # like nrun, nrunrun; and possibly customized initial power one day)
-        """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum
-        evaluated at self.k_actual. 
+        """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum 
+        evaluated at self.k_actual:
+
+        initial_power = (2pi^2)/k^3 * P,
+        where ln P = ln A_s + (n_s -1) * ln(k/k_0_scalar) + n_{run}/2 * ln(k/k_0_scalar)^2 
 
         Note: There is a z and mu dependence because the k_actual at which we 
         need to evaluate the initial power is different for different z and mu.
         """
-        k0 = self._k0  # 1/Mpc
+        k_pivot = 0.05  # 1/Mpc 
         As = self.provider.get_param('As')
         ns = self.provider.get_param('ns')
-        initial_power = (2.0 * np.pi**2) / (self.k_actual**3) * \
-            As * (self.k_actual / k0)**(ns - 1.0)
+        nrun = self.provider.get_param('nrun')
+        
+        lnk = np.log(self.k_actual / k_pivot)
+        initial_power = np.log(As) + (ns - 1.0) * lnk  \
+            + 0.5 * nrun * lnk ** 2 
+        initial_power = (2.0 * np.pi**2) / (self.k_actual**3) * np.exp(initial_power)
+
         return initial_power
 
     def _calc_sigma8(self):

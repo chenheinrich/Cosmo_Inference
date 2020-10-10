@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
     """
     Example usage:
-        python3 scripts/run_chains.py ./inputs/chains_pars/sim.yaml -d -f
+        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml -d -f
     """
 
     args = yaml_load_file(sys.argv[1])

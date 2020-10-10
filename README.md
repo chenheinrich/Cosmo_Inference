@@ -63,7 +63,7 @@ if you have venv activated and do not have administrative permission, give expli
 
 `venv/bin/pip3.7 install -e .`
 
-Test with `python -c "import spherelikes"`
+Test with `python3 -c "import spherelikes"`
 
 ## Run a sample cobaya run (must be from the root of this directory):
 
