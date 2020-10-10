@@ -133,7 +133,21 @@ params:
   omegamh2:
     derived: "lambda omegam, H0: omegam*(H0/100)**2"
     latex: \Omega_\mathrm{m} h^2
-  mnu: 0.06
+  mnu: 
+    prior:
+      min: 0.0
+      max: 0.5
+    ref:
+      dist: norm
+      loc: 0.06
+      scale: 0.01
+    proposal: 0.001
+    latex: \sum m_{\nu}
+  omeganu:
+    latex: \Omega_{\nu}
+  omeganuh2:
+    derived: "lambda omeganu, H0: omeganu*(H0/100)**2"
+    latex: \Omega_{\nu} h^2
   omegak:
     prior:
       min: -0.1
@@ -146,6 +160,25 @@ params:
     latex: \Omega_\mathrm{K}
   omega_de:
     latex: \Omega_\Lambda
+  w:
+    prior:
+      min: -3
+      max: 1
+    ref:
+      min: -1
+      max: -0.9
+    proposal: 0.01
+    latex: w_0
+  wa: 
+    prior:
+      min: -5
+      max: 5
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    proposal: 0.01
+    latex: w_a
   YHe:
     latex: Y_\mathrm{P}
   Y_p:

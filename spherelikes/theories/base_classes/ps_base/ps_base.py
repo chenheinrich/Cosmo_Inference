@@ -112,6 +112,7 @@ class PowerSpectrumBase(Theory):
         self.dmu = self.mu_edges[1:] - self.mu_edges[:-1]
         assert self.mu.size == self.dmu.size, ('mu and dmu not the same size: {}, {}'.format(
             self.mu.size, self.dmu.size))
+        self.nps = int(self.nsample * (self.nsample + 1) / 2)
 
     def get_requirements(self):
         """
@@ -303,7 +304,7 @@ class PowerSpectrumBase(Theory):
         galaxy samples:
             n_ps = nsample * (nsample + 1) / 2.
         """
-        self.nps = int(self.nsample * (self.nsample + 1) / 2)
+        
         galaxy_ps = np.zeros((self.nps, self.nz, self.nk, self.nmu))
         jj = 0
         for j1 in range(self.nsample):
