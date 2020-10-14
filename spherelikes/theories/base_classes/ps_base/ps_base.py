@@ -319,7 +319,8 @@ class PowerSpectrumBase(Theory):
 
     def _calc_matter_power(self, nonlinear=False):
         """ Returns 3-d numpy array of shape (nz, nk, nmu) for the matter power spectrum.
-        Default is linear matter power."""
+        Default is linear matter power. Note that the power spectrum itself is evaluated 
+        at z, but the k also has a dependence on z due to the AP factor varying with z."""
 
         Pk_interpolator = self.provider.get_Pk_interpolator(
             nonlinear=nonlinear)
@@ -328,9 +329,9 @@ class PowerSpectrumBase(Theory):
         # for every fixed z and fixed mu, there is an array of k scaled by AP factors.
         for iz in range(self.nz):
             for imu in range(self.nmu):
-                a = Pk_interpolator(self.z_list[iz], np.log(
+                p = Pk_interpolator(self.z_list[iz], np.log(
                     self.k_actual[iz, :, imu]))
-                matter_power[iz, :, imu] = np.exp(a)
+                matter_power[iz, :, imu] = np.exp(p)
         assert matter_power.shape == (self.nz, self.nk, self.nmu)
         return matter_power
 
