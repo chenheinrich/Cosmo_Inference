@@ -14,7 +14,7 @@ def generate_data(args_in):
 
     Note: You can also disable the likelihood calculation to not load elements 
     yet to be calculated (e.g. inverse covariance and simulated data vectors) 
-    by setting is_reference_likelihood = True.
+    by setting is_reference_likelihood = False here.
     """
 
     args = copy.deepcopy(args_in)
@@ -23,7 +23,7 @@ def generate_data(args_in):
         args['model_name'] = 'sim_data'
 
     args['is_reference_model'] = False
-    args['is_reference_likelihood'] = True
+    args['is_reference_likelihood'] = False
 
     calc = ModelCalculator(args)
     results = calc.get_and_save_results()
