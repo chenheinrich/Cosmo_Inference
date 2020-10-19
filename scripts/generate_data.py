@@ -23,7 +23,7 @@ def generate_data(args_in):
         args['model_name'] = 'sim_data'
 
     args['is_reference_model'] = False
-    args['is_reference_likelihood'] = False
+    args['is_reference_likelihood'] = True
 
     calc = ModelCalculator(args)
     results = calc.get_and_save_results()

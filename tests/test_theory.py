@@ -41,7 +41,6 @@ def input_args():
 # TODO To be written
 def test_indep(input_args):
     from plancklensing import PlanckLensingMarged
-    #from spherelikes.lieklihoods.base_classes.ps_base.ps_base.PowerSpectrumBase
     import camb
     lmax = 2500
     opts = camb_params.copy()

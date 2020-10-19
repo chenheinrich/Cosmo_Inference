@@ -35,15 +35,18 @@ class ChainPlotter():
         self.nsample = self.args['nsample']
         self.nz = self.args['nz']
 
+        info = self.get_chain_updated_info()
+        self.params_processor = ParamsProcessor(info)
+
+        self.params_lcdm = self.params_processor.get_camb_params()
+        self.params_lcdm.append('fnl')
+        print('self.params_lcdm', self.params_lcdm)
+        #['fnl', 'logA', 'ns', 'nrun', 'theta_MC_100', \
+        #    'ombh2', 'omch2', 'omegak', 'mnu', 'w', 'wa', 'tau'] 
         self.params_base = ['fnl', 'logA']
-        # TODO might want to put this somewhere central
-        self.params_lcdm = ['fnl', 'logA', 'ns', 'nrun', 'theta_MC_100', \
-            'ombh2', 'omch2', 'omegak', 'mnu', 'w', 'wa', 'tau'] 
         self.params_bias = self.get_params_bias(range(self.nsample), range(self.nz))
-        self.params_sys = []
+        self.params_sys = self.params_processor.get_sys_params()
         self.params = self.params_lcdm + self.params_bias + self.params_sys
-        #TODO ini the fuure could check this against input_params in root + 'updated.yaml', input
-        # params_sys for those under likelihood; and params_bias for those under spherelikes.theories
 
         self.survey_par_file = getattr(PowerSpectrumBase, 'survey_par_file')
         self.bias_default_values = self.get_bias_default_values()
@@ -52,11 +55,16 @@ class ChainPlotter():
 
         self.priors = self.get_priors()
 
+    def get_chain_updated_info(self):
+        path = os.path.join(self.chain_dir, self.roots[0]+'.updated.yaml')
+        info = yaml_load_file(path)
+        return info 
+
     def get_params_bias(self, isamples, izs):
         names = []
         for isample in isamples:
             for iz in izs:
-                name = 'gaussian_bias_sample_%s_z_%s'%(isample+1, iz+1)
+                name = 'gaussian_bias_sample_%s_z_%s' % (isample+1, iz+1)
                 names.append(name)
         return names
 
@@ -169,32 +177,109 @@ class ChainPlotter():
                 pass
         return ranges
 
+class ParamsProcessor():
+
+    """Input: entire dictionary stored in the updated yaml file of cobaya chains."""
+
+    def __init__(self, info):
+        self._info = info
+        self._params_dict = self._info['params']
+
+    def get_all_params(self):
+        return self._params_dict.keys()
+
+    def get_derived_params(self):
+        derived_params = []
+        for key in self._params_dict.keys():
+            if isinstance(self._params_dict['key'], dict):
+                if 'derived' in self._params_dict['key'].keys():
+                    name = self._params_dict[key]
+                    derived_params.append(name)    
+        return derived_params
+
+    def get_sampled_params(self):
+        derived_params = self.get_derived_params()
+        all_params = self.get_all_params()
+        sampled_params = all_params - derived_params
+        return sampled_params
+    
+    # Theory params
+    def get_camb_params(self):
+        params = self._info['theory']['camb']['input_params']
+        replace = {'As': 'logA', 'cosmomc_theta': 'theta_MC_100'}
+        for param_to_replace in replace:
+            if param_to_replace in params:
+                params.remove(param_to_replace)
+                params.append(replace[param_to_replace])
+        return params
+
+    def get_other_theory_params(self):
+        params = []
+        for key in self._info['theory'].keys():
+            if key is not 'camb':
+                theory_params = self._info['theory'][key]['input_params']
+                params.extend(theory_params)
+        return params
+
+    # Likelihood params
+    def get_sys_params(self):
+        """Returns all systematic parameters in updated yaml 
+        (those under 'likelihood')."""
+        params = []
+        for key in self._info['likelihood'].keys():
+            input_params = self._info['likelihood'][key]['input_params']
+            params.append(input_params)
+        return params
+    
+    def get_latex_for_paramname(self, paramname):
+        latex = self._params_dict[paramname]['latex']
+        return latex
+
+    def get_prior_dict_for_paramname(self, paramname):
+        prior_dict = self._params_dict[paramname]['prior']
+        return prior_dict
+
 
 class Prior():
 
-    def __init__(self, prior_dict):
-        self.prior_dict = prior_dict
+    """Input: dictionary of parameter prior as formatted by Cobaya chain yaml file"""
 
-    def get_center_and_sigma(self):
-        if self.is_uniform():
-            xmin = self.prior_dict['min'] 
-            xmax = self.prior_dict['max'] 
-            center = (xmin+xmax) / 2.0
-            sigma = (xmax-xmin) / 2.0
-        else:
-            if self.prior_dict['dist'] == 'norm':
-                center = self.prior_dict['loc'] 
-                sigma = self.prior_dict['scale'] 
-            else:
-                raise NotImplementedError
-        return center, sigma
-    
+    def __init__(self, prior_dict):
+        self._prior_dict = prior_dict
+
     def is_uniform(self):
-        is_min_given = 'min' in self.prior_dict.keys()
-        is_max_given = 'max' in self.prior_dict.keys()
+        is_min_given = 'min' in self._prior_dict.keys()
+        is_max_given = 'max' in self._prior_dict.keys()
         is_uniform = (is_min_given and is_max_given)
         return is_uniform
 
+    def get_center_and_sigma(self):
+        if self.is_uniform():
+            xmin = self._prior_dict['min'] 
+            xmax = self._prior_dict['max'] 
+            center = (xmin+xmax) / 2.0
+            sigma = (xmax-xmin) / 2.0
+        else:
+            if self._prior_dict['dist'] == 'norm':
+                center = self._prior_dict['loc'] 
+                sigma = self._prior_dict['scale'] 
+            else:
+                raise NotImplementedError
+        return center, sigma
+
+    def get_ranges(self, nstd=3.0):
+        """Get ranges based on prior; for normal 
+        distribution, default is 3 sigma bounds."""
+        if self.is_uniform():
+            lo = self._prior_dict['min']
+            hi = self._prior_dict['max']
+        else:
+            if self._prior_dict['dist'] == 'norm':
+                lo = self._prior_dict['loc'] - nstd * self._prior_dict['scale'] 
+                hi = self._prior_dict['loc'] + nstd * self._prior_dict['scale'] 
+            else:
+                raise NotImplementedError
+        return [lo, hi]
 
 if __name__ == '__main__':
     """Example usage: python3 -m analysis.plot ./analysis/inputs/ps_base.yaml"""
@@ -205,4 +290,5 @@ if __name__ == '__main__':
 
     plotter = ChainPlotter(args)
     plotter.plot_1d()
+    #plotter.plot_triangles()
 
