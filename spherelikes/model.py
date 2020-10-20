@@ -12,7 +12,7 @@ from cobaya.yaml import yaml_dump
 from cobaya.model import get_model
 from cobaya.tools import sort_cosmetic
 
-from spherelikes.params import get_bias_params_for_survey_file
+from spherelikes.theories.base_classes.ps_base.ps_base import make_dictionary_for_bias_params
 
 class ModelCalculator():
 
@@ -156,7 +156,7 @@ class ModelCalculator():
         print('fid_info ', fid_info)
         self.point.update(fid_info)
         if self.fix_default_bias is True:
-            bias_params = get_bias_params_for_survey_file(\
+            bias_params = make_dictionary_for_bias_params(\
                 self.survey_par_file, \
                 fix_to_default=self.fix_default_bias,\
                 include_latex=False)

@@ -1,6 +1,8 @@
-#Number density[h / Mpc] ^ 3:
+nsample: 5
+nz: 11
 
-numdens1:
+#Number density[h / Mpc] ^ 3:
+number_density_in_hinvMpc_1:
   - 0.00997
   - 0.00411
   - 0.000501
@@ -13,7 +15,7 @@ numdens1:
   - 1.5e-06
   - 1.13e-06
 
-numdens2:
+number_density_in_hinvMpc_2:
   - 0.0123
   - 0.00856
   - 0.00282
@@ -26,7 +28,7 @@ numdens2:
   - 1.07e-06
   - 6.79e-07
 
-numdens3:
+number_density_in_hinvMpc_3:
   - 0.0134
   - 0.00857
   - 0.00362
@@ -39,7 +41,7 @@ numdens3:
   - 1.93e-06
   - 6.79e-07
 
-numdens4:
+number_density_in_hinvMpc_4:
   - 0.0229
   - 0.0129
   - 0.00535
@@ -52,7 +54,7 @@ numdens4:
   - 1.93e-06
   - 1.36e-06
 
-numdens5:
+number_density_in_hinvMpc_5:
   - 0.0149
   - 0.00752
   - 0.00327
@@ -67,7 +69,7 @@ numdens5:
 
 #HOD- C15: Galaxy bias:
 
-galaxy_bias1:
+galaxy_bias_1:
   - 1.3
   - 1.5
   - 1.8
@@ -80,7 +82,7 @@ galaxy_bias1:
   - 2.7
   - 3.8
 
-galaxy_bias2:
+galaxy_bias_2:
   - 1.2
   - 1.4
   - 1.6
@@ -93,7 +95,7 @@ galaxy_bias2:
   - 3.7
   - 4.6
 
-galaxy_bias3:
+galaxy_bias_3:
   - 1.0
   - 1.3
   - 1.5
@@ -106,7 +108,7 @@ galaxy_bias3:
   - 4.1
   - 5.0
 
-galaxy_bias4:
+galaxy_bias_4:
   - 0.98
   - 1.3
   - 1.4
@@ -119,7 +121,7 @@ galaxy_bias4:
   - 2.9
   - 5.0
 
-galaxy_bias5:
+galaxy_bias_5:
   - 0.83
   - 1.2
   - 1.3

@@ -11,13 +11,13 @@ import logging
 
 from spherelikes.utils.log import LoggedError, class_logger
 from spherelikes.utils import constants
-from spherelikes.params import get_bias_params_for_survey_file, get_nsample_and_nz_for_survey_file
+from spherelikes.params import SurveyPar
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
 
 
-def get_base_params():
+def make_dictionary_for_base_params():
     base_params = {
         'fnl': {'prior': {'min': 0, 'max': 5},
                 'ref': {'dist': 'norm', 'loc': 1.0, 'scale': 0.5},
@@ -28,11 +28,77 @@ def get_base_params():
     }
     return base_params
 
+def make_dictionary_for_bias_params(survey_par_file, \
+    fix_to_default=False, include_latex=True,
+    prior_name=None, fractional_delta=0.03):
+    """Returns a nested dictionary of galaxy bias parameters, 
+    with keys (e.g. prior, ref, propose, latex, value) needed
+    by cobaya sampler.
+
+    Args:
+        survey_par_file: path to survey parameter file. 
+        fix_to_default (optional): boolean to fix parameters 
+            to default values given by the survey_par_file.
+        include_latex (optional): boolean to include latex
+            string for the parameters (e.g. set to false if 
+            just want a value returned).
+        prior_name (optional): 'tight_prior' or 'uniform'
+        fractional_delta (optional): a float between 0 and 1
+            to set the standard deviation of distributions 
+            as a fraction of the bias value; default is 0.03.
+
+    """
+    
+    prior_name = (prior_name or 'uniform')
+
+    survey_par = SurveyPar(survey_par_file)
+
+    bias_default = survey_par.get_galaxy_bias_array()
+    nsample = survey_par.get_nsample()
+    nz = survey_par.get_nz ()
+    
+    bias_params = {}
+    for isample in range(nsample):
+        for iz in range(nz):
+            
+            key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
+            
+            latex = 'b_g^{%i}(z_{%i})' % (isample + 1, iz + 1)
+            default_value = bias_default[isample, iz]
+            
+            scale = default_value * fractional_delta
+            scale_ref = scale/10.0
+
+            if prior_name == 'uniform':
+                delta = 1.0
+                prior = {'min': max(0.5, default_value - delta), 'max': default_value + delta}
+            elif prior_name == 'tight_prior':
+                prior = {'dist': 'norm', 'loc': default_value, 'scale': scale}
+            
+            if fix_to_default is True:
+                if include_latex is True:
+                    value = {'value': default_value, 
+                            'latex': latex
+                            }
+                else: 
+                    value = default_value
+            else:
+                value = {'prior': prior,
+                        'ref': {'dist': 'norm', 'loc': default_value, 'scale': scale_ref},
+                        'propose': scale_ref,
+                        'latex': latex,
+                        }
+
+            bias_params[key] = value
+
+    return bias_params
+
 def get_params_for_survey_file(survey_par_file, fix_to_default=False):
 
-    base_params = get_base_params()
-    bias_params = get_bias_params_for_survey_file(survey_par_file, fix_to_default=fix_to_default)
-
+    base_params = make_dictionary_for_base_params()
+    bias_params = make_dictionary_for_bias_params(\
+        survey_par_file, fix_to_default=fix_to_default)
+ 
     base_params.update(bias_params)
     return base_params
     
@@ -44,7 +110,9 @@ class PowerSpectrumBase(Theory):
     model_name = 'ref'
     plot_dir = 'plots/'
 
-    nsample, nz = get_nsample_and_nz_for_survey_file(survey_par_file)
+    survey_par = SurveyPar(survey_par_file)
+    nz = survey_par.get_nz()
+    nsample = survey_par.get_nsample()
     params = get_params_for_survey_file(survey_par_file, fix_to_default=False)
 
     nk = 1  # 21  # 211  # number of k points (to be changed into bins)
@@ -95,16 +163,9 @@ class PowerSpectrumBase(Theory):
 
     def _setup_survey_pars(self):
         """kmin and kmax preserved, dk calcula"""
-        path = os.path.join(self.survey_par_file)
-        pars = yaml_load_file(path)
-        self.z_lo = np.array(pars['zbin_lo'])
-        self.z_hi = np.array(pars['zbin_hi'])
-        self.z = (self.z_lo + self.z_hi) / 2.0
+        self.z = self.survey_par.get_zmid_array()
         self.z_list = list(self.z)
-        self.sigz = np.array(pars['sigz_over_one_plus_z'])[:, np.newaxis] \
-            * (1.0 + self.z[np.newaxis, :])
-        self.nsample = len(pars['sigz_over_one_plus_z'])
-        self.nz = self.z.size
+        self.sigz = self.survey_par.get_sigz_array()
         self.k = np.logspace(np.log10(self.kmin), np.log10(self.kmax), self.nk)
         self.dk = self.get_dk(self.k)
         self.mu_edges = np.linspace(0, 1, self.nmu + 1)
@@ -121,9 +182,16 @@ class PowerSpectrumBase(Theory):
         """
         return {}
 
+    def get_z_more(self):
+        z_lo = self.survey_par.get_zlo_array()
+        z_hi = self.survey_par.get_zhi_array()
+        z_mid = self.survey_par.get_zmid_array()
+        z_more = np.hstack((z_lo, z_hi, z_mid))
+        return z_more
+
     def must_provide(self, **requirements):
         z_list = self.z_list
-        z_more = np.hstack((self.z_lo, self.z_hi, self.z))
+        z_more = self.get_z_more()
         k_max = 8.0
         nonlinear = (False, True)
         spec_Pk = {

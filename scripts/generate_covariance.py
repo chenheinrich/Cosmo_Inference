@@ -11,6 +11,7 @@ from cobaya.yaml import yaml_load_file
 
 from spherelikes.model import ModelCalculator
 from spherelikes.utils.log import class_logger
+from spherelikes.params import SurveyPar
 
 
 class CovCalculator():
@@ -38,7 +39,6 @@ class CovCalculator():
 
         self.make_dict()
 
-        self.survey_pars = yaml_load_file(self.args['survey_par_file'])
         self.load_number_density()  # needs self.survey_pars
 
     def make_dict(self):
@@ -69,11 +69,10 @@ class CovCalculator():
     def load_number_density(self):
         """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
         expecting number density in survey_par_file are given in h/Mpc."""
+        
+        self.survey_par = SurveyPar(self.args['survey_par_file'])
         h = self.data['H0'] / 100.0
-        self.number_density = np.zeros((self.nsample, self.nz))
-        for isample in range(self.nsample):
-            self.number_density[isample, :] = h * \
-                np.array(self.survey_pars['numdens%s' % (isample + 1)])
+        self.number_density = h * self.survey_par.get_number_density_array()
 
     def get_and_save_invcov(self):
         self.get_cov()
