@@ -69,9 +69,9 @@ class CovCalculator():
     def load_number_density(self):
         """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
         expecting number density in survey_par_file are given in h/Mpc."""
-        
+        # TODO want to put h * number_density in the survey par maybe?
         self.survey_par = SurveyPar(self.args['survey_par_file'])
-        h = self.data['H0'] / 100.0
+        h = self.data['H0'] / 100.0 
         self.number_density = h * self.survey_par.get_number_density_array()
 
     def get_and_save_invcov(self):

@@ -25,7 +25,7 @@ jobs:
               git 
           git clone https://github.com/CobayaSampler/cobaya.git && \
           pip install -e cobaya --upgrade 
-          cobaya-install cosmo -p ./cosmo 
+          cobaya-install camb -p ./cosmo 
           pip install -r requirements.txt
           pip install -e .
           pip install pytest
