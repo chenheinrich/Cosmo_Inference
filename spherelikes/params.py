@@ -5,11 +5,45 @@ from cobaya.yaml import yaml_load_file
 class SurveyParFileError(Exception):
     pass
 
+class CobayaPar():
 
-# We make an inteface with the survey par file
-# so we can change survey par file format in the future, and don't need to change
-# how the information is being served to the other classes.
+    """Interface for the cobaya parameter file, delivering quantities such as
+    ...."""
+    
+    def __init__(self, cobaya_par_file):
+        self._cobaya_par_file = cobaya_par_file
+        self._info = yaml_load_file(self._cobaya_par_file)
+        self._run_checks()
+        
+    def _run_checks(self):
+        pass
+
+    def get_theory_list(self):
+        return self._info['theory'].keys()
+    
+    def get_likelihood_list(self):
+        return self._info['likelihood'].keys()
+
+    def get_spherex_theory_list(self):
+        theories = self.get_theory_list()
+        spherex_theories = [name for name in theories if name.startswith('sphere')]
+        print('spherex_theories', spherex_theories)
+        return spherex_theories
+
+    def get_spherex_theory(self):
+        return self.get_spherex_theory_list()[0]
+    
+    def get_survey_par_file(self):
+        theory_name = self.get_spherex_theory()
+        return self._info['theory'][theory_name]['survey_par_file']
+
+    def get_filename(self):
+        return self._cobaya_par_file
+
 class SurveyPar():
+
+    """Interface for the survey parameter file, delivering quantities such as
+    number densities, galaxy biases, nz, nsample, redshifts and errors."""
     
     def __init__(self, survey_par_file):
         self._survey_par_file = survey_par_file

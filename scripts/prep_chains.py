@@ -10,67 +10,72 @@ from scripts.generate_ref import generate_ref
 from scripts.generate_covariance import generate_covariance
 from scripts.generate_data import generate_data
 
-class SimulatedChains():
+from spherelikes.params import CobayaPar
 
-    def __init__(self, args):
+class ChainPreparation():
 
-        self.command_line_args = args
-        self.args = yaml_load_file(self.command_line_args.config_file)
+    def __init__(self, config_file):
 
-        self.info = yaml_load_file(self.args['cobaya_par_file'])
-        theory_name = self.args['theory_name']
-        self.args['survey_par_file'] = self.info['theory'][theory_name]['survey_par_file']
-        self.args['fix_default_bias'] = True
-
-        if 'overwrite_covariance' not in self.args.keys():
-            self.args['overwrite_covariance'] = False
+        self._common_args = self._get_common_args(config_file)
         
-    def prepare_chains(self):
-        self.get_reference_model()
-        self.get_covariance()
-        self.get_simulated_data()
+    def _get_common_args(self, config_file):
 
-    def get_reference_model(self):
+        common_args = yaml_load_file(config_file)
+        cobaya_par = CobayaPar(common_args['cobaya_par_file'])
+        common_args['survey_par_file'] = cobaya_par.get_survey_par_file()
+        common_args['fix_default_bias'] = True
+
+        if 'overwrite_covariance' not in common_args.keys():
+            common_args['overwrite_covariance'] = False
+
+        return common_args
+
+    def prepare_chains(self):
+        self._get_reference_model()
+        self._get_covariance()
+        self._get_simulated_data()
+
+    def _get_reference_model(self):
         """Generate reference cosmology results for AP"""
-        args_in = copy.deepcopy(self.args)
-        args_in['cosmo_par_file'] = self.args['ref_cosmo_par_file']
+        args_in = self._get_args_for_model_type('ref')
         generate_ref(args_in)
         print('Got reference model successfully!')
 
-    def get_covariance(self):
+    def _get_covariance(self):
         """generate inverse covariance if it doesn't already exist"""
-        invcov_path = os.path.join(self.args['output_dir'], 'invcov.npy')
+        invcov_path = os.path.join(self._common_args['output_dir'], 'invcov.npy')
 
-        if (os.path.exists(invcov_path) and self.args['overwrite_covariance'] is not True):
-            print('Skip making inverse covariance. Found invcov file at\n    {}'.format(
-                invcov_path))
+        skip = (os.path.exists(invcov_path) and self._common_args['overwrite_covariance'] is not True)
+        if skip is True:
+            print("Skip making inverse covariance.")
+            print("Found invcov file at: {}".format(invcov_path))
         else:
-            #  pulls same survey par file as used during sampling to add shot noise to covariance
-            args_in = copy.deepcopy(self.args)
-            args_in['cosmo_par_file'] = self.args['ref_cosmo_par_file']
+            args_in = self._get_args_for_model_type('ref')
             generate_covariance(args_in)
-            # TODO additional checks that some criterias are satisfied?
         print('Got inverse covariance successfully!')
 
-    def get_simulated_data(self):
+    def _get_simulated_data(self):
         """Generate simulated data"""
-        args_in = copy.deepcopy(self.args)
-        args_in['cosmo_par_file'] = self.args['data_cosmo_par_file']
+        args_in = self._get_args_for_model_type('data')
         generate_data(args_in)
         print('Got simulated data successfully!')
 
-    def run_chains(self):
-        for k, v in {"-f": "force", "-r": "resume", "-d": "debug"}.items():
-            if k in sys.argv:
-                self.info[v] = True
-        print('Start sampling ...')
-        updated_info, sampler = run(self.info)
-
+    def _get_args_for_model_type(self, model_type):
+        args_in = copy.deepcopy(self._common_args)
+        if model_type == 'ref':
+            args_in['cosmo_par_file'] = self._common_args['ref_cosmo_par_file']
+            args_in['is_reference_model'] = True
+            args_in['is_reference_likelihood'] = True
+        elif model_type == 'data':
+            args_in['cosmo_par_file'] = self._common_args['data_cosmo_par_file']
+            args_in['is_reference_model'] = False
+            args_in['is_reference_likelihood'] = True
+        return args_in
 
 if __name__ == '__main__':
     """
     Example usage:
-        python3 scripts/prep_chains.py ./inputs/chains_pars/sim.yaml 
+        python3 scripts/prep_chains.py ./inputs/chains_pars/ps_base.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -79,5 +84,5 @@ if __name__ == '__main__':
     )
 
     command_line_args = parser.parse_args()
-    sim = SimulatedChains(command_line_args)
-    sim.prepare_chains()
+    prep = ChainPreparation(command_line_args.config_file)
+    prep.prepare_chains()

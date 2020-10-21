@@ -359,23 +359,16 @@ def generate_covariance(args_in):
     """Computes and saves covariance matrix and its inverse, using an input
     fiducial cosmology (need to be the same as reference cosmollogy for AP).
 
-    Usage: python scripts/generate_covariance.py
-
     Note: We set is_reference_model = True automatically in this script to
     avoid calculating AP effects and bypass likelihood calculations.
 
-    Note: You can also disable the likelihood calculation to not load elements
+    Note: We also disable the likelihood calculation to not load elements
     yet to be calculated (e.g. inverse covariance and simulated data vectors)
     by setting is_reference_likelihood = True.
     """
 
     args = copy.deepcopy(args_in)
-
-    if args['model_name'] is None:
-        args['model_name'] = 'cov_data'
-
-    args['is_reference_model'] = True
-    args['is_reference_likelihood'] = True
+    args['model_name'] = args['model_name'] or 'cov_data'
 
     model_calc = ModelCalculator(args)
     results = model_calc.get_and_save_results()
@@ -384,17 +377,3 @@ def generate_covariance(args_in):
     cov_calc.get_and_save_invcov()
 
     return model_calc, cov_calc
-
-
-if __name__ == '__main__':
-
-    CWD = os.getcwd()
-    args = {
-        'model_name': None,
-        'cosmo_par_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_par_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
-        'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': CWD + '/data/ps_base/',
-        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase"
-    }
-    generate_covariance(args)
