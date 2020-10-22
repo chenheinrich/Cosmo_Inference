@@ -18,7 +18,12 @@ def generate_data(args_in):
     """
 
     args = copy.deepcopy(args_in)
-    args['model_name'] = args['model_name'] or 'sim_data'
+
+    if args['model_name'] is None:
+        args['model_name'] = 'sim_data'
+
+    args['is_reference_model'] = False
+    args['is_reference_likelihood'] = True
 
     calc = ModelCalculator(args)
     results = calc.get_and_save_results()

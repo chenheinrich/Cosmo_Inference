@@ -13,7 +13,7 @@ def input_args():
     args = {
         'model_name': None,
         'cosmo_par_file': CWD + '/tests/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_par_file': CWD + '/tests/inputs/cobaya_pars/unit_test_ps_base.yaml',
+        'cobaya_par_file': CWD + '/tests/inputs/cobaya_pars/ps_base.yaml',
         'survey_par_file': CWD + '/tests/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
         'output_dir': CWD + '/tests/data/ps_base/',
         'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase",

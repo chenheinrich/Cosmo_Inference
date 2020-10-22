@@ -17,7 +17,12 @@ def generate_ref(args_in):
     """
 
     args = copy.deepcopy(args_in)
-    args['model_name'] = args['model_name'] or 'ref'
+
+    if args['model_name'] is None:
+        args['model_name'] = 'ref'
+
+    args['is_reference_model'] = True
+    args['is_reference_likelihood'] = True
 
     calc = ModelCalculator(args)
     results = calc.get_and_save_results()

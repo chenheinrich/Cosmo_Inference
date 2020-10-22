@@ -64,12 +64,8 @@ class ChainPreparation():
         args_in = copy.deepcopy(self._common_args)
         if model_type == 'ref':
             args_in['cosmo_par_file'] = self._common_args['ref_cosmo_par_file']
-            args_in['is_reference_model'] = True
-            args_in['is_reference_likelihood'] = True
         elif model_type == 'data':
             args_in['cosmo_par_file'] = self._common_args['data_cosmo_par_file']
-            args_in['is_reference_model'] = False
-            args_in['is_reference_likelihood'] = True
         return args_in
 
 if __name__ == '__main__':

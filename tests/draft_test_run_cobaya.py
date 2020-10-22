@@ -2,7 +2,7 @@ import pytest
 from cobaya.yaml import yaml_load_file
 from cobaya.run import run
 
-from spherelikes.theories.base_classes.ps_base.ps_base import PowerSpectrumBase
+from spherelikes.theory.PowerSpectrum3D import PowerSpectrum3D
 
 
 def test_cobaya_run():

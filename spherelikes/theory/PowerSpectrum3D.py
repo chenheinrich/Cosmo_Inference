@@ -103,7 +103,7 @@ def get_params_for_survey_file(survey_par_file, fix_to_default=False):
     return base_params
     
 
-class PowerSpectrumBase(Theory):
+class PowerSpectrum3D(Theory):
 
     survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
     data_dir = 'data/ps_base/'

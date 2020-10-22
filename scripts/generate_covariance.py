@@ -368,7 +368,12 @@ def generate_covariance(args_in):
     """
 
     args = copy.deepcopy(args_in)
-    args['model_name'] = args['model_name'] or 'cov_data'
+
+    if args['model_name'] is None:
+        args['model_name'] = 'cov_data'
+
+    args['is_reference_model'] = True
+    args['is_reference_likelihood'] = True
 
     model_calc = ModelCalculator(args)
     results = model_calc.get_and_save_results()
