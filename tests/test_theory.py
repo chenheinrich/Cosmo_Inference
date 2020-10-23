@@ -8,7 +8,7 @@ cobaya_par_file = CWD + '/tests/inputs/cobaya_pars/ps_base.yaml'
 cosmo_par_file_sim = CWD + '/tests/inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
 cosmo_par_file_ref = CWD + '/tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
 
-@pytest.mark.short
+@pytest.mark.long
 @pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, expected", \
     [
     (cobaya_par_file, cosmo_par_file_sim, 0), \

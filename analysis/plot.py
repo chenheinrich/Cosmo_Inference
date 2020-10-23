@@ -8,10 +8,8 @@ from getdist import plots as gplots
 import getdist
 from cobaya.yaml import yaml_load_file
 
+from spherelikes.params import SurveyPar, CobayaPar
 #TODO need to make this flexible for different classes
-from spherelikes.params import get_bias_params_for_survey_file
-from spherelikes.theories.base_classes.ps_base.ps_base import PowerSpectrumBase
-import spherelikes.theories as theories
 from analysis import log
 
 
@@ -20,43 +18,47 @@ class ChainPlotter():
     def __init__(self, args):
 
         self.logger = log.class_logger(self)
-        self.args = args
 
-        self.analysis_settings = self.args['analysis_settings']
+        self._analysis_settings = args['analysis_settings']
         #TODO ideally write out all the parameter values into a yaml file to be loaded anytime
-        self.data_cosmo_par_file = self.args['data_cosmo_par_file']
-        self.chain_dir = self.args['chain_dir']
-        self.roots = self.args['roots']
-
-        if self.chain_dir[-1] == '/':
-            chain_dir = self.chain_dir[:-1]
-        base_name = os.path.basename(chain_dir)
-        self.plot_dir = os.path.join(self.args['plot_dir'], base_name, self.roots[0])
-        self.nsample = self.args['nsample']
-        self.nz = self.args['nz']
+        self._data_cosmo_par_file = args['data_cosmo_par_file']
+        self._chain_dir = self._remove_trailing_slash(args['chain_dir'])
+        self._roots = args['roots']
+        
+        base_name = os.path.basename(self._chain_dir)
+        self._plot_dir = os.path.join(args['plot_dir'], base_name, self._roots[0])
+        self._nsample = args['nsample']
+        self._nz = args['nz']
 
         info = self.get_chain_updated_info()
-        self.params_processor = ParamsProcessor(info)
+        self._params_processor = ParamsProcessor(info)
 
-        self.params_lcdm = self.params_processor.get_camb_params()
+        self.params_lcdm = self._params_processor.get_camb_params()
         self.params_lcdm.append('fnl')
         print('self.params_lcdm', self.params_lcdm)
         #['fnl', 'logA', 'ns', 'nrun', 'theta_MC_100', \
         #    'ombh2', 'omch2', 'omegak', 'mnu', 'w', 'wa', 'tau'] 
         self.params_base = ['fnl', 'logA']
-        self.params_bias = self.get_params_bias(range(self.nsample), range(self.nz))
-        self.params_sys = self.params_processor.get_sys_params()
+        self.params_bias = self.get_params_bias(range(self._nsample), range(self._nz))
+        self.params_sys = self._params_processor.get_sys_params()
         self.params = self.params_lcdm + self.params_bias + self.params_sys
 
-        self.survey_par_file = getattr(PowerSpectrumBase, 'survey_par_file')
+        chain_updated_yaml = os.path.join(self._chain_dir, self._roots[0]+'.updated.yaml')
+        self._cobaya_par = CobayaPar(chain_updated_yaml)
+        self._survey_par_file = self._cobaya_par.get_survey_par_file()
+
         self.bias_default_values = self.get_bias_default_values()
-        self.lcdm_sim_values = yaml_load_file(self.data_cosmo_par_file) 
+        self.lcdm_sim_values = yaml_load_file(self._data_cosmo_par_file) 
         self.sim_values = dict(self.bias_default_values, **self.lcdm_sim_values) #TODO add sys params in the future
 
         self.priors = self.get_priors()
 
+    def _remove_trailing_slash(self, string):
+        result = string[:-1] if string.endswith('/') else string
+        return result
+
     def get_chain_updated_info(self):
-        path = os.path.join(self.chain_dir, self.roots[0]+'.updated.yaml')
+        path = os.path.join(self._chain_dir, self._roots[0]+'.updated.yaml')
         info = yaml_load_file(path)
         return info 
 
@@ -83,15 +85,15 @@ class ChainPlotter():
     def plot_params_lcdm(self, plot_type = '1d'):
         """Make 1d posterior plot per galaxy sample for bias parameters at all z."""
         params = self.params_lcdm
-        plot_name = os.path.join(self.plot_dir, 'plot_%s_lcdm.png'%(plot_type))
+        plot_name = os.path.join(self._plot_dir, 'plot_%s_lcdm.png'%(plot_type))
         self.plot_params(plot_name, params=params, plot_type=plot_type)
 
     def plot_params_bias(self, plot_type = '1d'):
         """Make 1d posterior plot per galaxy sample for bias parameters at all z."""
-        for isample in range(self.nsample):
-            params = self.get_params_bias([isample], range(self.nz))
+        for isample in range(self._nsample):
+            params = self.get_params_bias([isample], range(self._nz))
             params.extend(self.params_base)
-            plot_name = os.path.join(self.plot_dir, \
+            plot_name = os.path.join(self._plot_dir, \
                 'plot_%s_bias_sample_%s.png'%(plot_type, isample+1))
             self.plot_params(plot_name, params=params, plot_type=plot_type)
 
@@ -101,8 +103,8 @@ class ChainPlotter():
         params = (params or self.params)
 
         g = gplots.get_subplot_plotter(
-            chain_dir=self.chain_dir, 
-            analysis_settings=self.analysis_settings)
+            chain_dir=self._chain_dir, 
+            analysis_settings=self._analysis_settings)
 
         mcsamples = self.get_mcsamples(g, params)
 
@@ -118,7 +120,7 @@ class ChainPlotter():
         self.logger.info('Saved plot: {}'.format(plot_name))
 
     def get_mcsamples(self, g, params):
-        samples = g.sampleAnalyser.samplesForRoot(self.roots[0])
+        samples = g.sampleAnalyser.samplesForRoot(self._roots[0])
         print('Number of points in chain = {}'.format(samples.weights.size))
 
         p = samples.getParams()
@@ -132,7 +134,7 @@ class ChainPlotter():
             weights = samples.weights,\
             loglikes = samples.loglikes, \
             names = params,\
-            settings = self.analysis_settings, \
+            settings = self._analysis_settings, \
             ranges = ranges, 
         )
         return MCSamples
@@ -152,13 +154,14 @@ class ChainPlotter():
 
     def get_bias_default_values(self):
         """Returns a dictionary with bias name and default values"""
-        default_values = get_bias_params_for_survey_file(\
-            self.survey_par_file, fix_to_default=True, include_latex=False)
+        from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
+        default_values = make_dictionary_for_bias_params(
+            self._survey_par_file, fix_to_default=True, include_latex=False)
         return default_values
 
     def get_priors(self):
         """Get priors applied when running chains"""
-        updated_yaml_file = os.path.join(self.chain_dir, self.roots[0] + '.updated.yaml')
+        updated_yaml_file = os.path.join(self._chain_dir, self._roots[0] + '.updated.yaml')
         info = yaml_load_file(updated_yaml_file)
         params_info = info['params']
         return params_info
