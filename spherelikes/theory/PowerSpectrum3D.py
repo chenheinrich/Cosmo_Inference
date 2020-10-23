@@ -12,6 +12,7 @@ import logging
 from spherelikes.utils.log import LoggedError, class_logger
 from spherelikes.utils import constants
 from spherelikes.params import SurveyPar
+from spherelikes.params_generator import TheoryParGenerator
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
@@ -28,9 +29,9 @@ def make_dictionary_for_base_params():
     }
     return base_params
 
-def make_dictionary_for_bias_params(survey_par_file, \
+def make_dictionary_for_bias_params(survey_par, \
     fix_to_default=False, include_latex=True,
-    prior_name=None, fractional_delta=0.03):
+    prior_name=None, prior_fractional_delta=0.03):
     """Returns a nested dictionary of galaxy bias parameters, 
     with keys (e.g. prior, ref, propose, latex, value) needed
     by cobaya sampler.
@@ -43,15 +44,13 @@ def make_dictionary_for_bias_params(survey_par_file, \
             string for the parameters (e.g. set to false if 
             just want a value returned).
         prior_name (optional): 'tight_prior' or 'uniform'
-        fractional_delta (optional): a float between 0 and 1
+        prior_fractional_delta (optional): a float between 0 and 1
             to set the standard deviation of distributions 
             as a fraction of the bias value; default is 0.03.
 
     """
     
     prior_name = (prior_name or 'uniform')
-
-    survey_par = SurveyPar(survey_par_file)
 
     bias_default = survey_par.get_galaxy_bias_array()
     nsample = survey_par.get_nsample()
@@ -66,7 +65,7 @@ def make_dictionary_for_bias_params(survey_par_file, \
             latex = 'b_g^{%i}(z_{%i})' % (isample + 1, iz + 1)
             default_value = bias_default[isample, iz]
             
-            scale = default_value * fractional_delta
+            scale = default_value * prior_fractional_delta
             scale_ref = scale/10.0
 
             if prior_name == 'uniform':
@@ -93,15 +92,28 @@ def make_dictionary_for_bias_params(survey_par_file, \
 
     return bias_params
 
-def get_params_for_survey_file(survey_par_file, fix_to_default=False):
+def get_params_for_survey_par(survey_par, fix_to_default=False):
 
     base_params = make_dictionary_for_base_params()
     bias_params = make_dictionary_for_bias_params(\
-        survey_par_file, fix_to_default=fix_to_default)
+        survey_par, fix_to_default=fix_to_default)
  
     base_params.update(bias_params)
     return base_params
-    
+
+
+class ParGenerator(TheoryParGenerator):
+
+    def __init__(self):
+        super().__init__()
+
+    def get_params(self, survey_par, gen_info):
+        """Update only the bias parameters according to the specifications."""
+        bias_params = make_dictionary_for_bias_params(\
+            survey_par, \
+            **gen_info['bias']
+        )
+        return bias_params
 
 class PowerSpectrum3D(Theory):
 
@@ -113,7 +125,7 @@ class PowerSpectrum3D(Theory):
     survey_par = SurveyPar(survey_par_file)
     nz = survey_par.get_nz()
     nsample = survey_par.get_nsample()
-    params = get_params_for_survey_file(survey_par_file, fix_to_default=False)
+    params = get_params_for_survey_par(survey_par, fix_to_default=False)
 
     nk = 1  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 1  # 5  # number of mu bins

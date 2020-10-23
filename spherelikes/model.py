@@ -81,6 +81,7 @@ class ModelCalculator():
 
         H0 = theory1.get_param('H0')
 
+        #TODO change this to deal only with SurveyPar
         self.survey_pars = yaml_load_file(self.args.survey_par_file)
         z_lo = np.array(self.survey_pars['zbin_lo'])
         z_hi = np.array(self.survey_pars['zbin_hi'])
@@ -161,7 +162,7 @@ class ModelCalculator():
         self.point.update(fid_info)
         if self.fix_default_bias is True:
             bias_params = make_dictionary_for_bias_params(\
-                self.survey_par_file, \
+                self.survey_par, \
                 fix_to_default=self.fix_default_bias,\
                 include_latex=False)
             print('bias_params', bias_params)

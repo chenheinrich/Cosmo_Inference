@@ -18,11 +18,11 @@ def test_cobaya(input_args):
     from cobaya.model import get_model
     from cobaya.yaml import yaml_load_file
     from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
-    from spherelikes.params import CobayaPar
+    from spherelikes.params import CobayaPar, SurveyPar
 
     cobaya_par = CobayaPar(input_args['cobaya_par_file'])
-    survey_par_file = cobaya_par.get_survey_par_file()
-    bias_params = make_dictionary_for_bias_params(survey_par_file, \
+    survey_par = cobaya_par.get_survey_par()
+    bias_params = make_dictionary_for_bias_params(survey_par, \
         fix_to_default=True, include_latex=False)
 
     camb_params = yaml_load_file(input_args['cosmo_par_file'])

@@ -22,7 +22,8 @@ class ChainPreparation():
 
         common_args = yaml_load_file(config_file)
         cobaya_par = CobayaPar(common_args['cobaya_par_file'])
-        common_args['survey_par_file'] = cobaya_par.get_survey_par_file()
+        survey_par = cobaya_par.get_survey_par()
+        common_args['survey_par_file'] = survey_par.get_par_file()
         common_args['fix_default_bias'] = True
 
         if 'overwrite_covariance' not in common_args.keys():

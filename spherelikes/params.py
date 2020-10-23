@@ -32,13 +32,18 @@ class CobayaPar():
 
     def get_spherex_theory(self):
         return self.get_spherex_theory_list()[0]
-    
-    def get_survey_par_file(self):
+
+    def get_survey_par(self):
         theory_name = self.get_spherex_theory()
-        return self._info['theory'][theory_name]['survey_par_file']
+        survey_par_file = self._info['theory'][theory_name]['survey_par_file']
+        survey_par = SurveyPar(survey_par_file)
+        return survey_par
 
     def get_filename(self):
         return self._cobaya_par_file
+
+    def get_params(self):
+        return self._info['params']
 
 class SurveyPar():
 
@@ -52,6 +57,9 @@ class SurveyPar():
         self._nz = self.get_nz()
         self._nsample = self.get_nsample()
         self._run_checks()
+
+    def get_par_file(self):
+        return self._survey_par_file()
 
     def get_nz(self):
         return self._info['nz']

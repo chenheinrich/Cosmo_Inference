@@ -45,7 +45,7 @@ class ChainPlotter():
 
         chain_updated_yaml = os.path.join(self._chain_dir, self._roots[0]+'.updated.yaml')
         self._cobaya_par = CobayaPar(chain_updated_yaml)
-        self._survey_par_file = self._cobaya_par.get_survey_par_file()
+        self._survey_par = self._cobaya_par.get_survey_par()
 
         self.bias_default_values = self.get_bias_default_values()
         self.lcdm_sim_values = yaml_load_file(self._data_cosmo_par_file) 
@@ -156,7 +156,7 @@ class ChainPlotter():
         """Returns a dictionary with bias name and default values"""
         from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
         default_values = make_dictionary_for_bias_params(
-            self._survey_par_file, fix_to_default=True, include_latex=False)
+            self._survey_par, fix_to_default=True, include_latex=False)
         return default_values
 
     def get_priors(self):
