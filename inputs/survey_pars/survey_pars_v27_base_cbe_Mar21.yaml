@@ -58,8 +58,7 @@ galaxy_bias_5:
 - 4.1
 - 4.5
 - 5.0
-nsample:
-- 5.0
+nsample: 5.0
 number_density_in_hinvMpc_1:
 - 0.00997
 - 0.00411
@@ -120,8 +119,7 @@ number_density_in_hinvMpc_5:
 - 2.99e-05
 - 9.41e-06
 - 2.04e-06
-nz:
-- 11.0
+nz: 11.0
 sigz_over_one_plus_z:
 - 0.003
 - 0.008

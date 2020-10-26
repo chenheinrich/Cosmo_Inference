@@ -4,16 +4,7 @@ import sys
 import yaml 
 import argparse
 
-def find_key(rules, line):
-    for key in rules.keys():
-        if line.startswith(key):  # TODO key must be unique, no errors raised yet
-            return key
-
-def find_values(key, values):
-    print(key, values)
-    print(re.findall(r"[-+]?\d*\.\d+|\d+", key))
-    num_numbers_in_key_name = len(re.findall(r"[-+]?\d*\.\d+|\d+", key))
-    return values[num_numbers_in_key_name:]
+import conversion_rules
 
 def get_dict_from_path_with_rules(path, rules):
     output_dict = {}
@@ -23,11 +14,12 @@ def get_dict_from_path_with_rules(path, rules):
                 if line.startswith(key):
                     num_start = len(key) + len(' = ')
                     values = line[num_start:]
-                    if len(values)>0:
-                        values = values.split()
-                        values = [float(v) for v in values]
-                    else:
-                        values = float(values)
+            
+                    values = values.split()
+                    values = [float(v) for v in values]
+                    if len(values)== 1:
+                        values = float(values[0])
+                    print('key, values', key, values)
                     rename = rules[key]['rename'] or key
                     output_dict[rename] = values
 
@@ -51,10 +43,10 @@ def write_yaml(output_path, output_dict):
     print('Written file: {}'.format(output_path))
 
 def main(path, rule_type):
-    import importlib
-    import conversion_rules
+    """Input file is examined for lines that start with the keys 
+    given in rules, for which the values are extracted and output
+    to a separate yaml file as lists or single value."""
     rules = getattr(conversion_rules, rule_type)
-    #from conversion_rules import roland as rules
     output_dict = get_dict_from_path_with_rules(path, rules)
     print('output_dict', output_dict)
 
@@ -64,13 +56,14 @@ def main(path, rule_type):
 
 if __name__ == '__main__':
     """Sample Usage: 
-        python convert_to_yaml ./params.v27_base_cbe_Mar21.txt roland
+        cd ./inputs/conversion/
+        python convert_to_yaml.py ./params.v27_base_cbe_Mar21.txt --type=roland
     """
 
     parser = argparse.ArgumentParser(description='Convert survey parameter file to yaml')
     parser.add_argument('path', help='path to survey parameter file')
-    parser.add_argument('--type', default='spherex_public', help="name of conversion rules: \
-        currently supporting 'roland' and 'spherex-public' (default). ")
+    parser.add_argument('--type', default='spherex_public', help="type of conversion rules \
+        to use: currently supporting 'roland' and 'spherex-public' (default). ")
     args = parser.parse_args()
 
     main(args.path, args.type)
