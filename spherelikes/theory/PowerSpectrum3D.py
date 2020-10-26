@@ -118,8 +118,7 @@ class ParGenerator(TheoryParGenerator):
 class PowerSpectrum3D(Theory):
 
     survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
-    data_dir = 'data/ps_base/'
-    model_name = 'ref'
+    model_path = 'data/ps_base/ref.pickle'
     plot_dir = 'plots/'
 
     survey_par = SurveyPar(survey_par_file)
