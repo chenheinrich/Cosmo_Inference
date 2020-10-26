@@ -1,18 +1,16 @@
 debug: True
 
 sampler:
-  #evaluate:
   mcmc:
     max_tries: 10000000
 
 output: chains/ps_base_fix_all_but_b1_and_fnl/ps_base
-data: "./data/ps_base_v27/"
 
 likelihood:
   spherelikes.likelihood.LikePowerSpectrum3D:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
-    invcov_path: "./data/ps_base/invcov.npy"
-    sim_data_path: "./data/ps_base/sim_data.pickle"
+    invcov_path: "./data/ps_base_v27/invcov.npy"
+    sim_data_path: "./data/ps_base_v27/sim_data.pickle"
 
 theory:
   camb:
@@ -32,7 +30,7 @@ theory:
 
     is_reference_model: False # if calculating reference model for AP, set to True
     survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
-    model_path: "./data/ps_base/ref.pickle"
+    model_path: "./data/ps_base_v27/ref.pickle"
 
     nk: 21 # 21  # 211  # number of k points (to be changed into bins)
     nmu: 5 # 5  # number of mu bins
