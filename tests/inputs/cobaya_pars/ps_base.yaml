@@ -1,7 +1,6 @@
 debug: True
 
 sampler:
-  #evaluate:
   mcmc:
     max_tries: 10000000
 
@@ -31,8 +30,7 @@ theory:
 
     is_reference_model: False # if calculating reference model for AP, set to True
     survey_par_file: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
-    data_dir: "./data/ps_base/"
-    model_name: "ref"
+    model_path: "./data/ps_base/ref.pickel"
 
     nk: 21 # 21  # 211  # number of k points (to be changed into bins)
     nmu: 5 # 5  # number of mu bins
