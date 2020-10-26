@@ -335,8 +335,7 @@ class PowerSpectrum3D(Theory):
             self.plot_dir).mkdir(parents=True, exist_ok=True)
 
     def _make_path_fid(self):
-        self.fname_fid = os.path.join(
-            self.data_dir, self.model_name + '.pickle')
+        self.fname_fid = self.model_path
 
     def _load_results_fid(self):
         try:

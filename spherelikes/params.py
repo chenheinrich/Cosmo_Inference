@@ -59,13 +59,13 @@ class SurveyPar():
         self._run_checks()
 
     def get_par_file(self):
-        return self._survey_par_file()
+        return self._survey_par_file
 
     def get_nz(self):
-        return self._info['nz']
+        return int(self._info['nz'])
 
     def get_nsample(self):
-        return self._info['nsample']
+        return int(self._info['nsample'])
         
     def _run_checks(self):
         self._check_arrays_are_length_nz()

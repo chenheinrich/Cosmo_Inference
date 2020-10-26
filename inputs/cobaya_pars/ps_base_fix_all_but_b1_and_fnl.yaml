@@ -6,6 +6,7 @@ sampler:
     max_tries: 10000000
 
 output: chains/ps_base_fix_all_but_b1_and_fnl/ps_base
+data: "./data/ps_base_v27/"
 
 likelihood:
   spherelikes.likelihood.LikePowerSpectrum3D:
@@ -30,15 +31,14 @@ theory:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True
-    survey_par_file: "./inputs/survey_pars/survey_pars_v28_base_cbe_testing.yaml"
-    data_dir: "./data/ps_base/"
-    model_name: "ref"
+    survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
+    model_path: "./data/ps_base/ref.pickle"
 
     nk: 21 # 21  # 211  # number of k points (to be changed into bins)
-    nmu: 5 # 5  # number of mu bins
+    nmu: 10 # 5  # number of mu bins
 
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
-    kmax: 0.14 # equivalent to 0.02 h/Mpc
+    kmax: 0.14 # equivalent to 0.2 h/Mpc
 
     do_test: False
     do_test_plot: True
