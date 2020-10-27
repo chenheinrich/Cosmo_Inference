@@ -13,6 +13,10 @@ from spherelikes.params import SurveyPar, CobayaPar
 from analysis import log
 
 
+def list_intersection(lst1, lst2): 
+    lst3 = [value for value in lst1 if value in lst2] 
+    return lst3 
+
 class ChainPlotter():
     
     def __init__(self, args):
@@ -35,13 +39,22 @@ class ChainPlotter():
 
         self.params_lcdm = self._params_processor.get_camb_params()
         self.params_lcdm.append('fnl')
+
+        sampled_params = self._params_processor.get_sampled_params()
+        self.params_lcdm = list_intersection(self.params_lcdm, sampled_params)
         print('self.params_lcdm', self.params_lcdm)
-        #['fnl', 'logA', 'ns', 'nrun', 'theta_MC_100', \
-        #    'ombh2', 'omch2', 'omegak', 'mnu', 'w', 'wa', 'tau'] 
+
         self.params_base = ['fnl', 'logA']
+        self.params_base = list_intersection(self.params_base, sampled_params)
+        
         self.params_bias = self.get_params_bias(range(self._nsample), range(self._nz))
+        self.params_bias = list_intersection(self.params_bias, sampled_params)
+        
         self.params_sys = self._params_processor.get_sys_params()
+        self.params_sys = list_intersection(self.params_sys, sampled_params)
+        
         self.params = self.params_lcdm + self.params_bias + self.params_sys
+        print('self.params = {}'.format(self.params))
 
         chain_updated_yaml = os.path.join(self._chain_dir, self._roots[0]+'.updated.yaml')
         self._cobaya_par = CobayaPar(chain_updated_yaml)
@@ -75,12 +88,16 @@ class ChainPlotter():
         self.plot_triangles()
 
     def plot_1d(self):
-        self.plot_params_lcdm(plot_type='1d')
-        self.plot_params_bias(plot_type='1d')
+        if len(self.params_lcdm) > 0:
+            self.plot_params_lcdm(plot_type='1d')
+        if len(self.params_bias) > 0:
+            self.plot_params_bias(plot_type='1d')
 
     def plot_triangles(self):
-        self.plot_params_lcdm(plot_type='triangle')
-        self.plot_params_bias(plot_type='triangle')
+        if len(self.params_lcdm) > 0:
+            self.plot_params_lcdm(plot_type='triangle')
+        if len(self.params_bias) > 0:
+            self.plot_params_bias(plot_type='triangle')
 
     def plot_params_lcdm(self, plot_type = '1d'):
         """Make 1d posterior plot per galaxy sample for bias parameters at all z."""
@@ -118,6 +135,21 @@ class ChainPlotter():
 
         g.export(plot_name)
         self.logger.info('Saved plot: {}'.format(plot_name))
+
+    def get_margestat(self, params=None):
+
+        params = (params or self.params)
+
+        g = gplots.get_subplot_plotter(
+            chain_dir=self._chain_dir, 
+            analysis_settings=self._analysis_settings)
+
+        mcsamples = self.get_mcsamples(g, params)
+
+        marge_stats = mcsamples.getMargeStats()
+        print(marge_stats)
+
+        return marge_stats
 
     def get_mcsamples(self, g, params):
         samples = g.sampleAnalyser.samplesForRoot(self._roots[0])
@@ -201,9 +233,11 @@ class ParamsProcessor():
         return derived_params
 
     def get_sampled_params(self):
-        derived_params = self.get_derived_params()
-        all_params = self.get_all_params()
-        sampled_params = all_params - derived_params
+        sampled_params = []
+        for key in self._params_dict.keys():
+            if 'prior' in self._params_dict[key].keys():
+                sampled_params.append(key)
+        print('sampled_params = {}'.format(sampled_params))
         return sampled_params
     
     # Theory params
@@ -292,6 +326,7 @@ if __name__ == '__main__':
     args = yaml_load_file(config_file)
 
     plotter = ChainPlotter(args)
-    plotter.plot_1d()
+    #plotter.plot_1d()
     #plotter.plot_triangles()
+    plotter.get_margestat()
 
