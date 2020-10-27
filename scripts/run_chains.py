@@ -11,6 +11,9 @@ if __name__ == '__main__':
 
     """
     Example usage:
+    1) in python
+        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 1 -d -f -run_in_python
+    2) using mpi with 16 chains on TACC
         python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 16 -d -f
     """
 
@@ -28,8 +31,7 @@ if __name__ == '__main__':
 
     command_line_args = parser.parse_args()
     nproc = command_line_args.n
-
-    run_in_python = False #TODO can make into commandline args
+    run_in_python = command_line_args.run_in_python
 
     chain_yaml_file = sys.argv[1]
     args = yaml_load_file(chain_yaml_file)

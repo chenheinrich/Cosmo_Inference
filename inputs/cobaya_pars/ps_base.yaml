@@ -26,13 +26,12 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.PowerSpectrum3D :
+  spherelikes.theory.PowerSpectrum3D:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True
     survey_par_file: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
-    data_dir: "./data/ps_base/"
-    model_name: "ref"
+    model_path: "./data/ps_base/ref.pickle"
 
     nk: 21 # 21  # 211  # number of k points (to be changed into bins)
     nmu: 5 # 5  # number of mu bins

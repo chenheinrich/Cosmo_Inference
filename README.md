@@ -76,3 +76,15 @@ to generate data needed for running MCMC chains: covariance matrix, reference co
 Then you can run chains (in debug mode add `-d` and to force removing existing chains add `-f`):
 
 `python3 scripts/run_chains.py ./inputs/chains_pars/ps_base_v27.yaml 1 -d -f -run_in_python`
+
+## Alternative install (under development): Docker
+
+From outside the container, you can run chains using:
+`docker run --rm chenheinrich/spherex:0.0.1`
+
+This requires you have the chains prepared, i.e. have a inverse covariance matrix on disk, etc. This step won't be needed once this becomes an installable likelihood, so the inverse covariance matrix will be automatically downloaded during installation. For now, run:
+
+`docker run --rm chenheinrich/spherex:0.0.1 python3 scripts/prep_chains.py ./inputs/chains_pars/ps_base.yaml`
+
+To run chains possibly with different commands:
+`docker run --rm chenheinrich/spherex:0.0.1 python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 1 -d -f -run_in_python`

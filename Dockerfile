@@ -22,14 +22,12 @@ RUN git clone https://github.com/CobayaSampler/cobaya.git \
 
 RUN pip3 install -r code/requirements.txt \
 &&  pip3 install -e code \
-&&  python3 -c "import spherelikes" \
-&&  cd code \
-&&  pytest ./tests/ -v -m short \
-#&&  python3 scripts/prep_chains.py ./inputs/chains_pars/ps_base.yaml
-#killed probably OOM
+&&  python3 -c "import spherelikes" 
 
 WORKDIR '/code'
-CMD ["python3", "scripts/run_chains.py", "./inputs/chains_pars/ps_base.yaml", "-f"]
+RUN pytest ./tests/ -v -m short 
+
+CMD ["python3", "scripts/run_chains.py", "./inputs/chains_pars/ps_base.yaml", "1", "-f", "-d", "-run_in_python"]
 
 # From outside the container, you can run chains:
 # docker run --rm chenheinrich/spherex:0.0.1

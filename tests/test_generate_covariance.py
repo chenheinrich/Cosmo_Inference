@@ -46,7 +46,7 @@ def test_dictionaries(cov_calc):
     cov_calc.test_dictionaries_are_constructed_correctly()
 
 
-@pytest.mark.short
+@pytest.mark.long
 def test_cov_is_symmetric_exchanging_ips1_and_ips2(cov_calc):
     cov_calc.get_cov()
     cov_calc.test_cov_is_symmetric_exchanging_ips1_and_ips2()
