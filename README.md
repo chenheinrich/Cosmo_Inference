@@ -77,14 +77,29 @@ Then you can run chains (in debug mode add `-d` and to force removing existing c
 
 `python3 scripts/run_chains.py ./inputs/chains_pars/ps_base_v27.yaml 1 -d -f -run_in_python`
 
-## Alternative install (under development): Docker
+## Alternatives: Docker (under development)
 
-From outside the container, you can run chains using:
+### Basic run
+
+After installing Docker, you can pull the image
+
+`docker pull chenheinrich/spherex:0.0.1`
+
+and run the default chains for SPHEREx (simulated):
 `docker run --rm chenheinrich/spherex:0.0.1`
 
-This requires you have the chains prepared, i.e. have a inverse covariance matrix on disk, etc. This step won't be needed once this becomes an installable likelihood, so the inverse covariance matrix will be automatically downloaded during installation. For now, run:
+### Custom chains
 
-`docker run --rm chenheinrich/spherex:0.0.1 python3 scripts/prep_chains.py ./inputs/chains_pars/ps_base.yaml`
+The following is subject to change.
 
-To run chains possibly with different commands:
-`docker run --rm chenheinrich/spherex:0.0.1 python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 1 -d -f -run_in_python`
+To run a different chain than the basic one, use
+`docker run --rm chenheinrich/spherex:0.0.1 python3 scripts/run_chains.py ./inputs/chains_pars/<run_name>.yaml 1 -d -f -run_in_python`
+replacing <run_name> by the name of your new yaml file. Note that you will need to prepare the elements needed by the chains yourself in this case, by running
+`docker run --rm chenheinrich/spherex:0.0.1 python3 scripts/prep_chains.py ./inputs/chains_pars/<run_name>.yaml`. 
+
+This will:
+1) run the reference cosmology and products needed for computing Alcock-Pazcynski effect (H(z) and D_A(z)).
+2) create a covariance matrix with shot noise specified by survey parameters and invert it (which could take a few minutes).
+3) create simulated data vector according to the cosmology specified.
+
+
