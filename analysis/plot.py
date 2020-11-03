@@ -319,14 +319,16 @@ class Prior():
         return [lo, hi]
 
 if __name__ == '__main__':
-    """Example usage: python3 -m analysis.plot ./analysis/inputs/ps_base.yaml"""
+    """Example usage: 
+    python3 -m analysis.plot ./analysis/inputs/ps_base.yaml
+    """
 
     config_file = sys.argv[1]
 
     args = yaml_load_file(config_file)
 
     plotter = ChainPlotter(args)
-    #plotter.plot_1d()
+    plotter.plot_1d()
     #plotter.plot_triangles()
     plotter.get_margestat()
 
