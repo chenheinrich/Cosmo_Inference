@@ -12,9 +12,9 @@ if __name__ == '__main__':
     """
     Example usage:
     1) in python
-        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 1 -d -f -run_in_python
+        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 1 -d -run_in_python
     2) using mpi with 16 chains on TACC
-        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 16 -d -f
+        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 16 -d
     """
 
     parser = argparse.ArgumentParser()
@@ -26,12 +26,15 @@ if __name__ == '__main__':
         help="debug mode.")
     parser.add_argument("-f", action='store_true',
         help="force delete previous chains.")
-    parser.add_argument("-run_in_python", action='store_true',
+    parser.add_argument("-r", action='store_true',
+        help="resume chains.")
+    parser.add_argument("--run_in_python", nargs='?', const=True, default=False,
         help="running inside of python (no mpi) inside of on commandline.")
 
     command_line_args = parser.parse_args()
     nproc = command_line_args.n
     run_in_python = command_line_args.run_in_python
+    print('run_in_python', run_in_python, 'nproc', nproc)
 
     chain_yaml_file = sys.argv[1]
     args = yaml_load_file(chain_yaml_file)
