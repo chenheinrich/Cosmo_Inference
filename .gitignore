@@ -22,6 +22,7 @@ analysis/plots
 data/
 job/
 out/
+inputs/cobaya_pars/chen
 
 # Distribution / packaging
 .Python
