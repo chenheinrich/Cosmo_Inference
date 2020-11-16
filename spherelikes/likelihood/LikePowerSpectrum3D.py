@@ -8,7 +8,7 @@ from cobaya.likelihood import Likelihood
 from spherelikes.utils.log import LoggedError, class_logger
 
 
-class LikelihoodBase(Likelihood):
+class LikePowerSpectrum3D(Likelihood):
 
     def initialize(self):
         """

@@ -11,13 +11,14 @@ import logging
 
 from spherelikes.utils.log import LoggedError, class_logger
 from spherelikes.utils import constants
-from spherelikes.params import get_bias_params_for_survey_file, get_nsample_and_nz_for_survey_file
+from spherelikes.params import SurveyPar
+from spherelikes.params_generator import TheoryParGenerator
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
 
 
-def get_base_params():
+def make_dictionary_for_base_params():
     base_params = {
         'fnl': {'prior': {'min': 0, 'max': 5},
                 'ref': {'dist': 'norm', 'loc': 1.0, 'scale': 0.5},
@@ -28,27 +29,109 @@ def get_base_params():
     }
     return base_params
 
-def get_params_for_survey_file(survey_par_file, fix_to_default=False):
+def make_dictionary_for_bias_params(survey_par, \
+    fix_to_default=False, include_latex=True,
+    prior_name=None, prior_fractional_delta=0.03):
+    """Returns a nested dictionary of galaxy bias parameters, 
+    with keys (e.g. prior, ref, propose, latex, value) needed
+    by cobaya sampler.
 
-    base_params = get_base_params()
-    bias_params = get_bias_params_for_survey_file(survey_par_file, fix_to_default=fix_to_default)
+    Args:
+        survey_par_file: path to survey parameter file. 
+        fix_to_default (optional): boolean to fix parameters 
+            to default values given by the survey_par_file.
+        include_latex (optional): boolean to include latex
+            string for the parameters (e.g. set to false if 
+            just want a value returned).
+        prior_name (optional): 'tight_prior' or 'uniform'
+        prior_fractional_delta (optional): a float between 0 and 1
+            to set the standard deviation of distributions 
+            as a fraction of the bias value; default is 0.03.
 
+    """
+    
+    prior_name = (prior_name or 'uniform')
+
+    bias_default = survey_par.get_galaxy_bias_array()
+    nsample = survey_par.get_nsample()
+    nz = survey_par.get_nz ()
+    
+    bias_params = {}
+    for isample in range(nsample):
+        for iz in range(nz):
+            
+            key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
+            
+            latex = 'b_g^{%i}(z_{%i})' % (isample + 1, iz + 1)
+            default_value = bias_default[isample, iz]
+            
+            scale = default_value * prior_fractional_delta
+            scale_ref = scale/10.0
+
+            if prior_name == 'uniform':
+                delta = 1.0
+                prior = {'min': max(0.5, default_value - delta), 'max': default_value + delta}
+            elif prior_name == 'tight_prior':
+                prior = {'dist': 'norm', 'loc': default_value, 'scale': scale}
+            
+            if fix_to_default is True:
+                if include_latex is True:
+                    value = {'value': default_value, 
+                            'latex': latex
+                            }
+                else: 
+                    value = default_value
+            else:
+                value = {'prior': prior,
+                        'ref': {'dist': 'norm', 'loc': default_value, 'scale': scale_ref},
+                        'propose': scale_ref,
+                        'latex': latex,
+                        }
+
+            bias_params[key] = value
+
+    return bias_params
+
+def get_params_for_survey_par(survey_par, fix_to_default=False):
+
+    base_params = make_dictionary_for_base_params()
+    bias_params = make_dictionary_for_bias_params(\
+        survey_par, fix_to_default=fix_to_default)
+ 
     base_params.update(bias_params)
     return base_params
-    
 
-class PowerSpectrumBase(Theory):
+
+class ParGenerator(TheoryParGenerator):
+
+    def __init__(self):
+        super().__init__()
+
+    def get_params(self, survey_par, gen_info):
+        """Update only the bias parameters according to the specifications."""
+        bias_params = make_dictionary_for_bias_params(\
+            survey_par, \
+            **gen_info['bias']
+        )
+        return bias_params
+
+class PowerSpectrum3D(Theory):
 
     survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
-    data_dir = 'data/ps_base/'
-    model_name = 'ref'
+    model_path = 'data/ps_base/ref.pickle'
     plot_dir = 'plots/'
 
-    nsample, nz = get_nsample_and_nz_for_survey_file(survey_par_file)
-    params = get_params_for_survey_file(survey_par_file, fix_to_default=False)
+    survey_par = SurveyPar(survey_par_file)
+    nz = survey_par.get_nz()
+    nsample = survey_par.get_nsample()
+    params = get_params_for_survey_par(survey_par, fix_to_default=False)
 
     nk = 1  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 1  # 5  # number of mu bins
+
+    h = 0.68
+    kmin = 1e-3 * h # in 1/Mpc
+    kmax = 0.2 * h # in 1/Mpc
 
     is_reference_model = False
     do_test = False
@@ -56,7 +139,6 @@ class PowerSpectrumBase(Theory):
     test_plot_names = None
 
     _delta_c = 1.686
-    _k0 = 0.05  # 1/Mpc
     _fraction_recon = 0.  # 0 for fully damped, no recon; 1 for fully reconstructed, no damping
 
     def initialize(self):
@@ -92,23 +174,17 @@ class PowerSpectrumBase(Theory):
 
     def _setup_survey_pars(self):
         """kmin and kmax preserved, dk calcula"""
-        path = os.path.join(self.survey_par_file)
-        pars = yaml_load_file(path)
-        self.z_lo = np.array(pars['zbin_lo'])
-        self.z_hi = np.array(pars['zbin_hi'])
-        self.z = (self.z_lo + self.z_hi) / 2.0
+        self.z = self.survey_par.get_zmid_array()
         self.z_list = list(self.z)
-        self.sigz = np.array(pars['sigz_over_one_plus_z'])[:, np.newaxis] \
-            * (1.0 + self.z[np.newaxis, :])
-        self.nsample = len(pars['sigz_over_one_plus_z'])
-        self.nz = self.z.size
-        self.k = np.logspace(np.log10(1e-5), np.log10(5.0), self.nk)
+        self.sigz = self.survey_par.get_sigz_array()
+        self.k = np.logspace(np.log10(self.kmin), np.log10(self.kmax), self.nk)
         self.dk = self.get_dk(self.k)
         self.mu_edges = np.linspace(0, 1, self.nmu + 1)
         self.mu = (self.mu_edges[:-1] + self.mu_edges[1:]) / 2.0
         self.dmu = self.mu_edges[1:] - self.mu_edges[:-1]
         assert self.mu.size == self.dmu.size, ('mu and dmu not the same size: {}, {}'.format(
             self.mu.size, self.dmu.size))
+        self.nps = int(self.nsample * (self.nsample + 1) / 2)
 
     def get_requirements(self):
         """
@@ -117,9 +193,16 @@ class PowerSpectrumBase(Theory):
         """
         return {}
 
+    def get_z_more(self):
+        z_lo = self.survey_par.get_zlo_array()
+        z_hi = self.survey_par.get_zhi_array()
+        z_mid = self.survey_par.get_zmid_array()
+        z_more = np.hstack((z_lo, z_hi, z_mid))
+        return z_more
+
     def must_provide(self, **requirements):
         z_list = self.z_list
-        z_more = np.hstack((self.z_lo, self.z_hi, self.z))
+        z_more = self.get_z_more()
         k_max = 8.0
         nonlinear = (False, True)
         spec_Pk = {
@@ -251,8 +334,7 @@ class PowerSpectrumBase(Theory):
             self.plot_dir).mkdir(parents=True, exist_ok=True)
 
     def _make_path_fid(self):
-        self.fname_fid = os.path.join(
-            self.data_dir, self.model_name + '.pickle')
+        self.fname_fid = self.model_path
 
     def _load_results_fid(self):
         try:
@@ -300,7 +382,7 @@ class PowerSpectrumBase(Theory):
         galaxy samples:
             n_ps = nsample * (nsample + 1) / 2.
         """
-        self.nps = int(self.nsample * (self.nsample + 1) / 2)
+        
         galaxy_ps = np.zeros((self.nps, self.nz, self.nk, self.nmu))
         jj = 0
         for j1 in range(self.nsample):
@@ -315,7 +397,8 @@ class PowerSpectrumBase(Theory):
 
     def _calc_matter_power(self, nonlinear=False):
         """ Returns 3-d numpy array of shape (nz, nk, nmu) for the matter power spectrum.
-        Default is linear matter power."""
+        Default is linear matter power. Note that the power spectrum itself is evaluated 
+        at z, but the k also has a dependence on z due to the AP factor varying with z."""
 
         Pk_interpolator = self.provider.get_Pk_interpolator(
             nonlinear=nonlinear)
@@ -324,9 +407,9 @@ class PowerSpectrumBase(Theory):
         # for every fixed z and fixed mu, there is an array of k scaled by AP factors.
         for iz in range(self.nz):
             for imu in range(self.nmu):
-                a = Pk_interpolator(self.z_list[iz], np.log(
+                p = Pk_interpolator(self.z_list[iz], np.log(
                     self.k_actual[iz, :, imu]))
-                matter_power[iz, :, imu] = np.exp(a)
+                matter_power[iz, :, imu] = np.exp(p)
         assert matter_power.shape == (self.nz, self.nk, self.nmu)
         return matter_power
 
@@ -513,19 +596,25 @@ class PowerSpectrumBase(Theory):
 
     def _calc_initial_power(self):
         # TODO want to make sure this corresponds to the same as camb module
-        # Find out how to get it from camb itself (we might have other parameters
-        # like nrun, nrunrun; and possibly customized initial power one day)
-        """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum
-        evaluated at self.k_actual. 
+        """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum 
+        evaluated at self.k_actual:
+
+        initial_power = (2pi^2)/k^3 * P,
+        where ln P = ln A_s + (n_s -1) * ln(k/k_0_scalar) + n_{run}/2 * ln(k/k_0_scalar)^2 
 
         Note: There is a z and mu dependence because the k_actual at which we 
         need to evaluate the initial power is different for different z and mu.
         """
-        k0 = self._k0  # 1/Mpc
+        k_pivot = 0.05  # 1/Mpc 
         As = self.provider.get_param('As')
         ns = self.provider.get_param('ns')
-        initial_power = (2.0 * np.pi**2) / (self.k_actual**3) * \
-            As * (self.k_actual / k0)**(ns - 1.0)
+        nrun = self.provider.get_param('nrun')
+        
+        lnk = np.log(self.k_actual / k_pivot)
+        initial_power = np.log(As) + (ns - 1.0) * lnk  \
+            + 0.5 * nrun * lnk ** 2 
+        initial_power = (2.0 * np.pi**2) / (self.k_actual**3) * np.exp(initial_power)
+
         return initial_power
 
     def _calc_sigma8(self):

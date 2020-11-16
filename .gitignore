@@ -12,14 +12,17 @@ docker_interactive
 
 # User generated files
 *chains/
-data/
 *.png
 demo*
 plots/
 *.npy
 data/unit_test
+analysis/inputs
+analysis/plots
+data/
 job/
 out/
+inputs/cobaya_pars/chen
 
 # Distribution / packaging
 .Python

@@ -12,7 +12,8 @@ from cobaya.yaml import yaml_dump
 from cobaya.model import get_model
 from cobaya.tools import sort_cosmetic
 
-from spherelikes.params import get_bias_params_for_survey_file
+from spherelikes.params import CobayaPar, SurveyPar
+from spherelikes.theory.PowerSpectrum3D  import make_dictionary_for_bias_params
 
 class ModelCalculator():
 
@@ -31,6 +32,9 @@ class ModelCalculator():
         self.is_reference_model = self.args.is_reference_model
         self.is_reference_likelihood = self.args.is_reference_likelihood
         self.fix_default_bias = self.args.fix_default_bias
+
+        self.cobaya_par = CobayaPar(self.cobaya_par_file)
+        self.survey_par = SurveyPar(self.survey_par_file)
 
         self.setup_paths()
         self.setup_model()
@@ -77,6 +81,7 @@ class ModelCalculator():
 
         H0 = theory1.get_param('H0')
 
+        #TODO change this to deal only with SurveyPar
         self.survey_pars = yaml_load_file(self.args.survey_par_file)
         z_lo = np.array(self.survey_pars['zbin_lo'])
         z_hi = np.array(self.survey_pars['zbin_hi'])
@@ -106,10 +111,11 @@ class ModelCalculator():
         self.copy_yaml_files()
 
     def test_results(self):
-        # TODO how to not make this specific?
-        theory = self.model.theory["spherelikes.theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
+        name = self.cobaya_par.get_spherex_theory()
+        theory = self.model.theory[name]
         ap = theory.get_AP_factor()
-        assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
+        if self.is_reference_model is True:
+            assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
     def load_results(self):
         results = pickle.load(open(self.fname, "rb"))
@@ -155,8 +161,8 @@ class ModelCalculator():
         print('fid_info ', fid_info)
         self.point.update(fid_info)
         if self.fix_default_bias is True:
-            bias_params = get_bias_params_for_survey_file(\
-                self.survey_par_file, \
+            bias_params = make_dictionary_for_bias_params(\
+                self.survey_par, \
                 fix_to_default=self.fix_default_bias,\
                 include_latex=False)
             print('bias_params', bias_params)
@@ -189,9 +195,8 @@ class ModelCalculator():
     def _get_auxiliary_variables(self):
         """Return a dictionary aux with keys 'k', 'mu' and 'z' used for computing results.
         """
-        # TODO (long term) how to not reference the particular theory?
-        # maybe have an inheritance structure here? (not sure ...)
-        theory = self.model.theory["spherelikes.theories.base_classes.ps_base.ps_base.PowerSpectrumBase"]
+        name = self.cobaya_par.get_spherex_theory()
+        theory = self.model.theory[name]
         theory.must_provide(galaxy_ps={}, ap={})
         k = theory.k
         mu = theory.mu
@@ -207,19 +212,18 @@ class ModelCalculator():
 
 def main():
 
+    CWD = os.getcwd()
     args = {
-        'model_name': 'model_debug',
-        'cosmo_par_file': './inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_par_file': './inputs/cobaya_pars/ps_base.yaml',
+        'model_name': 'ref',
+        'cosmo_par_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_par_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
         'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': './data/debug',
-        'fix_default_bias': True,
+        'output_dir': CWD + '/data/ps_base/',
     }
 
-    fid_calculator = FidModelCalculator(args)
+    fid_calculator = ModelCalculator(args)
     fid_calculator.get_and_save_results()
     fid_calculator.load_results()
-
 
 if __name__ == '__main__':
     main()

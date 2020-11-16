@@ -1,0 +1,148 @@
+
+############################################
+#MIDEX PhaseA: Brown et al, v27 survey specs, with AGN in catalog(?); v27_base_cbe; Tractor photometry
+#code used: nbarbias_SPHEREx.py
+#catalog: Mar21_v27_base_cbe_simulation.cat
+############################################
+#pre-MIDEX comments:
+####
+
+#Using HOD approach to get bias of galaxies. (Coupon+ 2015)
+#NOT cutting out QSO
+#actually using ALLWISE again
+#changed maximum bias to 5
+#also rescaled line EW
+#with template priors;
+#Using Coupon HOD for bias prescription, Sheth-Tormen massfn, Delta=215 for bias
+#to be run with new code that has numerical pk suppression due to redshift errors
+
+###
+############################################
+#New comments (MIDEX):
+###
+
+#With 3sigma outlier cut (on sz0eff)
+#using apply_defaultcuts_PhA in nbarbias_SPHEREx.py
+
+###
+############################################
+
+#Output directory
+out_dir = results
+
+#The fiducial cosmological parameters followed by 
+#stepsize (leave zero/blank if that parameter is not to be varied. 
+
+Ombh2 = 0.02258
+Ombh2_step = 0.00025
+
+#cold DM density.
+Omch2 = 0.1109 
+Omch2_step = 0.001
+
+om_nu = 0.0016
+om_nu_step = 0.0001
+
+num_massive_neutrinos = 3.0
+num_massive_neutrinos_step =
+
+#delta-step treated differently
+Delta = 0.
+Delta_step = -2.
+
+num_massless_neutrinos = 0.
+num_massless_neutrinos_step = 
+
+OmLambda = 0.734
+OmLambda_step = 0.01
+
+Omk = 0.0
+Omk_step = 0.01
+
+ns = 0.963
+ns_step = 0.01
+
+nrun = 0.0
+nrun_step = 0.01
+
+#Sigma 8, currently actually means A_s
+sigma_8 = 0.8
+sigma_8_step = 0.01
+
+w0 = -1.
+w0_step = 0.01
+
+wa = 0.
+wa_step = 0.01
+
+fnl = 0.
+fnl_step = 0.01
+
+
+# P(k) params
+#--------------------------------
+
+#sigz = sigz0 * (1 + z)
+sigz0 = 0.003 0.008 0.025 0.07 0.16
+
+#number of galaxy populations
+npop = 5
+
+#number of redshift bins
+Nzbin = 11
+
+#filename if number density read from file (use numbers below if empty)
+fname_numdens1 =
+fname_numdens2 =
+fname_numdens3 =
+fname_numdens4 =
+# 'R40-allsky-conservative-zhist.dat'
+
+fname_pksup = './PkSuppression/pksuppression_v27_base_cbe_Mar21.txt'
+
+
+#number density [(h^-1 Mpc)^-3] population 1 (need Nzbin entries)
+numdens1 = 0.00997 0.00411 0.000501 7.05e-05 3.16e-05 1.64e-05 3.59e-06 8.07e-07 1.84e-06 1.5e-06 1.13e-06
+numdens2 = 0.0123 0.00856 0.00282 0.000937 0.00043 5e-05 8.03e-06 3.83e-06 3.28e-06 1.07e-06 6.79e-07
+numdens3 = 0.0134 0.00857 0.00362 0.00294 0.00204 0.000212 6.97e-06 2.02e-06 1.43e-06 1.93e-06 6.79e-07
+numdens4 = 0.0229 0.0129 0.00535 0.00495 0.00415 0.000796 7.75e-05 7.87e-06 2.46e-06 1.93e-06 1.36e-06
+numdens5 = 0.0149 0.00752 0.00327 0.0025 0.00183 0.000734 0.000253 5.41e-05 2.99e-05 9.41e-06 2.04e-06
+
+
+#edges of redshift bins (need Nzbin+1 entries)
+zPk = 0.0 0.2 0.4 0.6 0.8 1.0 1.6 2.2 2.8 3.4 4.0 4.6
+
+#galbias population 1 (need Nzbin entries)
+galaxy_bias1 = 1.3 1.5 1.8 2.3 2.1 2.7 3.6 2.3 3.2 2.7 3.8
+galaxy_bias2 = 1.2 1.4 1.6 1.9 2.3 2.6 3.4 4.2 4.3 3.7 4.6
+galaxy_bias3 = 1.0 1.3 1.5 1.7 1.9 2.6 3.0 3.2 3.5 4.1 5.0
+galaxy_bias4 = 0.98 1.3 1.4 1.5 1.7 2.2 3.6 3.7 2.7 2.9 5.0
+galaxy_bias5 = 0.83 1.2 1.3 1.4 1.6 2.1 3.2 4.2 4.1 4.5 5.0
+
+
+#galbias step
+galaxy_bias_step = 0.01
+
+#Minimum k for which calculations are to be done
+min_k = 0.001
+
+#Maximum k for which calculations are to be done
+max_k = .6
+
+#Minimum k actually used in Fisher matrix
+min_k_Fisher = 0.
+
+#Maximum k actually used in Fisher matrix
+max_k_Fisher = 0.2
+
+#Number of k-bins
+Nkbin = 800
+
+#number of mu bins:
+Nmu = 10
+
+#apply background dependent rescaling to power spectrum: (only allowed if logbin=T && interpolate=T)
+geom_rescale = T
+
+#readspectra = 'fisher_Sigma0.1_NHfid_D0p0_z0.5_NL'
+

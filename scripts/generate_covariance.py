@@ -11,6 +11,7 @@ from cobaya.yaml import yaml_load_file
 
 from spherelikes.model import ModelCalculator
 from spherelikes.utils.log import class_logger
+from spherelikes.params import SurveyPar
 
 
 class CovCalculator():
@@ -38,7 +39,6 @@ class CovCalculator():
 
         self.make_dict()
 
-        self.survey_pars = yaml_load_file(self.args['survey_par_file'])
         self.load_number_density()  # needs self.survey_pars
 
     def make_dict(self):
@@ -69,11 +69,10 @@ class CovCalculator():
     def load_number_density(self):
         """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
         expecting number density in survey_par_file are given in h/Mpc."""
-        h = self.data['H0'] / 100.0
-        self.number_density = np.zeros((self.nsample, self.nz))
-        for isample in range(self.nsample):
-            self.number_density[isample, :] = h * \
-                np.array(self.survey_pars['numdens%s' % (isample + 1)])
+        # TODO want to put h * number_density in the survey par maybe?
+        self.survey_par = SurveyPar(self.args['survey_par_file'])
+        h = self.data['H0'] / 100.0 
+        self.number_density = h * self.survey_par.get_number_density_array()
 
     def get_and_save_invcov(self):
         self.get_cov()
@@ -360,12 +359,10 @@ def generate_covariance(args_in):
     """Computes and saves covariance matrix and its inverse, using an input
     fiducial cosmology (need to be the same as reference cosmollogy for AP).
 
-    Usage: python scripts/generate_covariance.py
-
     Note: We set is_reference_model = True automatically in this script to
     avoid calculating AP effects and bypass likelihood calculations.
 
-    Note: You can also disable the likelihood calculation to not load elements
+    Note: We also disable the likelihood calculation to not load elements
     yet to be calculated (e.g. inverse covariance and simulated data vectors)
     by setting is_reference_likelihood = True.
     """
@@ -385,17 +382,3 @@ def generate_covariance(args_in):
     cov_calc.get_and_save_invcov()
 
     return model_calc, cov_calc
-
-
-if __name__ == '__main__':
-
-    CWD = os.getcwd()
-    args = {
-        'model_name': None,
-        'cosmo_par_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_par_file': CWD + '/inputs/cobaya_pars/ps_base.yaml',
-        'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': CWD + '/data/ps_base/',
-        'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase"
-    }
-    generate_covariance(args)

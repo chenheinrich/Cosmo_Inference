@@ -12,10 +12,10 @@ def input_args():
     CWD = os.getcwd()
     args = {
         'model_name': None,
-        'cosmo_par_file': CWD + '/inputs/cosmo_pars/planck2018_fiducial.yaml',
-        'cobaya_par_file': CWD + '/tests/unit_test_ps_base.yaml',
-        'survey_par_file': CWD + '/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
-        'output_dir': CWD + '/data/unit_test/ps_base/',
+        'cosmo_par_file': CWD + '/tests/inputs/cosmo_pars/planck2018_fiducial.yaml',
+        'cobaya_par_file': CWD + '/tests/inputs/cobaya_pars/ps_base.yaml',
+        'survey_par_file': CWD + '/tests/inputs/survey_pars/survey_pars_v28_base_cbe.yaml',
+        'output_dir': CWD + '/tests/data/ps_base/',
         'theory_name': "theories.base_classes.ps_base.ps_base.PowerSpectrumBase",
         'overwrite_covariance': False,
         'fix_default_bias': True,
@@ -46,7 +46,7 @@ def test_dictionaries(cov_calc):
     cov_calc.test_dictionaries_are_constructed_correctly()
 
 
-@pytest.mark.short
+@pytest.mark.long
 def test_cov_is_symmetric_exchanging_ips1_and_ips2(cov_calc):
     cov_calc.get_cov()
     cov_calc.test_cov_is_symmetric_exchanging_ips1_and_ips2()
