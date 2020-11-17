@@ -1,0 +1,9 @@
+run_name: 'single_bis'
+
+cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
+
+survey_par_file: './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
+
+data_spec: 
+
+plot_dir: './plots/theory/'
