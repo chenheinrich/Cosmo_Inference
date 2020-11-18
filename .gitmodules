@@ -1,0 +1,3 @@
+[submodule "theory/cosmo/CAMB"]
+	path = theory/cosmo/CAMB
+	url = https://github.com/cmbant/CAMB.git
