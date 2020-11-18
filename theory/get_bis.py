@@ -35,7 +35,7 @@ def main(config_file):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory/get_bis.py ./inputs_theory/single_bis.yaml 
+        python3 -m theory.get_bis ./inputs_theory/single_bis.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
