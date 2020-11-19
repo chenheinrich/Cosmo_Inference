@@ -30,6 +30,13 @@ class P3D(DataVector):
         
     def calculate(self):
         #TODO to be implemented: 
+        # use ps2d_specs to get z and k
+        z = [0, 0.1, 0.3]
+        k = [1e-4, 1e-3, 1e-2, 1e-1]
+        matter_power = self._grs_ingredients.get_matter_power_for_z_and_k(z, k)
+        print('matter_power = ', matter_power)
+
+
         self._galaxy_ps = None
 
     def get_galaxy_ps(self):

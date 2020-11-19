@@ -6,7 +6,7 @@ import os
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
 from theory.data_vector.data_spec import DataSpec
-from theory.data_vector.data_vector import DataVector
+from theory.data_vector.data_vector import DataVector, P3D, B3D
 
 def get_fn_data_vec(info):
     return os.path.join(info['plot_dir'], info['run_name'] + '.png')
@@ -28,7 +28,7 @@ def main(config_file):
     survey_par = SurveyPar(survey_par_file)
     data_spec = DataSpec(data_spec_dict)
 
-    data_vec = DataVector(cosmo_par, survey_par, data_spec)
+    data_vec = P3D(cosmo_par, survey_par, data_spec)
     data_vec.calculate()
     data_vec.save(fn_data_vec)
 
