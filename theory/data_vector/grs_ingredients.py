@@ -1,22 +1,28 @@
 
 from theory.cosmo.cosmo_product import CosmoProduct_FromCobayaProvider
 from theory.cosmo.cosmo_product import CosmoProduct_FromCamb
-from theory.cosmo.cosmo_calculator import CambCalculator
 
 #TODO do this last!
 
 class GRSIngredients(object):
 
-    def __init__(self, cosmo_par, survey_par):
+    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, data_spec):
+       
         self._cosmo_par = cosmo_par
+        self._cosmo_par_fid = cosmo_par_fid
         self._survey_par = survey_par
-        self._cosmo_product = self._get_cosmo_product()
+        self._data_spec = data_spec
 
-    def _get_cosmo_product(self):
-        return CosmoProduct_FromCamb(self._cosmo_par)
+        self._z = self._survey_par.get_zmid_array()
+        self._k = self._data_spec.get_k()
+        
+        self._cosmo = self._get_cosmo_product(self._cosmo_par, self._z)
 
-    #TODO might want to make cosmo_products getter part of GRSIngredients 
-    # getter too, so nobody knows about cosmo_products really.
+    def _get_cosmo_product(self, cosmo_par, z):
+        return CosmoProduct_FromCamb(cosmo_par, z)
+
+    #TODO might want to make cosmos getter part of GRSIngredients 
+    # getter too, so nobody knows about cosmos really.
     def get_b1(self):
         """
         docstring
@@ -29,23 +35,28 @@ class GRSIngredients(object):
         """
         pass
 
-    def get_matter_power_for_z_and_k(self, z, k):
-
-        self._cosmo_product.update_redshifts(z)
-
-        matter_power = self._cosmo_product.get_matter_power_for_z_and_k(z, k)
-        angular_diameter = self._cosmo_product.get_angular_diameter(z)
-        Hubble = self._cosmo_product.get_Hubble(z)
-        sigma8 = self._cosmo_product.get_sigma8(z)
-        f = self._cosmo_product.get_f(z)
-
-        print('angular_diameter', angular_diameter)
-        print('Hubble', Hubble)
-
-        print('sigma8', sigma8)
-        print('f', f)
-        
+    def get_matter_power(self):
+        matter_power = self._cosmo.get_matter_power_for_z_and_k(self._z, self._k)
         return matter_power
+
+    def get_AP(self):
+        D = self._cosmo.get_angular_diameter(self._z)
+        H = self._cosmo.get_Hubble(self._z)
+        
+        cosmo_fid = self._get_cosmo_product(self._cosmo_par_fid, self._z)
+        D_fid = cosmo_fid.get_angular_diameter(self._z)
+        H_fid = cosmo_fid.get_Hubble(self._z)
+
+        AP = (D_fid/D)**2 * (H/H_fid)
+        return AP
+
+    def _get_f(self):
+        f = self._cosmo.get_f(self._z)
+        return f
+
+    def _get_sigma8(self):
+        sigma8 = self._cosmo.get_sigma8(self._z)
+        return sigma8
 
     def _get_bnl(self):
         pass

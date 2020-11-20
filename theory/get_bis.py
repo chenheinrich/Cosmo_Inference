@@ -19,16 +19,18 @@ def main(config_file):
     print('info', info)
     
     cosmo_par_file = info['cosmo_par_file']
+    cosmo_par_fid_file = info['cosmo_par_fid_file']
     survey_par_file = info['survey_par_file']
     #TODO might want to just specify data_spec in a block 
     data_spec_dict = info['data_spec'] 
     fn_data_vec = get_fn_data_vec(info)
 
     cosmo_par = CosmoPar(cosmo_par_file)
+    cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
     survey_par = SurveyPar(survey_par_file)
     data_spec = DataSpec(data_spec_dict)
 
-    data_vec = P3D(cosmo_par, survey_par, data_spec)
+    data_vec = P3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     data_vec.calculate()
     data_vec.save(fn_data_vec)
 

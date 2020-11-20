@@ -1,6 +1,8 @@
 run_name: 'single_bis'
 
-cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
+cosmo_par_file: './inputs/cosmo_pars/planck2018_test.yaml'
+
+cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
 survey_par_file: './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
 

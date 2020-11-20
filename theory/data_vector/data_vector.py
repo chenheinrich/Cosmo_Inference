@@ -4,8 +4,9 @@ from theory.data_vector.data_spec import DataSpec
 
 class DataVector():
 
-    def __init__(self, cosmo_par, survey_par, data_spec):
+    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, data_spec):
         self._cosmo_par = cosmo_par
+        self._cosmo_par_fid = cosmo_par_fid
         self._survey_par = survey_par
         self._data_spec = data_spec
 
@@ -18,25 +19,26 @@ class DataVector():
         pass
 
     def _get_grs_ingredients(self):
-        grs_ing = GRSIngredients(self._cosmo_par, self._survey_par)
+        grs_ing = GRSIngredients(self._cosmo_par, self._cosmo_par_fid, self._survey_par, self._data_spec)
         return grs_ing
 
 
 class P3D(DataVector):
 
-    def __init__(self, cosmo_par, survey_par, ps3d_spec):
+    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, ps3d_spec):
         # TODO check that ps3d_spec is instance of the right child class?
-        super().__init__(cosmo_par, survey_par, ps3d_spec)
+        super().__init__(cosmo_par, cosmo_par_fid, survey_par, ps3d_spec)
         
     def calculate(self):
         #TODO to be implemented: 
-        # use ps2d_specs to get z and k
+        # use ps3d_specs to get z and k
         z = [0, 0.1, 0.3]
-        k = [1e-4, 1e-3, 1e-2, 1e-1]
-        matter_power = self._grs_ingredients.get_matter_power_for_z_and_k(z, k)
+        matter_power = self._grs_ingredients.get_matter_power()
         print('matter_power = ', matter_power)
 
-
+        ap = self._grs_ingredients.get_AP()
+        print('ap = ', ap)
+        
         self._galaxy_ps = None
 
     def get_galaxy_ps(self):
@@ -45,9 +47,9 @@ class P3D(DataVector):
 
 class B3D(DataVector):
 
-    def __init__(self, cosmo_par, survey_par, bs3d_spec):
+    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, bs3d_spec):
         # TODO check that bs3d_spec is instance of the right child class?
-       super().__init__(cosmo_par, survey_par, bs3d_spec)
+       super().__init__(cosmo_par, cosmo_par_fid, survey_par, bs3d_spec)
 
     def calculate(self):
         #TODO to be implemented: 
