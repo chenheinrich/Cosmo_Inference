@@ -1,6 +1,6 @@
 
 from theory.cosmo.cosmo_product import CosmoProduct_FromCobayaProvider
-from theory.cosmo.cosmo_product import CosmoProduct_FromCambCalculator
+from theory.cosmo.cosmo_product import CosmoProduct_FromCamb
 from theory.cosmo.cosmo_calculator import CambCalculator
 
 #TODO do this last!
@@ -13,9 +13,7 @@ class GRSIngredients(object):
         self._cosmo_product = self._get_cosmo_product()
 
     def _get_cosmo_product(self):
-        #TODO might need to place this somewhere else
-        camb_calc = CambCalculator(self._cosmo_par)
-        return CosmoProduct_FromCambCalculator(self._cosmo_par, camb_calc)
+        return CosmoProduct_FromCamb(self._cosmo_par)
 
     #TODO might want to make cosmo_products getter part of GRSIngredients 
     # getter too, so nobody knows about cosmo_products really.
@@ -32,12 +30,14 @@ class GRSIngredients(object):
         pass
 
     def get_matter_power_for_z_and_k(self, z, k):
-        matter_power = self._cosmo_product.get_matter_power_for_z_and_k(z, k)
-        angular_diameter = self._cosmo_product.get_angular_diameter_array(z)
-        Hubble = self._cosmo_product.get_Hubble_array(z)
 
-        sigma8 = self._cosmo_product.get_sigma8_array()
-        f = self._cosmo_product.get_f_array()
+        self._cosmo_product.update_redshifts(z)
+
+        matter_power = self._cosmo_product.get_matter_power_for_z_and_k(z, k)
+        angular_diameter = self._cosmo_product.get_angular_diameter(z)
+        Hubble = self._cosmo_product.get_Hubble(z)
+        sigma8 = self._cosmo_product.get_sigma8(z)
+        f = self._cosmo_product.get_f(z)
 
         print('angular_diameter', angular_diameter)
         print('Hubble', Hubble)
