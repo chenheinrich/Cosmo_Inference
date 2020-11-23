@@ -14,9 +14,10 @@ class GRSIngredients(object):
         self._data_spec = data_spec
 
         self._z = self._survey_par.get_zmid_array()
-        self._k = self._data_spec.get_k()
+        self._k = self._data_spec.k
         
         self._cosmo = self._get_cosmo_product(self._cosmo_par, self._z)
+        self._cosmo_fid = self._get_cosmo_product(self._cosmo_par_fid, self._z)
 
     def _get_cosmo_product(self, cosmo_par, z):
         return CosmoProduct_FromCamb(cosmo_par, z)
@@ -43,12 +44,16 @@ class GRSIngredients(object):
         D = self._cosmo.get_angular_diameter(self._z)
         H = self._cosmo.get_Hubble(self._z)
         
-        cosmo_fid = self._get_cosmo_product(self._cosmo_par_fid, self._z)
-        D_fid = cosmo_fid.get_angular_diameter(self._z)
-        H_fid = cosmo_fid.get_Hubble(self._z)
+        D_fid = self._cosmo_fid.get_angular_diameter(self._z)
+        H_fid = self._cosmo_fid.get_Hubble(self._z)
 
         AP = (D_fid/D)**2 * (H/H_fid)
         return AP
+
+    def _get_H0(self):
+        """Returns H0 in km/s/Mpc units."""
+        H0 = self._cosmo.get_H0()
+        return H0
 
     def _get_f(self):
         f = self._cosmo.get_f(self._z)

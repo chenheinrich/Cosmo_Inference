@@ -126,8 +126,8 @@ class PowerSpectrum3D(Theory):
     nsample = survey_par.get_nsample()
     params = get_params_for_survey_par(survey_par, fix_to_default=False)
 
-    nk = 1  # 21  # 211  # number of k points (to be changed into bins)
-    nmu = 1  # 5  # number of mu bins
+    nk = 2  # 21  # 211  # number of k points (to be changed into bins)
+    nmu = 2  # 5  # number of mu bins
 
     h = 0.68
     kmin = 1e-3 * h # in 1/Mpc
