@@ -120,9 +120,43 @@ class DataSpec():
     @property
     def nmu(self):
         return self._nmu
+    
+    def set_k_and_mu_actual(self, ap_perp, ap_para):
+        """Return four 3-d numpy arrays of shape (nz, nk, mu) 
+        for the actual values of k_perp, k_para, k and mu
+        given the two AP factors in directions perpendicular to 
+        and parallel to the line-of-sigh, ap_perp and ap_para, 
+        each specified as a 1-d numpy array of size self._d.size:
+            k_perp = k_perp|ref * D_A(z)|ref / D_A(z),
+            k_para = k_para|ref * (1/H(z))|ref / (1/H(z)),
+        where
+            k// = mu * k,
+            kperp = sqrt(k^2  - k//^2) = k sqrt(1 - mu^2).
+        """
         
+        assert ap_perp.shape == self._z.shape, (ap_perp.shape, self._z.shape)
+        assert ap_para.shape == self._z.shape, (ap_para.shape, self._z.shape)
 
+        k_perp_ref = self._k[:, np.newaxis] * \
+            np.sqrt(1. - (self._mu**2)[np.newaxis, :])
+        k_para_ref = self._k[:, np.newaxis] * self._mu[np.newaxis, :]
 
+        k_actual_perp = k_perp_ref[np.newaxis, :, :] * \
+            ap_perp[:, np.newaxis, np.newaxis]
+
+        k_actual_para = k_para_ref[np.newaxis, :, :] * \
+            ap_para[:, np.newaxis, np.newaxis]
+
+        k_actual = np.sqrt(k_actual_perp**2 + k_actual_para**2)
+
+        mu_actual = k_actual_para/k_actual
+
+        self._k_actual_perp = k_actual_perp
+        self._k_actual_para = k_actual_para
+        self._k_actual = k_actual
+        self._mu_actual = mu_actual
+
+    
     
 
 
