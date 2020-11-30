@@ -17,13 +17,16 @@ class DataSpec():
         self._survey_par = survey_par
         self._dict = data_spec_dict
         self._setup_specs()
-        self._setup_derived_specs
 
     def _setup_specs(self):
+
         self._setup_z()
         self._setup_sigz()
         self._setup_k()
         self._setup_mu()
+
+        self._setup_n()
+        self._setup_shape()
 
     def _setup_z(self):
         self._z = self._survey_par.get_zmid_array()
@@ -60,19 +63,15 @@ class DataSpec():
         assert self._mu.size == self._dmu.size, ('mu and dmu do not have the same size: {}, {}'.format(
             self._mu.size, self._dmu.size))
     
-    def _setup_derived_specs(self):
-        self._setup_n()
-        self._setup_shape()
-
     def _setup_n(self):
-        self._nsample = self._dict['nsample']
-        self._nps = int(self._dict['nsample'] * (self._dict['nsample'] + 1) / 2)
+        self._nsample = self._sigz.shape[0]
+        self._nps = int(self._nsample * (self._nsample + 1) / 2)
         self._nz = self._z.size
         self._nk = self._k.size
         self._nmu = self._mu.size
 
         assert self._nmu == self._dict['nmu']
-        assert self._nk == self._dict['nk'] - 1 #TODO to be changed so input nk means nkbin
+        assert self._nk == self._dict['nk'] #- 1 #TODO to be changed so input nk means nkbin
     
     def _setup_shape(self):
         self._shape = (self._nps, self._nz, self._nk, self._nmu)
@@ -121,40 +120,6 @@ class DataSpec():
     def nmu(self):
         return self._nmu
     
-    def set_k_and_mu_actual(self, ap_perp, ap_para):
-        """Return four 3-d numpy arrays of shape (nz, nk, mu) 
-        for the actual values of k_perp, k_para, k and mu
-        given the two AP factors in directions perpendicular to 
-        and parallel to the line-of-sigh, ap_perp and ap_para, 
-        each specified as a 1-d numpy array of size self._d.size:
-            k_perp = k_perp|ref * D_A(z)|ref / D_A(z),
-            k_para = k_para|ref * (1/H(z))|ref / (1/H(z)),
-        where
-            k// = mu * k,
-            kperp = sqrt(k^2  - k//^2) = k sqrt(1 - mu^2).
-        """
-        
-        assert ap_perp.shape == self._z.shape, (ap_perp.shape, self._z.shape)
-        assert ap_para.shape == self._z.shape, (ap_para.shape, self._z.shape)
-
-        k_perp_ref = self._k[:, np.newaxis] * \
-            np.sqrt(1. - (self._mu**2)[np.newaxis, :])
-        k_para_ref = self._k[:, np.newaxis] * self._mu[np.newaxis, :]
-
-        k_actual_perp = k_perp_ref[np.newaxis, :, :] * \
-            ap_perp[:, np.newaxis, np.newaxis]
-
-        k_actual_para = k_para_ref[np.newaxis, :, :] * \
-            ap_para[:, np.newaxis, np.newaxis]
-
-        k_actual = np.sqrt(k_actual_perp**2 + k_actual_para**2)
-
-        mu_actual = k_actual_para/k_actual
-
-        self._k_actual_perp = k_actual_perp
-        self._k_actual_para = k_actual_para
-        self._k_actual = k_actual
-        self._mu_actual = mu_actual
 
     
     
