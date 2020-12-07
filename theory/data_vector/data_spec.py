@@ -75,6 +75,7 @@ class DataSpec():
     
     def _setup_shape(self):
         self._shape = (self._nps, self._nz, self._nk, self._nmu)
+        self._transfer_shape = (self._nsample, self._nz, self._nk, self._nmu)
 
     @property
     def z(self):
@@ -103,6 +104,10 @@ class DataSpec():
     @property
     def shape(self):
         return self._shape
+    
+    @property
+    def transfer_shape(self):
+        return self._transfer_shape
 
     @property
     def nps(self):
@@ -119,10 +124,59 @@ class DataSpec():
     @property
     def nmu(self):
         return self._nmu
-    
 
+    @property
+    def nsample(self):
+        return self._nsample
     
-    
+    def get_k_actual_perp_and_para(self, ap_perp, ap_para, z=None):
+        """Return two 3-d numpy arrays of shape (nz, nk, mu) 
+        for the actual values of k_perp and k_para to line-of-sight,
+        given the two AP factors in directions perpendicular to 
+        and parallel to the line-of-sigh, ap_perp and ap_para, 
+        each specified as a 1-d numpy array of size self._d.size:
+            k_perp = k_perp|ref * D_A(z)|ref / D_A(z),
+            k_para = k_para|ref * (1/H(z))|ref / (1/H(z))
+        """
+        
+        if z is not None:
+            assert ap_perp.shape == z.shape, (ap_perp.shape, z.shape)
+            assert ap_para.shape == z.shape, (ap_para.shape, z.shape)
+
+        k_perp_ref = self.k[:, np.newaxis] * \
+            np.sqrt(1. - (self.mu**2)[np.newaxis, :])
+        k_para_ref = self.k[:, np.newaxis] * self.mu[np.newaxis, :]
+
+        k_actual_perp = k_perp_ref[np.newaxis, :, :] * \
+            ap_perp[:, np.newaxis, np.newaxis]
+
+        k_actual_para = k_para_ref[np.newaxis, :, :] * \
+            ap_para[:, np.newaxis, np.newaxis]
+
+        return (k_actual_perp, k_actual_para)
+
+    def get_k_and_mu_actual(self, ap_perp, ap_para, z=None):
+        """Return two 3-d numpy arrays of shape (nz, nk, mu) 
+        for the actual values of k and mu,
+        given the two AP factors in directions perpendicular to 
+        and parallel to the line-of-sigh, ap_perp and ap_para, 
+        each specified as a 1-d numpy array of size self._d.size:
+            k_perp = k_perp|ref * D_A(z)|ref / D_A(z),
+            k_para = k_para|ref * (1/H(z))|ref / (1/H(z)),
+        where
+            k// = mu * k,
+            kperp = sqrt(k^2  - k//^2) = k sqrt(1 - mu^2).
+        """
+        k_actual_perp, k_actual_para = self.get_k_actual_perp_and_para(ap_perp, ap_para, z=None)
+        
+        k_actual = np.sqrt(k_actual_perp**2 + k_actual_para**2)
+        mu_actual = k_actual_para/k_actual
+
+        return (k_actual, mu_actual)
+
+
+        
+        
 
 
 
