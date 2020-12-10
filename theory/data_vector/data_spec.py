@@ -176,7 +176,31 @@ class DataSpec():
 
 
         
-        
+class TriangleSpecs():
+
+    def __init__(self, nk):
+        self._nk = nk
+        self._dict_tri_tuple2index, self._tri_index_array \
+            = self._get_dict_tri_tuple2index_and_index2tuple()
+    
+    def get_dict_tri_tuple2index(self):
+        return self._dict_tri_tuple2index
+
+    def get_tri_index_array(self):
+        return self._tri_index_array
+
+    def _get_dict_tri_tuple2index_and_index2tuple(self, nk):
+        itri = 0
+        dict_tri_tuple2index = {}
+        tri_index_array = np.zeros((ntri, 3))
+        for ik1 in np.arange(nk):
+            for ik2 in np.arange(ik1, nk):   
+                for ik3 in np.arange(ik2, nk):
+                    # TODO compute whether ik3 satisfies triangle inequality
+                        itri = itri + 1
+                        dict_tri_tuple2index['%i, %i, %i'%(ik1, ik2, ik3)] = itri
+                        tri_index_array[itri] = [ik1, ik2, ik3]
+        return dict_tri_tuple2index, tri_index_array
 
 
 

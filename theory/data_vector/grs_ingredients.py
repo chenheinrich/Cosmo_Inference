@@ -35,6 +35,7 @@ class GRSIngredients(object):
             'gaussian_bias', \
             'AP', \
             'matter_power_with_AP',\
+            'matter_power_without_AP',\
             'kaiser', \
             'fog', \
             'fog_using_ref_cosmology'\
@@ -81,11 +82,11 @@ class GRSIngredients(object):
         """Returns alpha as 3-d numpy array with shape (nz, nk, nmu) """
 
         assert 'alpha' not in self._ingredients.keys()
-
-        expected_shape = self._d.shape[1:]
         
         initial_power = self._get_initial_power(self._k_actual)
         matter_power = self.get('matter_power_with_AP')
+
+        expected_shape = self._d.shape[1:]
 
         assert initial_power.shape == expected_shape, \
             (initial_power.shape, expected_shape)
@@ -155,6 +156,22 @@ class GRSIngredients(object):
                 p = self._get_matter_power_at_z_and_ks(zs[iz], ks[iz, :, imu])
                 matter_power[iz, :, imu] = p
         self._ingredients['matter_power_with_AP'] = matter_power
+
+    def _calc_matter_power_without_AP(self, nonlinear=False):
+        """ Returns 3-d numpy array of shape (nz, nk, nmu) for the matter power spectrum.
+        Default is linear matter power. Note that the power spectrum itself is evaluated 
+        at z, but the k also has a dependence on z and mu due to the AP factor varying 
+        with z and mu."""
+
+        assert 'matter_power_without_AP' not in self._ingredients.keys()
+
+        ks = self._d.k
+        zs = self._d.z
+        matter_power = np.zeros((zs.size, ks.size))
+        for iz in range(zs.size):
+            p = self._get_matter_power_at_z_and_ks(zs[iz], ks)
+            matter_power[iz, :] = p
+        self._ingredients['matter_power_without_AP'] = matter_power
 
     def _calc_kaiser(self):
         """Returns a 4-d numpy array of shape (nsample, nz, nk, nmu) for RSD Kaiser factor.
@@ -279,6 +296,17 @@ class GRSIngredients(object):
         initial_power = (2.0 * np.pi**2)/(k**3) * np.exp(initial_power)
         
         return initial_power
+
+    @staticmethod
+    def _get_dot_k1k2(k1, k2, k3):
+        return 0.5 * (-k1**2 - k2**2 + k3**2)
+
+    @staticmethod
+    def _get_F2(k1, k2, k3):  
+        cos = get_dot_k1k2(k1, k2, k3) / k1 / k2
+        ans = 5.0 / 7.0 + 0.5 * (k1 / k2 + k2 / k1) * cos + 2.0 / 7.0 * cos**2
+        return ans
+
 
     
     

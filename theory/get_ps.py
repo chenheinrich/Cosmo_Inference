@@ -27,23 +27,6 @@ def get_ps(info):
     galaxy_ps = data_vec.get('galaxy_ps')
     return galaxy_ps
 
-def get_bis(info):
-    
-    cosmo_par_file = info['cosmo_par_file']
-    cosmo_par_fid_file = info['cosmo_par_fid_file']
-    survey_par_file = info['survey_par_file']
-    data_spec_dict = info['Bispectrum3D'] 
-
-    cosmo_par = CosmoPar(cosmo_par_file)
-    cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
-
-    survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpec(survey_par, data_spec_dict)
-
-    data_vec = P3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
-    galaxy_bis = data_vec.get('galaxy_bis')
-    return galaxy_bis
-
 def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
