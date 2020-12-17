@@ -80,7 +80,8 @@ class B3D(DataVector):
         super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_spec)
 
         self._state = {}
-        self._allowed_names = ['galaxy_ps', 'galaxy_transfer']
+        self._allowed_names = ['galaxy_bis']
+        (self._ik1, self._ik2, self._ik3) = self._get_ik1_ik2_ik3()
         
     def get(self, name):
         if name in self._allowed_names:
@@ -90,77 +91,109 @@ class B3D(DataVector):
         else:
             raise NameNotAllowedError(name, self._allowed_names)
 
+    def _get_ik1_ik2_ik3(self):
+        self._triangle_specs = TriangleSpecs(self._data_spec.k)
+        return self._triangle_specs.get_ik1_ik2_ik3()
+
     def _calc_galaxy_bis(self):
-        galaxy_bis = np.zeros(self._data_spec.shape)
+        self._state['galaxy_bis'] = self._get_Bggg()  
+        #TODO deal with changing fnl later
+        # Leave like this for now, in case we want to only change fnl while keeping all else the same
+        # when doing quick analysis.
+        # think about how to make this useful for cobaya when only varying fnl and bias as well.
 
-        AP = self._grs_ingredients.get('AP')
-        matter_power = self._grs_ingredients.get('matter_power_with_AP')
-        galaxy_transfer = self.get('galaxy_transfer')
+    def _get_Bggg(self):
+        """3d numpy array of shape (nb, nz, ntri)"""
+    
+        nb = self._data_spec.nsample
+        nz = self._data_spec.nz
+        ntri = self._triangle_specs.ntri
 
-        print('AP = ', AP)
-
-        jj = 0
-        for j1 in range(self._data_spec.nsample):
-            for j2 in range(j1, self._data_spec.nsample):
-                galaxy_bis[jj] = AP[:, np.newaxis, np.newaxis] \
-                    * matter_power \
-                    * galaxy_transfer[j1, :, :, :] \
-                    * galaxy_transfer[j2, :, :, :]
-                jj = jj + 1
-        assert jj == self._data_spec.nps
-
-        self._state['galaxy_bis'] = galaxy_bis
-
-    @staticmethod
-    def get_matter_power_quadratic_permutations(matter_power, iz, ik1, ik2, ik3, imu1 = 0, imu2 = 0, imu3 = 0):
+        Bggg = np.zeros((nb, nz, ntri))
+        Bggg_b20 = np.zeros((nb, nz, ntri))
         
-        mp = matter_power[iz,:,:]
-        pk12 = mp[ik1, imu1] * mp[ik2, imu2]
-        pk23 = mp[ik2, imu3] * mp[ik2, imu3]
-        pk13 = mp[ik1, imu3] * mp[ik1, imu3]
+        for iz in range(self._data_spec.nz):
+            ib = 0
+            for isample1 in range(self._data_spec.nsample):
+                isample2 = isample1
+                isample3 = isample1 #TODO change to multi-tracer later
+                Bggg[ib, iz, :] =  self._get_Bggg_b10_at_iz(iz, isample1, isample2, isample3)
+                Bggg_b20[ib, iz, :] = self._get_Bggg_b20_at_iz(iz, isample1, isample2, isample3)
+                ib = ib + 1
+        
+        Bggg = Bggg + Bggg_b20
 
-        return pk12, pk23, pk13
+        return Bggg
 
-    def get_Bmmm_of_z_and_k(self, fnl):
-        #TODO figure out prefactors:
-        # prefac1 = (b_lin + nl1) * (b_lin + nl2) * (b_lin + nl3)
-        # use galaxy_bias to get b_lin+nl1
-        alpha = self._grs_ingredients.get('alpha') # shape = (nz, nk, nmu)
-        matter_power = self._grs_ingredients.get('matter_power_without_AP') # shape (nz, nk)
-        k = self._data_spec.k
+    def _get_Bggg_b10_at_iz(self, iz, isample1, isample2, isample3):
+        imu = 0 #TODO handle later
+        bias = self._grs_ingredients.get('galaxy_bias') 
+        Bmmm = self._get_Bmmm()
+        Bggg_b10 = Bmmm[iz, :] * bias[isample1, iz, self._ik1, imu] * bias[isample2, iz, self._ik2, imu] * bias[isample3, iz, self._ik3, imu]
+        return Bggg_b10
 
-        triangle_specs = TriangleSpecs(self._data_spec.nk)
-        tri_index_array = triangle_specs.get_tri_index_array()
-            
-        iz = 0 # TODO iterate over this
-        ik1 = tri_index_array[:,0]
-        ik2 = tri_index_array[:,1]
-        ik3 = tri_index_array[:,2]
+    def _get_Bggg_b20_at_iz(self, iz, isample1, isample2, isample3):
+        (pk12, pk23, pk13) = self._get_pk12_23_13(iz)
+        bias = self._grs_ingredients.get('galaxy_bias') 
+        bias_20 = self._grs_ingredients.get('galaxy_bias_20') 
+        
+        imu = 0 #TODO handle later
+        Bggg_b20 = bias[isample1, iz, self._ik1, imu] * \
+                        bias[isample2, iz, self._ik2, imu] * \
+                        bias_20[isample3, iz] * pk12  \
+                + bias[isample1, iz, self._ik1, imu] * \
+                        bias[isample3, iz, self._ik3, imu] * \
+                        bias_20[isample2, iz] * pk13 \
+                + bias[isample2, iz, self._ik2, imu] * \
+                        bias[isample3, iz, self._ik3, imu] * \
+                        bias_20[isample1, iz] * pk23 
+        
+        return Bggg_b20
+    
+    def _get_Bmmm_at_iz(self, iz):
+        """Matter bispectrum at redshift index iz: 1d numpy array of shape (ntri,)"""
 
-        pk12, pk23, pk13 = self.get_matter_power_quadratic_permutations(\
-            matter_power, iz, ik1, ik2, ik3) 
+        (pk12, pk23, pk13) = self._get_pk12_23_13(iz)
+        (alpha1, alpha2, alpha3) = self._get_alpha1_alpha2_alpha3(iz)
+        (k1_array, k2_array, k3_array) = self._get_k1_k2_k3_array(iz)
 
-        #TODO NEXT use above for get_F2 and alpha
-        #TODO get_F2(k, ik1, ik2, ik3); what about if RSD? think through this
-        t1 = 2.0 * (alpha3 / (alpha1 * alpha2)) * fnl + \
-            2.0 * get_F2(k1_array, k2_array, k3_array)
-        t2 = 2.0 * (alpha2 / (alpha1 * alpha3)) * fnl + \
-            2.0 * get_F2(k1_array, k3_array, k2_array)
-        t3 = 2.0 * (alpha1 / (alpha2 * alpha3)) * fnl + \
-            2.0 * get_F2(k2_array, k3_array, k1_array)
-        term1 = t1 * pk12 + t2 * pk13 + t3 * pk23
-        # TODO 
-        # TO CHECK: previously ans2 = prefac2 * (t1 * pmk1 * pmk2 + t2 * pmk1 * pmk3 + t3 * pmk2 * pmk3)
-        # factor of 2 missing here, c.f. Eq. 5.5, unless their b10 is different than
-        # Elisabeth's b2! --- CHECK LATER
-        Bmmm = term1  # + term2  (wrong do not need b20 term2 here here)
+        fnl = self._cosmo_par.fnl
+        t1 = 2.0 * fnl * alpha3 / (alpha1 * alpha2) + \
+                2.0 * self._grs_ingredients.get_F2(k1_array, k2_array, k3_array)
+        t2 = 2.0 * fnl * alpha2 / (alpha1 * alpha3) + \
+                2.0 * self._grs_ingredients.get_F2(k1_array, k3_array, k2_array)
+        t3 = 2.0 * fnl * alpha1 / (alpha2 * alpha3) + \
+                2.0 * self._grs_ingredients.get_F2(k2_array, k3_array, k1_array)
+        Bmmm = t1 * pk12 + t2 * pk13 + t3 * pk23
+        
         return Bmmm
 
+    def _get_Bmmm(self):
+        """2d numpy array of shape (nz, ntri)"""
+        Bmmm = np.array([self._get_Bmmm_at_iz(iz) for iz in range(self._data_spec.nz)])
+        return Bmmm
+    
+    def _get_pk12_23_13(self, iz):
+        matter_power = self._grs_ingredients.get('matter_power_with_AP') # shape (nz, nk)
+        (ik1, ik2, ik3) = self._triangle_specs.get_ik1_ik2_ik3()
+        pk12, pk23, pk13 = self._grs_ingredients.get_matter_power_quadratic_permutations(\
+            matter_power, iz, ik1, ik2, ik3) 
+        return pk12, pk23, pk13
 
-        #TODO stepping through k1, k2, k3 (eventually mu1, mu2, mu3)
-        # shape of Bggg: (nz, nk1=nk, nk2=nk-nk1, nk3=nk3(k1,k2))
-        # let Bggg be 1-dimensional for each z, so (nz, ntri)
-        # eventually when adding mu, can keep same form (nz, ntri)
-        # while really we got (nz, nk1, nmu1, nk2, nmu2, nk3, nmu3)
-        # if use only unique triangles w/ k3>=k2>=k1 and satisfying unique triangles
+    def _get_alpha1_alpha2_alpha3(self, iz):
 
+        imu = 0 #TODO to handle later
+        alpha = self._grs_ingredients.get('alpha') # shape = (nz, nk, nmu)
+
+        alpha1 = alpha[iz, self._ik1, imu]
+        alpha2 = alpha[iz, self._ik2, imu]
+        alpha3 = alpha[iz, self._ik3, imu]
+
+        return (alpha1, alpha2, alpha3)
+
+    def _get_k1_k2_k3_array(self, iz):
+        imu = 0 #TODO to handle later
+        k1_array = self._grs_ingredients.k_actual[iz, self._ik1, imu]
+        k2_array = self._grs_ingredients.k_actual[iz, self._ik2, imu]
+        k3_array = self._grs_ingredients.k_actual[iz, self._ik3, imu]
+        return (k1_array, k2_array, k3_array)

@@ -1,5 +1,4 @@
 import numpy as np
-
 class DataSpec():
 
     """
@@ -178,29 +177,75 @@ class DataSpec():
         
 class TriangleSpecs():
 
-    def __init__(self, nk):
-        self._nk = nk
-        self._dict_tri_tuple2index, self._tri_index_array \
-            = self._get_dict_tri_tuple2index_and_index2tuple()
+    def __init__(self, k):
+        self._k = k
+        self._nk = k.size
+        self._tri_dict_tuple2index, self._tri_index_array, self._tri_array, self._ntri \
+            = self._get_tri_info()
     
-    def get_dict_tri_tuple2index(self):
-        return self._dict_tri_tuple2index
+    @property
+    def ntri(self):
+        return self._ntri
+
+    def get_tri_dict_tuple2index(self):
+        return self._tri_dict_tuple2index
 
     def get_tri_index_array(self):
         return self._tri_index_array
 
-    def _get_dict_tri_tuple2index_and_index2tuple(self, nk):
+    def get_tri_array(self):
+        return self._tri_array
+
+    def get_ik1_ik2_ik3(self):
+        tri_index_array = self.get_tri_index_array()
+        ik1 = tri_index_array[:,0].astype(int)
+        ik2 = tri_index_array[:,1].astype(int)
+        ik3 = tri_index_array[:,2].astype(int)
+        return (ik1, ik2, ik3)
+
+    def _get_tri_info(self):
         itri = 0
-        dict_tri_tuple2index = {}
-        tri_index_array = np.zeros((ntri, 3))
+        nk = self._nk
+        k = self._k
+        
+        tri_dict_tuple2index = {}
+        tri_index_array = np.zeros((nk**3, 3))
+        tri_array = np.zeros((nk**3, 3))
+
         for ik1 in np.arange(nk):
             for ik2 in np.arange(ik1, nk):   
                 for ik3 in np.arange(ik2, nk):
-                    # TODO compute whether ik3 satisfies triangle inequality
-                        itri = itri + 1
-                        dict_tri_tuple2index['%i, %i, %i'%(ik1, ik2, ik3)] = itri
+
+                    k1 = k[ik1]
+                    k2 = k[ik2]
+                    k3_array = k
+                    ik3_range = self._get_ik3_range(k1, k2, k3_array)
+
+                    for ik3 in ik3_range:
+                        k3 = k3_array[ik3]
+                        tri_dict_tuple2index['%i, %i, %i'%(ik1, ik2, ik3)] = itri
                         tri_index_array[itri] = [ik1, ik2, ik3]
-        return dict_tri_tuple2index, tri_index_array
+                        tri_array[itri] = [k1, k2, k3]
+                        itri = itri + 1
+
+        ntri = itri
+        assert np.all(tri_index_array[ntri:-1, :] == 0)
+        tri_index_array = tri_index_array[:ntri, :]
+        tri_index_array = tri_index_array[:ntri, :]
+
+        return tri_dict_tuple2index, tri_index_array, tri_array, ntri
+
+    @staticmethod
+    def _get_ik3_range(k1, k2, k3_array):
+        ik3_min = np.min(np.where(k3_array >= k2))
+        ik3_max = np.max(np.where(k3_array <= (k1 + k2)))
+        ik3_array = np.arange(ik3_min, ik3_max+1)
+        k3min = np.min(k3_array[ik3_array])
+        k3max = np.max(k3_array[ik3_array])
+        assert k3max <= (k1+k2)  
+        assert k3min >= k2  
+        return ik3_array
+
 
 
 

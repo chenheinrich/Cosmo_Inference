@@ -40,8 +40,9 @@ def get_bis(info):
     survey_par = SurveyPar(survey_par_file)
     data_spec = DataSpec(survey_par, data_spec_dict)
 
-    data_vec = P3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    data_vec = B3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     galaxy_bis = data_vec.get('galaxy_bis')
+    print('galaxy_bis.shape = {}'.format(galaxy_bis.shape))
     return galaxy_bis
 
 def get_fn(info):
@@ -78,17 +79,6 @@ if __name__ == '__main__':
         info = yaml.load(file, Loader=yaml.FullLoader)
     print('info', info)
 
-    ps = get_ps(info)
+    bggg = get_bis(info)
     fn = get_fn(info)
-    file_tools.save_file_npy(fn, ps)
-
-    #TODO optional comparison
-    d1 = np.load(fn)
-    fn2 = './data/ps_base/ref.pickle'
-    results = pickle.load(open(fn2, "rb"))
-    d2 = results['galaxy_ps']
-    compare_galaxy_ps(d1, d2)
-
-    #TODO need to plot and make sure we can reproduce previous galaxy ps results + debug!
-    #TODO NEXT: need to add plotting routines and unit tests (from old module, that can be tested now)
-    
+    file_tools.save_file_npy(fn, bggg)

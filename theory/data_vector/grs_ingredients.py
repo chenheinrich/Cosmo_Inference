@@ -32,6 +32,7 @@ class GRSIngredients(object):
         self._allowed_ingredients = [\
             'alpha', \
             'galaxy_bias', \
+            'galaxy_bias_20', \
             'gaussian_bias', \
             'AP', \
             'matter_power_with_AP',\
@@ -52,6 +53,16 @@ class GRSIngredients(object):
     @property
     def allowed_ingredients(self):
         return self._allowed_ingredients
+
+    @property
+    def k_actual(self):
+        """3d numpy array of shape (nz, nk, nmu)"""
+        return self._k_actual
+
+    @property
+    def mu_actual(self):
+        """1d numpy array of shape (nmu)"""
+        return self._mu_actual
 
     def get(self, name):
         if name in self._allowed_ingredients:
@@ -121,6 +132,24 @@ class GRSIngredients(object):
         assert galaxy_bias.shape == expected_shape, msg
 
         self._ingredients['galaxy_bias'] = galaxy_bias
+
+    def _calc_galaxy_bias_20(self, fnl=None):
+        """Returns 2d numpy array of shape (nsample, nz) for second-order galaxy 
+        bias, a number for each galaxy sample and redshift
+        """
+        b1 = self.get('gaussian_bias')
+        b2 = self._get_b2_Lezeyras_2016_for_b1(b1)
+        self._ingredients['galaxy_bias_20'] = b2 
+
+    @staticmethod
+    def _get_b2_Lezeyras_2016_for_b1(b1):
+        """Returns b2 given b1 using GR fit from Lezeyras et al. 2016
+        https://arxiv.org/pdf/1511.01096.pdf Eq. 5.2 
+        (Also used in SPHEREx forecast) defined with 
+        delta_g(x) = b1 * delta_m(x) + 0.5 * b2 * delta_m^2(x).
+        """
+        b2 = 0.412 - 2.143 * b1 + 0.929 * b1 * b1 + 0.008 * b1 * b1 * b1
+        return b2
 
     def _calc_gaussian_bias(self):
         """"Returns a 2-d numpy array of shape (nsample, nz) for gaussian galaxy bias,
@@ -272,7 +301,7 @@ class GRSIngredients(object):
     def _get_initial_power(self, k):
         # TODO want to make sure this corresponds to the same as camb module
         """Returns 3-d numpy array of shape (nz, nk, nmu) of initial power spectrum 
-        evaluated at self.k_actual:
+        evaluated at self._k_actual:
 
         initial_power = (2pi^2)/k^3 * P,
         where ln P = ln A_s + (n_s-1) * ln(k/k_0_scalar) + n_{run}/2 * ln(k/k_0_scalar)^2 
@@ -298,14 +327,21 @@ class GRSIngredients(object):
         return initial_power
 
     @staticmethod
-    def _get_dot_k1k2(k1, k2, k3):
-        return 0.5 * (-k1**2 - k2**2 + k3**2)
-
-    @staticmethod
-    def _get_F2(k1, k2, k3):  
-        cos = get_dot_k1k2(k1, k2, k3) / k1 / k2
+    def get_F2(k1, k2, k3):  
+        dot_k1k2 = 0.5 * (-k1**2 - k2**2 + k3**2)
+        cos = dot_k1k2 / k1 / k2
         ans = 5.0 / 7.0 + 0.5 * (k1 / k2 + k2 / k1) * cos + 2.0 / 7.0 * cos**2
         return ans
+
+    @staticmethod
+    def get_matter_power_quadratic_permutations(matter_power, iz, ik1, ik2, ik3, imu1 = 0, imu2 = 0, imu3 = 0):
+        
+        mp = matter_power[iz,:,:]
+        pk12 = mp[ik1, imu1] * mp[ik2, imu2]
+        pk23 = mp[ik2, imu3] * mp[ik2, imu3]
+        pk13 = mp[ik1, imu3] * mp[ik1, imu3]
+
+        return pk12, pk23, pk13
 
 
     

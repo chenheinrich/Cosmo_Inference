@@ -1,4 +1,4 @@
-run_name: 'single_tracer_bis'
+run_name: 'ps'
 
 cosmo_par_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
@@ -6,7 +6,7 @@ cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
 survey_par_file: './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
 
-Bispectrum3D: 
+PowerSpectrum3D: 
   nk: 21 # number of k points (to be changed into bins)
   nmu: 5 # number of mu bins
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
