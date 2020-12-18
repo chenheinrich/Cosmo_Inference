@@ -4,7 +4,7 @@ cosmo_par_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
 cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
-survey_par_file: './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
+survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
 
 Bispectrum3D: 
   nk: 21 # number of k points (to be changed into bins)
