@@ -26,6 +26,7 @@ class DataSpec():
 
         self._setup_n()
         self._setup_shape()
+        self._setup_triangle_specs()
 
     def _setup_z(self):
         self._z = self._survey_par.get_zmid_array()
@@ -75,6 +76,9 @@ class DataSpec():
     def _setup_shape(self):
         self._shape = (self._nps, self._nz, self._nk, self._nmu)
         self._transfer_shape = (self._nsample, self._nz, self._nk, self._nmu)
+
+    def _setup_triangle_specs(self):
+        self._triangle_specs = TriangleSpecs(self._k)
 
     @property
     def z(self):
@@ -127,6 +131,10 @@ class DataSpec():
     @property
     def nsample(self):
         return self._nsample
+
+    @property
+    def triangle_specs(self):
+        return self._triangle_specs
     
     def get_k_actual_perp_and_para(self, ap_perp, ap_para, z=None):
         """Return two 3-d numpy arrays of shape (nz, nk, mu) 
@@ -180,24 +188,48 @@ class TriangleSpecs():
     def __init__(self, k):
         self._k = k
         self._nk = k.size
-        self._tri_dict_tuple2index, self._tri_index_array, self._tri_array, self._ntri \
+        self._tri_dict_tuple2index, self._tri_index_array, self._tri_array, self._ntri, \
+            self._indices_equilateral, self._indices_k2_equal_k3 \
             = self._get_tri_info()
     
     @property
     def ntri(self):
         return self._ntri
 
-    def get_tri_dict_tuple2index(self):
+    @property
+    def tri_dict_tuple2index(self):
         return self._tri_dict_tuple2index
 
-    def get_tri_index_array(self):
+    @property
+    def tri_index_array(self):
         return self._tri_index_array
 
-    def get_tri_array(self):
+    @property
+    def tri_array(self):
         return self._tri_array
 
+    @property
+    def indices_equilateral(self):
+        assert np.all(self._indices_equilateral == self.indices_equilateral2)
+        return self._indices_equilateral
+
+    @property
+    def indices_equilateral2(self):
+        (ik1, ik2, ik3) = self.get_ik1_ik2_ik3()
+        ind12 = np.where(ik1 == ik2)[0]
+        ind23 = np.where(ik2 == ik3)[0]
+        indices = [ind for ind in ind12 if ind in ind23] 
+        assert np.all(ik1[indices] == ik2[indices])
+        assert np.all(ik2[indices] == ik3[indices])
+        assert len(indices) == self._nk
+        return indices
+
+    @property
+    def indices_k2_equal_k3(self):
+        return self._indices_k2_equal_k3
+
     def get_ik1_ik2_ik3(self):
-        tri_index_array = self.get_tri_index_array()
+        tri_index_array = self.tri_index_array
         ik1 = tri_index_array[:,0].astype(int)
         ik2 = tri_index_array[:,1].astype(int)
         ik3 = tri_index_array[:,2].astype(int)
@@ -207,36 +239,51 @@ class TriangleSpecs():
         itri = 0
         nk = self._nk
         k = self._k
+
+        indices_equilateral = []
+        indices_k2_equal_k3 = []
         
         tri_dict_tuple2index = {}
         tri_index_array = np.zeros((nk**3, 3))
         tri_array = np.zeros((nk**3, 3))
 
         for ik1 in np.arange(nk):
+
+            indices_equilateral.append(itri)
+
             for ik2 in np.arange(ik1, nk):   
-                for ik3 in np.arange(ik2, nk):
+                
+                indices_k2_equal_k3.append(itri)
+                
+                k1 = k[ik1]
+                k2 = k[ik2]
+                k3_array = k
+                ik3_range = self._get_ik3_range_satisfying_triangle_inequality(k1, k2, k3_array)
 
-                    k1 = k[ik1]
-                    k2 = k[ik2]
-                    k3_array = k
-                    ik3_range = self._get_ik3_range(k1, k2, k3_array)
+                for ik3 in ik3_range:
 
-                    for ik3 in ik3_range:
-                        k3 = k3_array[ik3]
-                        tri_dict_tuple2index['%i, %i, %i'%(ik1, ik2, ik3)] = itri
-                        tri_index_array[itri] = [ik1, ik2, ik3]
-                        tri_array[itri] = [k1, k2, k3]
-                        itri = itri + 1
+                    k3 = k3_array[ik3]
+                    tri_dict_tuple2index['%i, %i, %i'%(ik1, ik2, ik3)] = itri
+                    tri_index_array[itri] = [ik1, ik2, ik3]
+                    tri_array[itri] = [k1, k2, k3]
+                    itri = itri + 1
 
         ntri = itri
         assert np.all(tri_index_array[ntri:-1, :] == 0)
         tri_index_array = tri_index_array[:ntri, :]
         tri_index_array = tri_index_array[:ntri, :]
 
-        return tri_dict_tuple2index, tri_index_array, tri_array, ntri
+        print('indices_steppint_in_k2', indices_k2_equal_k3)
+        print('tri_array[indices_k2_equal_k3,:]', tri_array[indices_k2_equal_k3,:])
+        print(len(indices_k2_equal_k3))
+        
+        assert len(indices_k2_equal_k3) == self._nk * (self._nk + 1)/2, \
+            (len(indices_k2_equal_k3), self._nk * (self._nk + 1)/2)
+        
+        return tri_dict_tuple2index, tri_index_array, tri_array, ntri, indices_equilateral, indices_k2_equal_k3
 
     @staticmethod
-    def _get_ik3_range(k1, k2, k3_array):
+    def _get_ik3_range_satisfying_triangle_inequality(k1, k2, k3_array):
         ik3_min = np.min(np.where(k3_array >= k2))
         ik3_max = np.max(np.where(k3_array <= (k1 + k2)))
         ik3_array = np.arange(ik3_min, ik3_max+1)
