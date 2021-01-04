@@ -86,7 +86,10 @@ class B3D(DataVector):
     def get(self, name):
         if name in self._allowed_names:
             if name not in self._state.keys():
-                getattr(self, '_calc_'+name)()
+                if name in ['Bggg_b10', 'Bggg_b20']:
+                    getattr(self, '_calc_'+'galaxy_bis')() 
+                else:
+                    getattr(self, '_calc_'+name)() 
             return self._state[name]
         else:
             raise NameNotAllowedError(name, self._allowed_names)
@@ -197,3 +200,19 @@ class B3D(DataVector):
         k2_array = self._grs_ingredients.k_actual[iz, self._ik2, imu]
         k3_array = self._grs_ingredients.k_actual[iz, self._ik3, imu]
         return (k1_array, k2_array, k3_array)
+
+    def get_expected_Bggg_b10_equilateral_triangles_single_tracer(self, isample=0, iz=0, imu=0):
+        """Returns a 1D numpy array for expected value of Bggg b10 terms 
+        for equilateral triangles in single tracer specified by isample."""
+
+        matter_power = self._grs_ingredients.get('matter_power_with_AP')
+        Pm = matter_power[iz, :, imu]
+        
+        bias = self._grs_ingredients.get('galaxy_bias') 
+        b = bias[isample, iz, :, imu]
+        
+        F2_equilateral = 0.2857142857142857
+        Bmmm_equilateral = 3.0 * (2.0 * F2_equilateral * Pm ** 2)
+        Bggg_b10_equilateral_triangles_single_tracer = b ** 3 * Bmmm_equilateral 
+
+        return Bggg_b10_equilateral_triangles_single_tracer

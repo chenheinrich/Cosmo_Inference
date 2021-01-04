@@ -27,11 +27,15 @@ class BisPlotter():
             
 
     def _run_checks(self):
-        self._check_cyclic_permutation_of_tracers()
+        
+        self._check_cyclic_permutation_of_tracers_are_different()
+        
         k_peak = self._get_k_at_peak_of_Bggg_b10_equilateral_triangles()
+        print('k_peak = {}'.format(k_peak))
+
         self._check_Bggg_b10_equilateral_triangles()
 
-    def _check_cyclic_permutation_of_tracers(self):
+    def _check_cyclic_permutation_of_tracers_are_different(self):
         iz = 0
         ib1 =  self._data_spec.dict_isamples_to_ib['0_0_1']
         ib2 =  self._data_spec.dict_isamples_to_ib['0_1_0']
@@ -46,35 +50,29 @@ class BisPlotter():
         frac_diff = diff[ind]/self._d[ib1, iz, ind]
         print('frac diff at max abs diff for B001 - B010:', frac_diff)
 
-    def _get_k_at_peak_of_Bggg_b10_equilateral_triangles(self):
+    def _get_k_at_peak_of_Bggg_b10_equilateral_triangles(self, iz=0):
+        
         ib1 = self._data_spec.dict_isamples_to_ib['0_0_0']
-        iz = 0
         indices_equilateral = self._data_spec.triangle_specs.indices_equilateral
         Bggg_b10 = self._d1[ib1, iz, indices_equilateral]
+        
         ind = np.where(Bggg_b10 == np.max(Bggg_b10))[0]
         k_peak = self._data_spec.k[ind]
-        print('k_peak = {}'.format(k_peak))
+        
         return k_peak
 
     def _check_Bggg_b10_equilateral_triangles(self, isample=0, iz=0, imu=0):
         
-        matter_power = self._data_vec._grs_ingredients.get('matter_power_with_AP')
-        Pm = matter_power[iz, :, imu]
-        
-        bias = self._data_vec._grs_ingredients.get('galaxy_bias') 
-        b = bias[isample, iz, :, imu]
-        
-        F2_equilateral = 0.2857142857142857
-        Bmmm_equilateral = 3.0 * (2.0 * F2_equilateral * Pm ** 2)
-        Bggg_b10_check = b ** 3 * Bmmm_equilateral 
+        expected = self._data_vec.get_expected_Bggg_b10_equilateral_triangles_single_tracer(
+            isample=0, iz=0, imu=0)
 
         ibis = self._data_spec.dict_isamples_to_ib['%i_%i_%i'%(isample, isample, isample)]
         indices_equilateral = self._data_spec.triangle_specs.indices_equilateral
         Bggg_b10_equilateral = self._d1[ibis, iz, indices_equilateral]
         
-        assert np.allclose(Bggg_b10_equilateral, Bggg_b10_check)
-        print((Bggg_b10_check - Bggg_b10_equilateral)/Bggg_b10_equilateral)
-
+        print((expected - Bggg_b10_equilateral)/Bggg_b10_equilateral)
+        assert np.allclose(Bggg_b10_equilateral, expected)
+        
 
     def _plot_galaxy_bis(self, ib):
 

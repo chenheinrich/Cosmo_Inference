@@ -331,7 +331,9 @@ class GRSIngredients(object):
         dot_k1k2 = 0.5 * (-k1**2 - k2**2 + k3**2)
         cos = dot_k1k2 / k1 / k2
         ans = 5.0 / 7.0 + 0.5 * (k1 / k2 + k2 / k1) * cos + 2.0 / 7.0 * cos**2
-        return ans
+        #HACK 
+        return 1.0
+        #return ans
 
     @staticmethod
     def get_matter_power_quadratic_permutations(matter_power, iz, ik1, ik2, ik3, imu1 = 0, imu2 = 0, imu3 = 0):
