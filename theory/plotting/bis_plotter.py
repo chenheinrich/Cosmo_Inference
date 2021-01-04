@@ -6,14 +6,14 @@ from theory.utils import file_tools
 
 class BisPlotter():
     
-    def __init__(self, data_vec, data_spec, d2=None):
+    def __init__(self, data_vec, data_spec, d2=None, plot_dir='./plots/theory/bispectrum/'):
         self._d = data_vec.get('galaxy_bis')
         self._d1 = data_vec.get('Bggg_b10')
         self._d2 = data_vec.get('Bggg_b20')
         self._data_spec = data_spec
         self._data_vec = data_vec
 
-        self._plot_dir = './plots/theory/bispectrum/F2_set_to_1/'
+        self._plot_dir = plot_dir
         file_tools.mkdir_p(self._plot_dir)
 
     def make_plots(self):

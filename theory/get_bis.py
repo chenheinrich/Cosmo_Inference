@@ -61,5 +61,5 @@ if __name__ == '__main__':
     file_tools.save_file_npy(fn, data_vec.get('galaxy_bis'))
 
     data_spec = get_data_spec(info)
-    bis_plotter = BisPlotter(data_vec, data_spec)
+    bis_plotter = BisPlotter(data_vec, data_spec, plot_dir=info['plot_dir'])
     bis_plotter.make_plots()
