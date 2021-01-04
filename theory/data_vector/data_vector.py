@@ -80,7 +80,7 @@ class B3D(DataVector):
         super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_spec)
 
         self._state = {}
-        self._allowed_names = ['galaxy_bis']
+        self._allowed_names = ['galaxy_bis', 'Bggg_b10', 'Bggg_b20']
         (self._ik1, self._ik2, self._ik3) = self._get_ik1_ik2_ik3()
         
     def get(self, name):
@@ -96,32 +96,29 @@ class B3D(DataVector):
         return self._triangle_specs.get_ik1_ik2_ik3()
 
     def _calc_galaxy_bis(self):
-        self._state['galaxy_bis'] = self._get_Bggg()  
-        #TODO deal with changing fnl later
-        # Leave like this for now, in case we want to only change fnl while keeping all else the same
-        # when doing quick analysis.
-        # think about how to make this useful for cobaya when only varying fnl and bias as well.
+        b10 = self._get_Bggg(term_name='b10')  
+        b20 = self._get_Bggg(term_name='b20')  
+        self._state['galaxy_bis'] = b10 + b20
+        self._state['Bggg_b10'] = b10
+        self._state['Bggg_b20'] = b20
+        #TODO think about how to make this useful for cobaya when only varying fnl and bias as well.
 
-    def _get_Bggg(self):
+    def _get_Bggg(self, term_name='b10'):
         """3d numpy array of shape (nb, nz, ntri)"""
     
-        nb = self._data_spec.nsample
+        nb = self._data_spec.nsample**3
         nz = self._data_spec.nz
         ntri = self._triangle_specs.ntri
 
         Bggg = np.zeros((nb, nz, ntri))
-        Bggg_b20 = np.zeros((nb, nz, ntri))
         
         for iz in range(self._data_spec.nz):
             ib = 0
             for isample1 in range(self._data_spec.nsample):
-                isample2 = isample1
-                isample3 = isample1 #TODO change to multi-tracer later
-                Bggg[ib, iz, :] =  self._get_Bggg_b10_at_iz(iz, isample1, isample2, isample3)
-                Bggg_b20[ib, iz, :] = self._get_Bggg_b20_at_iz(iz, isample1, isample2, isample3)
-                ib = ib + 1
-        
-        Bggg = Bggg + Bggg_b20
+                for isample2 in range(self._data_spec.nsample):
+                    for isample3 in range(self._data_spec.nsample):
+                        Bggg[ib, iz, :] =  getattr(self, '_get_Bggg_' + term_name + '_at_iz')(iz, isample1, isample2, isample3)
+                        ib = ib + 1
 
         return Bggg
 
@@ -138,15 +135,18 @@ class B3D(DataVector):
         bias_20 = self._grs_ingredients.get('galaxy_bias_20') 
         
         imu = 0 #TODO handle later
-        Bggg_b20 = bias[isample1, iz, self._ik1, imu] * \
-                        bias[isample2, iz, self._ik2, imu] * \
-                        bias_20[isample3, iz] * pk12  \
-                + bias[isample1, iz, self._ik1, imu] * \
-                        bias[isample3, iz, self._ik3, imu] * \
-                        bias_20[isample2, iz] * pk13 \
-                + bias[isample2, iz, self._ik2, imu] * \
-                        bias[isample3, iz, self._ik3, imu] * \
-                        bias_20[isample1, iz] * pk23 
+        Bggg_b20 = bias[isample1, iz, self._ik1, imu] \
+                        * bias[isample2, iz, self._ik2, imu] \
+                        * bias_20[isample3, iz] \
+                        * pk12 \
+                + bias[isample1, iz, self._ik1, imu] \
+                        * bias_20[isample2, iz] \
+                        * bias[isample3, iz, self._ik3, imu] \
+                        * pk13 \
+                + bias_20[isample1, iz] \
+                        * bias[isample2, iz, self._ik2, imu] \
+                        * bias[isample3, iz, self._ik3, imu] \
+                        * pk23 
         
         return Bggg_b20
     

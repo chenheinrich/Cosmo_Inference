@@ -338,8 +338,8 @@ class GRSIngredients(object):
         
         mp = matter_power[iz,:,:]
         pk12 = mp[ik1, imu1] * mp[ik2, imu2]
-        pk23 = mp[ik2, imu3] * mp[ik2, imu3]
-        pk13 = mp[ik1, imu3] * mp[ik1, imu3]
+        pk23 = mp[ik2, imu2] * mp[ik3, imu3]
+        pk13 = mp[ik1, imu1] * mp[ik3, imu3]
 
         return pk12, pk23, pk13
 

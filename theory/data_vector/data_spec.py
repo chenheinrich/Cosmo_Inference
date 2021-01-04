@@ -181,8 +181,47 @@ class DataSpec():
 
         return (k_actual, mu_actual)
 
+class DataSpecBispectrum(DataSpec):
 
+    def __init__(self, survey_par, data_spec_dict):
+        super().__init__(survey_par, data_spec_dict)
+        self._dict_isamples_to_ib, self._dict_ib_to_isamples, self._nb = \
+            self._get_multi_tracer_config_all(self.nsample) 
+    
+    @property
+    def nb(self):
+        return self._nb
         
+    @property
+    def dict_isamples_to_ib(self):
+        """Returns an integer for ib (the bispectrum index) given a string 
+        of the form '%i_%i_%i'%(isample1, isample2, isample3)
+        """
+        return self._dict_isamples_to_ib
+
+    @property
+    def dict_ib_to_isamples(self):
+        """Returns a tuple (isample1, isample2, isample3) given ib, 
+        the bispectrum index
+        """
+        return self._dict_ib_to_isamples
+
+    @staticmethod
+    def _get_multi_tracer_config_all(nsample):
+        dict_isamples_to_ib = {}
+        dict_ib_to_isamples = {}
+        ib = 0
+        for isample1 in range(nsample):
+            for isample2 in range(nsample):
+                for isample3 in range(nsample):
+                    dict_isamples_to_ib['%i_%i_%i'%(isample1, isample2, isample3)] = ib
+                    dict_ib_to_isamples['%i'%ib] = (isample1, isample2, isample3)
+                    ib = ib + 1
+        nb = nsample**3 #TODO need to treat self._nps in power spectrum version
+        assert ib == nb
+        
+        return dict_isamples_to_ib, dict_ib_to_isamples, nb
+
 class TriangleSpecs():
 
     def __init__(self, k):
@@ -270,13 +309,10 @@ class TriangleSpecs():
 
         ntri = itri
         assert np.all(tri_index_array[ntri:-1, :] == 0)
+
         tri_index_array = tri_index_array[:ntri, :]
         tri_index_array = tri_index_array[:ntri, :]
 
-        print('indices_steppint_in_k2', indices_k2_equal_k3)
-        print('tri_array[indices_k2_equal_k3,:]', tri_array[indices_k2_equal_k3,:])
-        print(len(indices_k2_equal_k3))
-        
         assert len(indices_k2_equal_k3) == self._nk * (self._nk + 1)/2, \
             (len(indices_k2_equal_k3), self._nk * (self._nk + 1)/2)
         
