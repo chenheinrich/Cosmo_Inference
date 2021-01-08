@@ -21,7 +21,6 @@ from theory.get_bis import get_data_vec_bis, get_data_spec
 data_vec = get_data_vec_bis(info)
 data_spec = get_data_spec(info)
 
-@pytest.mark.long
 @pytest.mark.parametrize("data_vec, data_spec, isample, iz, imu", \
     [
     (data_vec, data_spec, 0, 0, 0), \
@@ -45,7 +44,6 @@ def get_Bggg_b10_equilateral_triangles_single_tracer(data_vec, data_spec, isampl
     
     return ans
 
-@pytest.mark.long
 @pytest.mark.parametrize("data_vec, data_spec, isample1, isample2, isample3, iz, imu, itri", \
     [
     (data_vec, data_spec, 0, 1, 2, 0, 0, 0), \
@@ -63,7 +61,6 @@ def test_Bggg_b10_general_triangles_multi_tracer(data_vec, data_spec, isample1, 
     
     assert np.allclose(answer, expected)
 
-@pytest.mark.long
 @pytest.mark.parametrize("data_vec, data_spec, isample1, isample2, isample3, iz, imu, itri", \
     [
     (data_vec, data_spec, 0, 4, 2, 5, 0, None), \
@@ -80,7 +77,6 @@ def test_Bggg_b20_general_triangles_multi_tracer(data_vec, data_spec, isample1, 
     
     assert np.allclose(answer, expected)
 
-@pytest.mark.long
 @pytest.mark.parametrize("data_vec, data_spec, isample1, isample2, isample3, iz, imu, itri, expected", \
     [
     (data_vec, data_spec, 0, 4, 2, 5, 0, 3, 772698575.5929023), \
