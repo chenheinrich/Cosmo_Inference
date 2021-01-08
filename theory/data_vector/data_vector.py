@@ -1,7 +1,7 @@
 import numpy as np
 
 from theory.data_vector.grs_ingredients import GRSIngredients
-from theory.data_vector.data_spec import DataSpec, TriangleSpecs
+from theory.data_vector.data_spec import DataSpec, TriangleSpec
 from theory.utils.errors import NameNotAllowedError
 
 class DataVector():
@@ -95,8 +95,8 @@ class B3D(DataVector):
             raise NameNotAllowedError(name, self._allowed_names)
 
     def _get_ik1_ik2_ik3(self):
-        self._triangle_specs = TriangleSpecs(self._data_spec.k)
-        return self._triangle_specs.get_ik1_ik2_ik3()
+        self._triangle_spec = TriangleSpec(self._data_spec.k)
+        return self._triangle_spec.get_ik1_ik2_ik3()
 
     def _calc_galaxy_bis(self):
         b10 = self._get_Bggg(term_name='b10')  
@@ -111,7 +111,7 @@ class B3D(DataVector):
     
         nb = self._data_spec.nsample**3
         nz = self._data_spec.nz
-        ntri = self._triangle_specs.ntri
+        ntri = self._triangle_spec.ntri
 
         Bggg = np.zeros((nb, nz, ntri))
         
@@ -178,7 +178,7 @@ class B3D(DataVector):
     
     def _get_pk12_23_13(self, iz):
         matter_power = self._grs_ingredients.get('matter_power_with_AP') # shape (nz, nk)
-        (ik1, ik2, ik3) = self._triangle_specs.get_ik1_ik2_ik3()
+        (ik1, ik2, ik3) = self._triangle_spec.get_ik1_ik2_ik3()
         pk12, pk23, pk13 = self._grs_ingredients.get_matter_power_quadratic_permutations(\
             matter_power, iz, ik1, ik2, ik3) 
         return pk12, pk23, pk13
@@ -210,9 +210,102 @@ class B3D(DataVector):
         
         bias = self._grs_ingredients.get('galaxy_bias') 
         b = bias[isample, iz, :, imu]
+
+        alpha = self._grs_ingredients.get('alpha') 
+        imu = 0 # TODO handle later
+        alpha1 = alpha[iz, np.arange(self._data_spec.nk), imu]
+
+        fnl = self._cosmo_par.fnl
         
         F2_equilateral = 0.2857142857142857
         Bmmm_equilateral = 3.0 * (2.0 * F2_equilateral * Pm ** 2)
+        Bmmm_equilateral += 3.0 * (2.0 * fnl / alpha1 * Pm ** 2)
+        
         Bggg_b10_equilateral_triangles_single_tracer = b ** 3 * Bmmm_equilateral 
 
         return Bggg_b10_equilateral_triangles_single_tracer
+
+    def get_expected_Bggg_b10_general_triangles_multi_tracer(self, \
+        isample1, isample2, isample3, iz, itri=None, imu=0): 
+
+        if itri is None:
+            ik1 = self._ik1
+            ik2 = self._ik2
+            ik3 = self._ik3
+        else:
+            iks = self._triangle_spec.tri_index_array[itri]
+            ik1 = iks[0]
+            ik2 = iks[1]
+            ik3 = iks[2]
+
+        bias = self._grs_ingredients.get('galaxy_bias') 
+        b_g1 = bias[isample1, iz, ik1, imu] 
+        b_g2 = bias[isample2, iz, ik2, imu] 
+        b_g3 = bias[isample3, iz, ik3, imu]
+
+        matter_power = self._grs_ingredients.get('matter_power_with_AP')
+        Pm = matter_power[iz, :, imu]
+        pk12 = Pm[ik1] * Pm[ik2] 
+        pk23 = Pm[ik2] * Pm[ik3]
+        pk13 = Pm[ik1] * Pm[ik3]
+
+        alpha = self._grs_ingredients.get('alpha') # shape = (nz, nk, nmu)
+        alpha1 = alpha[iz, ik1, imu]
+        alpha2 = alpha[iz, ik2, imu]
+        alpha3 = alpha[iz, ik3, imu]
+
+        k1_array = self._data_spec.k[ik1]
+        k2_array = self._data_spec.k[ik2]
+        k3_array = self._data_spec.k[ik3]
+
+        fnl = self._cosmo_par.fnl
+        t1 = 2.0 * fnl * alpha3 / (alpha1 * alpha2) + \
+                2.0 * self._grs_ingredients.get_F2(k1_array, k2_array, k3_array)
+        t2 = 2.0 * fnl * alpha2 / (alpha1 * alpha3) + \
+                2.0 * self._grs_ingredients.get_F2(k1_array, k3_array, k2_array)
+        t3 = 2.0 * fnl * alpha1 / (alpha2 * alpha3) + \
+                2.0 * self._grs_ingredients.get_F2(k2_array, k3_array, k1_array)
+        Bmmm = t1 * pk12 + t2 * pk13 + t3 * pk23
+
+        Bggg_b10 = Bmmm * b_g1 * b_g2 * b_g3
+
+        return Bggg_b10
+    
+    def get_expected_Bggg_b20_general_triangles_multi_tracer(self, \
+        isample1, isample2, isample3, iz, itri=None, imu=0): 
+
+        if itri is None:
+            ik1 = self._ik1
+            ik2 = self._ik2
+            ik3 = self._ik3
+        else:
+            iks = self._triangle_spec.tri_index_array[itri]
+            ik1 = iks[0]
+            ik2 = iks[1]
+            ik3 = iks[2]
+
+        bias = self._grs_ingredients.get('galaxy_bias') 
+        bias_20 = self._grs_ingredients.get('galaxy_bias_20') 
+
+        matter_power = self._grs_ingredients.get('matter_power_with_AP')
+        Pm = matter_power[iz, :, imu]
+        pk12 = Pm[ik1] * Pm[ik2] 
+        pk23 = Pm[ik2] * Pm[ik3]
+        pk13 = Pm[ik1] * Pm[ik3]
+        
+        Bggg_b20 = bias[isample1, iz, ik1, imu] \
+                        * bias[isample2, iz, ik2, imu] \
+                        * bias_20[isample3, iz] \
+                        * pk12 \
+                + bias[isample1, iz, ik1, imu] \
+                        * bias_20[isample2, iz] \
+                        * bias[isample3, iz, ik3, imu] \
+                        * pk13 \
+                + bias_20[isample1, iz] \
+                        * bias[isample2, iz, ik2, imu] \
+                        * bias[isample3, iz, ik3, imu] \
+                        * pk23 
+
+        return Bggg_b20
+        
+

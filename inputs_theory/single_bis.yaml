@@ -1,4 +1,4 @@
-run_name: 'single_tracer_bis'
+run_name: 'multi_tracer_bis'
 
 cosmo_par_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
@@ -12,4 +12,4 @@ Bispectrum3D:
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
 
-plot_dir: './plots/theory/bispectrum/F2_set_to_1'
+plot_dir: './plots/theory/bispectrum/fnl_0/'

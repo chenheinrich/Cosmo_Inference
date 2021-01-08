@@ -26,7 +26,7 @@ class DataSpec():
 
         self._setup_n()
         self._setup_shape()
-        self._setup_triangle_specs()
+        self._setup_triangle_spec()
 
     def _setup_z(self):
         self._z = self._survey_par.get_zmid_array()
@@ -77,8 +77,8 @@ class DataSpec():
         self._shape = (self._nps, self._nz, self._nk, self._nmu)
         self._transfer_shape = (self._nsample, self._nz, self._nk, self._nmu)
 
-    def _setup_triangle_specs(self):
-        self._triangle_specs = TriangleSpecs(self._k)
+    def _setup_triangle_spec(self):
+        self._triangle_spec = TriangleSpec(self._k)
 
     @property
     def z(self):
@@ -133,8 +133,8 @@ class DataSpec():
         return self._nsample
 
     @property
-    def triangle_specs(self):
-        return self._triangle_specs
+    def triangle_spec(self):
+        return self._triangle_spec
     
     def get_k_actual_perp_and_para(self, ap_perp, ap_para, z=None):
         """Return two 3-d numpy arrays of shape (nz, nk, mu) 
@@ -222,7 +222,7 @@ class DataSpecBispectrum(DataSpec):
         
         return dict_isamples_to_ib, dict_ib_to_isamples, nb
 
-class TriangleSpecs():
+class TriangleSpec():
 
     def __init__(self, k):
         self._k = k
@@ -283,7 +283,7 @@ class TriangleSpecs():
         indices_k2_equal_k3 = []
         
         tri_dict_tuple2index = {}
-        tri_index_array = np.zeros((nk**3, 3))
+        tri_index_array = np.zeros((nk**3, 3), dtype=int)
         tri_array = np.zeros((nk**3, 3))
 
         for ik1 in np.arange(nk):
