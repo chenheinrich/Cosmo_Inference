@@ -99,8 +99,7 @@ class BisPlotter():
 
     def _plot_galaxy_bis(self, ib):
 
-        #izs = np.arange(0, self._data_spec.nz, 10)
-        izs = [3,4]
+        izs = np.arange(0, self._data_spec.nz, 10)
 
         y_list = [self._d1[ib, iz, :] for iz in izs]
         y_list2 = [self._d2[ib, iz, :] for iz in izs]

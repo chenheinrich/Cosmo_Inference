@@ -53,10 +53,10 @@ def get_Bggg_b10_equilateral_triangles_single_tracer(data_vec, data_spec, isampl
 )
 def test_Bggg_b10_general_triangles_multi_tracer(data_vec, data_spec, isample1, isample2, isample3, iz, itri, imu):
     """itri = None tests all triangles at the same time."""
-    expected = data_vec.get_expected_Bggg_b10_general_triangles_multi_tracer(\
+    expected = data_vec.get_expected_Bggg_b10_general(\
         isample1, isample2, isample3, iz, itri=itri, imu=imu)
     
-    answer = get_Bggg_general_triangles_multi_tracer(data_vec, data_spec, \
+    answer = get_Bggg_general(data_vec, data_spec, \
         isample1, isample2, isample3, iz, itri=itri, imu=imu, name='Bggg_b10')
     
     assert np.allclose(answer, expected)
@@ -69,10 +69,10 @@ def test_Bggg_b10_general_triangles_multi_tracer(data_vec, data_spec, isample1, 
 
 def test_Bggg_b20_general_triangles_multi_tracer(data_vec, data_spec, isample1, isample2, isample3, iz, itri, imu):
     """itri = None tests all triangles at the same time."""
-    expected = data_vec.get_expected_Bggg_b20_general_triangles_multi_tracer(\
+    expected = data_vec.get_expected_Bggg_b20_general(\
         isample1, isample2, isample3, iz, itri=itri, imu=imu)
     
-    answer = get_Bggg_general_triangles_multi_tracer(data_vec, data_spec, \
+    answer = get_Bggg_general(data_vec, data_spec, \
         isample1, isample2, isample3, iz, itri=itri, imu=imu, name='Bggg_b20')
     
     assert np.allclose(answer, expected)
@@ -82,16 +82,16 @@ def test_Bggg_b20_general_triangles_multi_tracer(data_vec, data_spec, isample1, 
     (data_vec, data_spec, 0, 4, 2, 5, 0, 3, 772698575.5929023), \
     ]
 )
-def test_Bggg_general_triangles_multi_tracer(data_vec, data_spec, \
+def test_Bggg_general(data_vec, data_spec, \
     isample1, isample2, isample3, iz, itri, imu, expected):
     """itri = None tests all triangles at the same time."""
     
-    answer = get_Bggg_general_triangles_multi_tracer(data_vec, data_spec, \
+    answer = get_Bggg_general(data_vec, data_spec, \
         isample1, isample2, isample3, iz, itri=itri, imu=imu, name='galaxy_bis')
     
     assert np.allclose(answer, expected), (answer, expected)
 
-def get_Bggg_general_triangles_multi_tracer(data_vec, data_spec,\
+def get_Bggg_general(data_vec, data_spec,\
     isample1, isample2, isample3, iz, itri=None, imu=0, name='galaxy_bis'):
     """name can be 'Bggg',  'Bggg_b10', or 'Bggg_b20'"""
     

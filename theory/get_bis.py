@@ -6,7 +6,7 @@ import pickle
 
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
-from theory.data_vector.data_spec import DataSpecBispectrum
+from theory.data_vector.data_spec import DataSpecBispectrum, DataSpecBispectrumOriented
 from theory.data_vector.data_vector import DataVector, B3D
 from theory.utils import file_tools
 from theory.plotting.bis_plotter import BisPlotter
@@ -15,7 +15,7 @@ def get_data_spec(info):
     survey_par_file = info['survey_par_file']
     data_spec_dict = info['Bispectrum3D'] 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecBispectrum(survey_par, data_spec_dict)
+    data_spec = DataSpecBispectrumOriented(survey_par, data_spec_dict)
     return data_spec
 
 def get_data_vec_bis(info):
@@ -29,7 +29,7 @@ def get_data_vec_bis(info):
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecBispectrum(survey_par, data_spec_dict)
+    data_spec = DataSpecBispectrumOriented(survey_par, data_spec_dict)
 
     data_vec = B3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     

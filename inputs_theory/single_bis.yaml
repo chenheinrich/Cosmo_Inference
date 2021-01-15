@@ -8,8 +8,11 @@ survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
 
 Bispectrum3D: 
   nk: 21 # number of k points (to be changed into bins)
-  nmu: 5 # number of mu bins
+  nmu: 5 # number of mu bins 
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
+  triangle_orientation: 'theta1_phi12'
+  nbin_theta1: 2
+  nbin_phi12: 4
 
-plot_dir: './plots/theory/bispectrum/fnl_0/'
+plot_dir: './plots/theory/bispectrum_oriented/fnl_0/'
