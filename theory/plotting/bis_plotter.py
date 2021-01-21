@@ -1,29 +1,41 @@
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 import os
 
 from theory.utils import file_tools
+from theory.data_vector.data_vector import DataVector, B3D, B3D_RSD
+from theory.plotting.triangle_plotter import TrianglePlotter
 
-class BisPlotter():
+class BisPlotter(TrianglePlotter):
     
-    def __init__(self, data_vec, data_spec, d2=None, plot_dir='./plots/theory/bispectrum/'):
+    def __init__(self, data_vec, data_spec, d2=None, plot_dir='./plots/theory/bispectrum/', do_run_checks=True):
         self._d = data_vec.get('galaxy_bis')
         self._d1 = data_vec.get('Bggg_b10')
         self._d2 = data_vec.get('Bggg_b20')
         self._data_spec = data_spec
         self._data_vec = data_vec
+        self._do_run_checks = do_run_checks
 
         self._plot_dir = plot_dir
         file_tools.mkdir_p(self._plot_dir)
 
     def make_plots(self):
         
-        self._run_checks()
+        if self._do_run_checks is True:
+            self._run_checks()
 
         nb = self._data_spec.nsample ** 3
 
-        for ib in range(nb):
-            self._plot_galaxy_bis(ib)       
+
+        if isinstance(self._data_vec, B3D_RSD):
+            for ib in range(nb):
+                self._plot_galaxy_bis_rsd(ib)  
+        #TODO might want to tighten this logic
+        elif isinstance(self._data_vec, B3D):
+            for ib in range(nb):
+                self._plot_galaxy_bis(ib)   
+
             
 
     def _run_checks(self):
@@ -121,6 +133,103 @@ class BisPlotter():
         self._plot_1D(dimension, y_list, ylatex, yname, self._data_spec, \
             xlim=xlim, plot_dir=self._plot_dir, izs=izs, \
             y_list2=y_list2, y_list3=y_list3, legend=legend, title=title)
+
+    def _plot_galaxy_bis_rsd(self, ib):
+
+        izs = np.arange(0, self._data_spec.nz, 10)
+
+        nori = self._data_vec._triangle_spec.nori
+        
+        y_list = [self._d[ib, iz, :, :] for iz in izs]
+            
+        dimension = 'tri'
+        (isample1, isample2, isample3) = self._data_spec.dict_ib_to_isamples['%i'%ib]
+        yname = 'galaxy_bis_oriented_ABC_%i_%i_%i'%(isample1, isample2, isample3)
+        ylatex = r'$B_{g_{%s}g_{%s}g_{%s}}$'%(isample1, isample2, isample3)
+
+        fnl = self._data_vec._cosmo_par.fnl
+        title = r'$B_{g_{%s}g_{%s}g_{%s}}$, $f_{\rm NL} = %s$'%(isample1, isample2, isample3, fnl)
+
+        legend = ['iori = %i'%iori for iori in range(nori)] 
+        legend.extend([\
+            #r'$k_2 = k_3$', \
+            r'$k_1 = k_2 = k_3 = k_{eq}$'])
+
+        xlim = [0, self._data_spec.triangle_spec.ntri]
+
+        self._plot_1D_with_orientation(dimension, y_list, ylatex, yname, self._data_spec, \
+            xlim=xlim, plot_dir=self._plot_dir, izs=izs, legend=legend, title=title)
+
+    def _plot_1D_with_orientation(self, dimension, y_list, ylatex, yname, data_spec,\
+                legend='', plot_type='plot', k=None, z=None, \
+                ylim=None, xlim=None,
+                plot_dir='', izs=None, title=''):#TODO need to pass izs idfferently
+
+        allowed_plot_types = ['plot', 'loglog', 'semilogx', 'semilogy']
+
+        ntri = y_list[0].shape[0]
+        x = np.arange(ntri) 
+        xlabel = 'Triangles'
+
+        for i, y in enumerate(y_list): # different redshifts, each being a plot
+
+            fig, ax = plt.subplots(figsize=(18,6))
+            gs = gridspec.GridSpec(ncols=1, nrows=2, hspace=0, wspace=0, figure=fig)
+
+            if plot_type in allowed_plot_types:
+                
+                ax = fig.add_subplot(gs[0, 0])
+                for iori in range(y.shape[1]):
+                    if iori in [1,3]: #HACK
+                        line_style = '--'
+                    else:
+                        line_style = '-'
+                    line, = getattr(ax, plot_type)(x, y[:, iori], ls=line_style, marker='.', markersize=4)
+                    
+                #self._add_markers_at_k2_equal_k3(ax, plot_type, x, y, marker='.')
+                
+                ax2 = fig.add_subplot(gs[1, 0])
+                for iori in range(y.shape[1]):
+                    frac_diff = (y[:, iori] - y[:, 0])/y[:, 0]
+                    line, = getattr(ax2, plot_type)(x, frac_diff, marker='.', markersize=4)
+                #self._add_markers_at_k2_equal_k3(ax2, plot_type, x, y, marker='.')
+
+            else:
+                msg = "plot_type can only be one of the following: {}".format(
+                    allowed_plot_types)
+                raise ValueError(msg)
+
+            if ylim is not None:
+                ax.set_ylim(ylim)
+            if xlim is not None:
+                ax.set_xlim(xlim)
+                ax2.set_xlim(xlim)
+            ax2.set_ylim([-0.01, 0.01])
+
+            kwargs_equilateral = {'color': 'grey', 'alpha': 0.8}
+            self._add_vertical_lines_at_equilateral(ax, **kwargs_equilateral)
+            self._add_vertical_lines_at_equilateral(ax2, **kwargs_equilateral)
+            self._add_k_labels(ax, **kwargs_equilateral)
+
+            ax.legend(legend)
+            #ax2.legend(legend)
+        
+            self._add_zero_line(ax, color='black', ls='--', alpha=0.5)
+            self._add_zero_line(ax2, color='black', ls='--', alpha=0.5)
+
+            #ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylatex)
+            ax.set_title(title)
+            
+            ax2.set_xlabel(xlabel)
+            ax2.set_ylabel('Fractional difference')
+
+            plot_name = 'plot_%s_vs_%s_iz_%i.png' % (yname, dimension, izs[i])
+            plot_name = os.path.join(plot_dir, plot_name)
+
+            fig.savefig(plot_name)
+            print('Saved plot = {}'.format(plot_name))
+            plt.close()
 
     def _plot_1D(self, dimension, y_list, ylatex, yname, data_spec,\
                 legend='', plot_type='plot', k=None, z=None, \

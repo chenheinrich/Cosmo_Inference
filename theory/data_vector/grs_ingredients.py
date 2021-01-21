@@ -345,4 +345,8 @@ class GRSIngredients(object):
 
 
     
-    
+class GRSIngredientsForBispectrum(GRSIngredients): #No AP
+
+    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, data_spec, **params_values_dict):
+       super().__init__(cosmo_par, cosmo_par_fid, survey_par, data_spec, **params_values_dict)
+

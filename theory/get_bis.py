@@ -7,9 +7,10 @@ import pickle
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
 from theory.data_vector.data_spec import DataSpecBispectrum, DataSpecBispectrumOriented
-from theory.data_vector.data_vector import DataVector, B3D
+from theory.data_vector.data_vector import DataVector, B3D, B3D_RSD
 from theory.utils import file_tools
 from theory.plotting.bis_plotter import BisPlotter
+from theory.plotting.triangle_spec_plotter import TriangleSpecTheta1Phi12Plotter
 
 def get_data_spec(info):
     survey_par_file = info['survey_par_file']
@@ -31,7 +32,7 @@ def get_data_vec_bis(info):
     survey_par = SurveyPar(survey_par_file)
     data_spec = DataSpecBispectrumOriented(survey_par, data_spec_dict)
 
-    data_vec = B3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    data_vec = B3D_RSD(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     
     return data_vec
 
@@ -56,10 +57,14 @@ if __name__ == '__main__':
         info = yaml.load(file, Loader=yaml.FullLoader)
     print('info', info)
 
+    data_spec = get_data_spec(info)
+    triangle_plotter = TriangleSpecTheta1Phi12Plotter(data_spec._triangle_spec, plot_dir=info['plot_dir'])
+    triangle_plotter.make_plots()
+
     data_vec = get_data_vec_bis(info)
     fn = get_fn(info)
     file_tools.save_file_npy(fn, data_vec.get('galaxy_bis'))
-
-    data_spec = get_data_spec(info)
-    bis_plotter = BisPlotter(data_vec, data_spec, plot_dir=info['plot_dir'])
+       
+    bis_plotter = BisPlotter(data_vec, data_spec, plot_dir=info['plot_dir'], do_run_checks=False)
     bis_plotter.make_plots()
+
