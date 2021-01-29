@@ -14,7 +14,17 @@ class TriangleSpecPlotter(TrianglePlotter):
         super().__init__(triangle_spec, plot_dir)
 
     def make_plots(self):
+        pass
+
+class TriangleSpecTheta1Phi12Plotter(TriangleSpecPlotter):
+
+    def __init__(self, triangle_spec_theta1_phi12, plot_dir):
+        assert isinstance(triangle_spec_theta1_phi12, TriangleSpecTheta1Phi12)
+        super().__init__(triangle_spec_theta1_phi12, plot_dir)
+
+    def make_plots(self):
         self._plot_theta12_and_k()
+        self._plot_mu()
 
     def _plot_theta12_and_k(self, plot_type='plot', plot_name=None, plot_type2='semilogy', plot_type3='semilogy'):
 
@@ -55,9 +65,8 @@ class TriangleSpecPlotter(TrianglePlotter):
 
             ax.yaxis.set_ticks([0, 30, 60, 90, 120, 150, 180])
 
-            ax.xaxis.set_visible(False)
-            ax.xaxis.set_ticklabels([])
-            plt.setp(ax.get_yticklabels()[0], visible=False)    
+            self._turn_off_xaxis_ticklabels(ax)
+            self._turn_off_yaxis_first_ticklabel(ax)
 
         # Middle panel
 
@@ -104,18 +113,7 @@ class TriangleSpecPlotter(TrianglePlotter):
 
         plt.savefig(plot_name)
         print('Saved plot: {}'.format(plot_name))
-        
 
-class TriangleSpecTheta1Phi12Plotter(TriangleSpecPlotter):
-
-    def __init__(self, triangle_spec_theta1_phi12, plot_dir):
-        assert isinstance(triangle_spec_theta1_phi12, TriangleSpecTheta1Phi12)
-        self._triangle_spec = triangle_spec_theta1_phi12
-        self._plot_dir = plot_dir
-
-    def make_plots(self):
-        self._plot_theta12_and_k()
-        self._plot_mu()
 
     def _plot_mu(self, plot_type='plot', plot_name=None):
 

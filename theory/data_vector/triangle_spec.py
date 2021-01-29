@@ -1,6 +1,14 @@
 import numpy as np
 import sys
 
+class AnglesNotInRangeError(Exception):
+
+    def __init__(self, angle, message='.'):
+        self.angle = angle
+        self.message = 'Error: Input angles %s are not in allowed range: '%self.angle + message
+        super().__init__(self.message)
+
+
 class TriangleSpec():
 
     """Class managing a list of k1, k2, k3 satisfying triangle inequalities given discretized k list."""
@@ -15,6 +23,10 @@ class TriangleSpec():
     @property
     def k(self):
         return self._k
+
+    @property
+    def nk(self):
+        return self._nk
 
     @property
     def ntri(self):
@@ -147,8 +159,10 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
     y' \perp z, y \perp x, such that x, y, z form a right-handed coordinates.
     """
 
-    def __init__(self, k, theta1, phi12):
+    def __init__(self, k, theta1, phi12, set_mu_to_zero=False):
         super().__init__(k)
+        self._set_mu_to_zero = set_mu_to_zero
+        print('You have set self._set_mu_to_zero to {}'.format(self._set_mu_to_zero)) #TODO use logger
         
         try:
             self._check_input_angle_range(theta1, phi12)
@@ -215,7 +229,10 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
     def mu_array(self):
         """3d numpy array where mu_array[itri, iori, :] gives [mu1, mu2, mu3] 
         for the itri-th triangle and iori-th orientation."""
-        return self._oriented_triangle_info['mu']
+        if self._set_mu_to_zero is True:
+            return np.zeros_like(self._oriented_triangle_info['mu'])
+        else:
+            return self._oriented_triangle_info['mu']
 
     @staticmethod
     def _check_input_angle_range(theta1, phi12):

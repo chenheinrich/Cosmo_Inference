@@ -3,17 +3,10 @@ import numpy as np
 from theory.utils.misc import evaluate_string_to_float
 from theory.data_vector.triangle_spec import TriangleSpec, TriangleSpecTheta1Phi12
 
-class AnglesNotInRangeError(Exception):
-
-    def __init__(self, angle, message='.'):
-        self.angle = angle
-        self.message = 'Error: Input angles %s are not in allowed range: '%self.angle + message
-        super().__init__(self.message)
-
 class DataSpec():
 
     """
-    Sample Usage:
+    Sample Usage: 
         d = DataSpec(survey_par, data_spec_dict)
 
     You can direclty access variables: z, sigz, k, dk, mu, dmu, nps, 
@@ -198,6 +191,29 @@ class DataSpec():
 
         return (k_actual, mu_actual)
 
+class DataSpecPowerSpectrum(DataSpec):
+
+    def __init__(self, survey_par, data_spec_dict):
+        super().__init__(survey_par, data_spec_dict)
+        self._dict_isamples_to_ips, self._dict_ips_to_isamples, _nps = \
+            self._get_multi_tracer_config_all(self.nsample) 
+        assert _nps == self._nps
+    
+    @staticmethod
+    def _get_multi_tracer_config_all(nsample):
+        dict_isamples_to_ips = {}
+        dict_ips_to_isamples = {}
+        ips = 0
+        for isample1 in range(nsample):
+            for isample2 in range(isample1, nsample):
+                    dict_isamples_to_ips['%i_%i'%(isample1, isample2)] = ips
+                    dict_ips_to_isamples['%i'%ips] = (isample1, isample2)
+                    ips = ips + 1
+        nps = int(nsample * (nsample + 1)/2)
+        assert ips == nps
+        
+        return dict_isamples_to_ips, dict_ips_to_isamples, nps
+
 class DataSpecBispectrum(DataSpec):
 
     def __init__(self, survey_par, data_spec_dict):
@@ -244,9 +260,13 @@ class DataSpecBispectrumOriented(DataSpecBispectrum):
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)
         
-        self._theta1, self._phi12 = self._setup_angles(data_spec_dict)
-        self._triangle_spec = TriangleSpecTheta1Phi12(self._k, self._theta1, self._phi12)
+        self._theta1, self._phi12, self._cos_theta1 = self._setup_angles(data_spec_dict)
+        self._triangle_spec = TriangleSpecTheta1Phi12(self._k, self._theta1, self._phi12, \
+            set_mu_to_zero = data_spec_dict['debug_settings']['set_mu_to_zero']) #TODO to clean up a bit more
     
+        self._debug_sigp = data_spec_dict['debug_settings']['sigp']
+        self._debug_f_of_z = data_spec_dict['debug_settings']['f_of_z']
+
     @property
     def theta1(self):
         return self._theta1
@@ -254,6 +274,10 @@ class DataSpecBispectrumOriented(DataSpecBispectrum):
     @property
     def phi12(self):
         return self._phi12
+
+    @property
+    def cos_theta1(self):
+        return self._cos_theta1
 
     def _setup_angles(self, data_spec_dict):
 
@@ -281,16 +305,8 @@ class DataSpecBispectrumOriented(DataSpecBispectrum):
             print('theta1_in_deg', theta1 / np.pi * 180.0)
             print('phi12 in deg', phi12 / np.pi * 180.0)
             
-            return theta1, phi12
+            return theta1, phi12, cos_theta1
             
-    @property
-    def cos_theta1(self):
-        return self._cos_theta1
-    
-    @property
-    def phi12(self):
-        return self._phi12
-
     @staticmethod
     def _get_bin_centers_from_nbin(min_value, max_value, nbin):
         edges = np.linspace(min_value, max_value, nbin+1)

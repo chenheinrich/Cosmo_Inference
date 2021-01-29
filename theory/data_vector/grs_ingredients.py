@@ -5,6 +5,7 @@ from theory.cosmo.cosmo_product import CosmoProduct_FromCobayaProvider
 from theory.cosmo.cosmo_product import CosmoProduct_FromCamb
 from theory.utils import constants
 from theory.utils.errors import NameNotAllowedError
+from theory.utils.logging import class_logger
 
 class GRSIngredients(object):
 
@@ -14,6 +15,8 @@ class GRSIngredients(object):
         Args:
             params_values_dict: has gaussian_bias_sample_<i>_z_<j> where i and j start at 1.
         """
+
+        self.logger = class_logger(self)
 
         self._cosmo_par = cosmo_par
         self._cosmo_par_fid = cosmo_par_fid
@@ -39,9 +42,13 @@ class GRSIngredients(object):
             'matter_power_without_AP',\
             'kaiser', \
             'fog', \
-            'fog_using_ref_cosmology'\
+            'fog_using_ref_cosmology',\
+            'sigp', \
         ]
         self._ingredients = {}
+
+
+        self.logger.info('self._d.mu = {}'.format(self._d.mu))
 
     def _get_cosmo_product(self, cosmo_par, z):
         return CosmoProduct_FromCamb(cosmo_par, z)
@@ -82,6 +89,11 @@ class GRSIngredients(object):
         AP_perp, AP_para = self._get_AP_perp_and_para()
         return self._d.get_k_and_mu_actual(AP_perp, AP_para)
 
+    #TODO to finish
+    #def _get_survey_volume_array(self):
+    #    self._cosmo.get_comoving_radial_distance_at_z()
+    #    self._survey_par.
+
     def _calc_AP(self):
         """Returns AP factor in an array same size as self._d.z."""
         assert 'AP' not in self._ingredients.keys()
@@ -117,6 +129,8 @@ class GRSIngredients(object):
 
         assert 'galaxy_bias' not in self._ingredients.keys()
 
+        #HACK
+        #delta_c = 0.0
         delta_c = 1.686
 
         gaussian_bias = self.get('gaussian_bias')[:, :, np.newaxis, np.newaxis]
@@ -169,6 +183,22 @@ class GRSIngredients(object):
 
         self._ingredients['gaussian_bias'] = gaussian_bias
 
+    def _calc_sigp(self):
+        """"Returns a 2-d numpy array of shape (nsample, nz) for sigmap,
+        where sigp = sigma_z * (1+z) * c / H
+        """
+        
+        Hubble = self._cosmo.get_Hubble_at_z(self._d.z)
+        sigp = self._survey_par.get_sigz_array() \
+            * (1.0 + self._d.z[np.newaxis, :]) \
+            * constants.c_in_km_per_sec\
+            / Hubble[np.newaxis, :]
+
+        self._ingredients['sigp'] = sigp
+
+        # TODO check: expect suppression at k ~ 0.076 1/Mpc 
+        # for H = 75km/s/Mpc at z = 0.25 w/ sigma_z = 0.003
+
     def _calc_matter_power_with_AP(self, nonlinear=False):
         """ Returns 3-d numpy array of shape (nz, nk, nmu) for the matter power spectrum.
         Default is linear matter power. Note that the power spectrum itself is evaluated 
@@ -187,10 +217,8 @@ class GRSIngredients(object):
         self._ingredients['matter_power_with_AP'] = matter_power
 
     def _calc_matter_power_without_AP(self, nonlinear=False):
-        """ Returns 3-d numpy array of shape (nz, nk, nmu) for the matter power spectrum.
-        Default is linear matter power. Note that the power spectrum itself is evaluated 
-        at z, but the k also has a dependence on z and mu due to the AP factor varying 
-        with z and mu."""
+        """ Returns 3-d numpy array of shape (nz, nk) for the matter power spectrum.
+        Default is linear matter power."""
 
         assert 'matter_power_without_AP' not in self._ingredients.keys()
 

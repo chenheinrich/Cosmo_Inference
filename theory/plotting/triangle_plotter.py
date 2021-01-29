@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
 
+from theory.data_vector.triangle_spec import TriangleSpec
+from theory.utils.file_tools import mkdir_p
+
 
 class TrianglePlotter():
 
@@ -10,6 +13,7 @@ class TrianglePlotter():
         assert isinstance(triangle_spec, TriangleSpec)
         self._triangle_spec = triangle_spec
         self._plot_dir = plot_dir
+        mkdir_p(self._plot_dir)
 
     def _add_markers_at_k2_equal_k3(self, ax, plot_type, x, y, marker='.', **kwargs):
         indices_k2_equal_k3 = self._triangle_spec.indices_k2_equal_k3
@@ -50,4 +54,35 @@ class TrianglePlotter():
     def _add_vertical_lines_at_xs(ax, xs, **kwargs):
         for x in xs:
             ax.axvline(x = x, **kwargs)
+
+    @staticmethod
+    def _turn_off_xaxis_ticklabels(ax):
+        ax.xaxis.set_visible(False)
+        ax.xaxis.set_ticklabels([])
+
+    @staticmethod
+    def _turn_off_yaxis_first_ticklabel(ax):
+        plt.setp(ax.get_yticklabels()[0], visible=False)    
+
+    @staticmethod
+    def _set_ylim_clipped(ax, ylim=None, ylim_clip=None):
+        if ylim is not None:
+            ax.set_ylim(ylim)
+        if ylim_clip is None:
+            ax.set_ylim(ylim)
+        else:
+            ylim = ax.get_ylim()
+
+            if ylim_clip[0] is not None:
+                clipped_ylim_lo = max(ylim[0], ylim_clip[0])
+            else:
+                clipped_ylim_lo = ylim[0]
+
+            if ylim_clip[1] is not None:
+                clipped_ylim_hi = min(ylim[1], ylim_clip[1])
+            else:
+                clipped_ylim_hi = ylim[1]
+                
+            ylim = [clipped_ylim_lo, clipped_ylim_hi]
+            ax.set_ylim(ylim)
 

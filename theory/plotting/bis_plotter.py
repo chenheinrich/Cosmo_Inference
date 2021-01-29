@@ -10,15 +10,20 @@ from theory.plotting.triangle_plotter import TrianglePlotter
 class BisPlotter(TrianglePlotter):
     
     def __init__(self, data_vec, data_spec, d2=None, plot_dir='./plots/theory/bispectrum/', do_run_checks=True):
+        
+        super().__init__(data_spec.triangle_spec, plot_dir)
+
+        self._data_vec = data_vec
+        self._data_spec = data_spec
+
+        self._do_run_checks = do_run_checks
+
         self._d = data_vec.get('galaxy_bis')
         self._d1 = data_vec.get('Bggg_b10')
         self._d2 = data_vec.get('Bggg_b20')
-        self._data_spec = data_spec
-        self._data_vec = data_vec
-        self._do_run_checks = do_run_checks
 
-        self._plot_dir = plot_dir
-        file_tools.mkdir_p(self._plot_dir)
+        self._d1_primordial = data_vec.get('Bggg_b10_primordial')
+        self._d1_gravitational = data_vec.get('Bggg_b10_gravitational')
 
     def make_plots(self):
         
@@ -27,10 +32,10 @@ class BisPlotter(TrianglePlotter):
 
         nb = self._data_spec.nsample ** 3
 
-
         if isinstance(self._data_vec, B3D_RSD):
             for ib in range(nb):
                 self._plot_galaxy_bis_rsd(ib)  
+
         #TODO might want to tighten this logic
         elif isinstance(self._data_vec, B3D):
             for ib in range(nb):
@@ -137,11 +142,8 @@ class BisPlotter(TrianglePlotter):
     def _plot_galaxy_bis_rsd(self, ib):
 
         izs = np.arange(0, self._data_spec.nz, 10)
-
-        nori = self._data_vec._triangle_spec.nori
-        
         y_list = [self._d[ib, iz, :, :] for iz in izs]
-            
+
         dimension = 'tri'
         (isample1, isample2, isample3) = self._data_spec.dict_ib_to_isamples['%i'%ib]
         yname = 'galaxy_bis_oriented_ABC_%i_%i_%i'%(isample1, isample2, isample3)
@@ -150,79 +152,132 @@ class BisPlotter(TrianglePlotter):
         fnl = self._data_vec._cosmo_par.fnl
         title = r'$B_{g_{%s}g_{%s}g_{%s}}$, $f_{\rm NL} = %s$'%(isample1, isample2, isample3, fnl)
 
-        legend = ['iori = %i'%iori for iori in range(nori)] 
-        legend.extend([\
-            #r'$k_2 = k_3$', \
-            r'$k_1 = k_2 = k_3 = k_{eq}$'])
+        nori = self._data_vec._triangle_spec.nori
+        
 
         xlim = [0, self._data_spec.triangle_spec.ntri]
 
-        self._plot_1D_with_orientation(dimension, y_list, ylatex, yname, self._data_spec, \
-            xlim=xlim, plot_dir=self._plot_dir, izs=izs, legend=legend, title=title)
+        #TODO set this flag somewhere else
+        do_plot_primordial_vs_gravitational_bispectrum = True
 
+        if do_plot_primordial_vs_gravitational_bispectrum is True:
+
+            y2_list = [self._d1_primordial[ib, iz, :, :] for iz in izs]
+            y3_list = [self._d1_gravitational[ib, iz, :, :] for iz in izs]
+
+            legend = ['total', r'$b_1^3$ prim.', r'$b_1^3$ grav.']
+            legend.extend([\
+            #r'$k_2 = k_3$', \
+            r'$k_1 = k_2 = k_3 = k_{eq}$'])
+
+            self._plot_1D_with_orientation(dimension, y_list, ylatex, yname, self._data_spec, \
+                xlim=xlim, plot_dir=self._plot_dir, izs=izs, legend=legend, title=title, \
+                y2_list=y2_list, y3_list=y3_list)
+
+        else:
+            legend = ['total']
+            legend.extend([\
+            #r'$k_2 = k_3$', \
+            r'$k_1 = k_2 = k_3 = k_{eq}$'])
+            self._plot_1D_with_orientation(dimension, y_list, ylatex, yname, self._data_spec, \
+                xlim=xlim, plot_dir=self._plot_dir, izs=izs, legend=legend, title=title)
+
+
+        #Plot frac difference wrt mu's = 0
+        do_plot_frac_diff = False
+        
+        if do_plot_frac_diff is True:
+            fname_set_mu_to_zero = self._get_fname_set_mu_to_zero(self._plot_dir)
+            print('Loading bispectrum with set_mu_to_zero from {}'.format(fname_set_mu_to_zero))
+            bis_set_mu_to_zero = os.path.join(fname_set_mu_to_zero)
+            #bis_set_mu_to_zero = './plots/theory/bispectrum_oriented_theta1_phi12_2_4/set_mu_to_zero/fnl_0/multi_tracer_bis.npy'
+            y2 = np.load(bis_set_mu_to_zero)
+            frac_diff = (self._d - y2)/y2
+            y2_list = [frac_diff[ib, iz, :, :] for iz in izs]
+
+            ylatex = ''
+            yname = 'galaxy_bis_oriented_ABC_%i_%i_%i_frac_diff_wrt_mu_set_to_zero'%(isample1, isample2, isample3)
+            ylim_clip = [-50, 50]
+            title = r'Fractional Difference of $B_{g_{%s}g_{%s}g_{%s}}$ wrt $\mu_i = 0$ ($f_{\rm NL} = %s)$'%(isample1, isample2, isample3, fnl)
+
+            self._plot_1D_with_orientation(dimension, y2_list, ylatex, yname, self._data_spec, \
+                xlim=xlim, plot_dir=self._plot_dir, izs=izs, legend=legend, title=title, 
+                ylim_clip=ylim_clip)
+
+    @staticmethod
+    def _get_fname_set_mu_to_zero(plot_dir):
+        string = plot_dir
+        ind_fnl = string.find('fnl')
+        ind_replace = string[ind_fnl:].find('/')
+        string_to_replace = string[(ind_fnl + ind_replace):]
+        print(string_to_replace)
+        fname_set_mu_to_zero = string.replace(string_to_replace, '/set_mu_to_zero/multi_tracer_bis.npy')
+        return fname_set_mu_to_zero
+        
     def _plot_1D_with_orientation(self, dimension, y_list, ylatex, yname, data_spec,\
                 legend='', plot_type='plot', k=None, z=None, \
                 ylim=None, xlim=None,
-                plot_dir='', izs=None, title=''):#TODO need to pass izs idfferently
+                plot_dir='', izs=None, title='',
+                y2_list=None, y3_list=None, ylim_clip=None):#TODO need to pass izs idfferently
 
         allowed_plot_types = ['plot', 'loglog', 'semilogx', 'semilogy']
 
         ntri = y_list[0].shape[0]
+        nori = y_list[0].shape[1]
+
         x = np.arange(ntri) 
         xlabel = 'Triangles'
 
         for i, y in enumerate(y_list): # different redshifts, each being a plot
+            
+            fig = plt.figure(figsize=(12,12), constrained_layout=True)
+            gs = gridspec.GridSpec(ncols=1, nrows=nori+1, hspace=0, wspace=0, figure=fig)
 
-            fig, ax = plt.subplots(figsize=(18,6))
-            gs = gridspec.GridSpec(ncols=1, nrows=2, hspace=0, wspace=0, figure=fig)
+            kwargs_equilateral = {'color': 'grey', 'alpha': 0.8}
 
             if plot_type in allowed_plot_types:
                 
-                ax = fig.add_subplot(gs[0, 0])
-                for iori in range(y.shape[1]):
-                    if iori in [1,3]: #HACK
-                        line_style = '--'
-                    else:
-                        line_style = '-'
+                for iori in range(nori):
+
+                    ax = fig.add_subplot(gs[iori, 0])
+
+                    if iori%2 == 1:
+                        ax.set_facecolor('cornsilk')
+                        ax.set_alpha(0.2)
+
+                    line_style = '-'
                     line, = getattr(ax, plot_type)(x, y[:, iori], ls=line_style, marker='.', markersize=4)
+
+                    if y2_list is not None:
+                        y2 = y2_list[i]
+                        line, = getattr(ax, plot_type)(x, y2[:, iori], ls='--', marker='.', markersize=4)
+
+                    if y3_list is not None:
+                        y3 = y3_list[i]
+                        line, = getattr(ax, plot_type)(x, y3[:, iori], ls=':', marker='.', markersize=4)
+
+                    self._add_vertical_lines_at_equilateral(ax, **kwargs_equilateral)
+
+                    if iori == 0:
+                        ax.set_title(title)
+                        ax.legend(legend, bbox_to_anchor=(1.01, 0.5))
+
+                    self._add_zero_line(ax, color='black', ls='--', alpha=0.5)
+
+                    self._set_ylim_clipped(ax, ylim=ylim, ylim_clip=ylim_clip)
                     
-                #self._add_markers_at_k2_equal_k3(ax, plot_type, x, y, marker='.')
-                
-                ax2 = fig.add_subplot(gs[1, 0])
-                for iori in range(y.shape[1]):
-                    frac_diff = (y[:, iori] - y[:, 0])/y[:, 0]
-                    line, = getattr(ax2, plot_type)(x, frac_diff, marker='.', markersize=4)
-                #self._add_markers_at_k2_equal_k3(ax2, plot_type, x, y, marker='.')
+                    ax.set_ylabel(ylatex)
+                    
+                    self._turn_off_xaxis_ticklabels(ax)
+                    self._turn_off_yaxis_first_ticklabel(ax)
+
+                    if xlim is not None:
+                        ax.set_xlim(xlim)
 
             else:
                 msg = "plot_type can only be one of the following: {}".format(
                     allowed_plot_types)
                 raise ValueError(msg)
-
-            if ylim is not None:
-                ax.set_ylim(ylim)
-            if xlim is not None:
-                ax.set_xlim(xlim)
-                ax2.set_xlim(xlim)
-            ax2.set_ylim([-0.01, 0.01])
-
-            kwargs_equilateral = {'color': 'grey', 'alpha': 0.8}
-            self._add_vertical_lines_at_equilateral(ax, **kwargs_equilateral)
-            self._add_vertical_lines_at_equilateral(ax2, **kwargs_equilateral)
-            self._add_k_labels(ax, **kwargs_equilateral)
-
-            ax.legend(legend)
-            #ax2.legend(legend)
-        
-            self._add_zero_line(ax, color='black', ls='--', alpha=0.5)
-            self._add_zero_line(ax2, color='black', ls='--', alpha=0.5)
-
-            #ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylatex)
-            ax.set_title(title)
-            
-            ax2.set_xlabel(xlabel)
-            ax2.set_ylabel('Fractional difference')
 
             plot_name = 'plot_%s_vs_%s_iz_%i.png' % (yname, dimension, izs[i])
             plot_name = os.path.join(plot_dir, plot_name)
@@ -284,45 +339,6 @@ class BisPlotter(TrianglePlotter):
             print('Saved plot = {}'.format(plot_name))
             plt.close()
 
-    def _add_markers_at_k2_equal_k3(self, ax, plot_type, x, y, marker='.'):
-        indices_k2_equal_k3 = self._data_spec.triangle_spec.indices_k2_equal_k3
-        x_k2 = x[indices_k2_equal_k3]
-        y_k2 = y[indices_k2_equal_k3]
-        getattr(ax, plot_type)(x_k2, y_k2, marker, markersize = 4)
-
-    def _add_vertical_lines_at_equilateral(self, ax, **kwargs):
-        indices_equilateral = self._data_spec.triangle_spec.indices_equilateral
-        self._add_vertical_lines_at_xs(ax, indices_equilateral, **kwargs)
-
-    def _add_zero_line(self, ax, **kwargs):
-        ax.axhline(y=0, **kwargs)
-
-    def _add_k_labels(self, ax, y_margins=0.3, **kwargs):
-
-        indices_equilateral = self._data_spec.triangle_spec.indices_equilateral
-        k = self._data_spec.k
-
-        ax.margins(y=y_margins)
-        y = ax.get_ylim()[0]
-
-        for i in np.arange(0, self._data_spec.nk, 2):
-            textstr = '%.1e'%k[i]
-            if i == 0:
-                textstr = r'$k_{eq}=$'+textstr
-            x = indices_equilateral[i] + 1
-            plt.annotate(textstr, xy=(x,y),  xytext=(0,15), \
-                textcoords="offset points", **kwargs)
-
-        for i in np.arange(1, self._data_spec.nk, 2):
-            textstr = '%.1e'%k[i]
-            x = indices_equilateral[i]
-            plt.annotate(textstr, xy=(x,y), xytext=(0,6), \
-                textcoords="offset points", **kwargs)
-
-    @staticmethod
-    def _add_vertical_lines_at_xs(ax, xs, **kwargs):
-        for x in xs:
-            ax.axvline(x = x, **kwargs)
         
 
             
