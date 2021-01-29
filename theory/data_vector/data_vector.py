@@ -79,6 +79,8 @@ class P3D(DataVector):
 
 class B3D(DataVector):
 
+    """No AP"""
+
     def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_spec):
         # TODO check that b3d_spec is instance of the right child class?
         super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_spec)
@@ -170,32 +172,31 @@ class B3D(DataVector):
 
     def _get_Bggg_b10_with_Bmmm_at_iz(self, iz, isample1, isample2, isample3, Bmmm_iz):
 
-        imu = 0 #TODO handle later
-        bias = self._grs_ingredients.get('galaxy_bias') 
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
         Bggg_b10 = Bmmm_iz \
-            * bias[isample1, iz, self._ik1, imu] \
-            * bias[isample2, iz, self._ik2, imu] \
-            * bias[isample3, iz, self._ik3, imu]
+            * bias[isample1, iz, self._ik1] \
+            * bias[isample2, iz, self._ik2] \
+            * bias[isample3, iz, self._ik3]
         return Bggg_b10
 
     def _get_Bggg_b20_at_iz(self, iz, isample1, isample2, isample3):
 
         (pk12, pk23, pk13) = self._get_pk12_23_13(iz)
-        bias = self._grs_ingredients.get('galaxy_bias') 
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
         bias_20 = self._grs_ingredients.get('galaxy_bias_20') 
+        #TODO double check this should really be of Gaussian biass
         
-        imu = 0 #TODO handle later
-        Bggg_b20 = bias[isample1, iz, self._ik1, imu] \
-                        * bias[isample2, iz, self._ik2, imu] \
+        Bggg_b20 = bias[isample1, iz, self._ik1] \
+                        * bias[isample2, iz, self._ik2] \
                         * bias_20[isample3, iz] \
                         * pk12 \
-                + bias[isample1, iz, self._ik1, imu] \
+                + bias[isample1, iz, self._ik1] \
                         * bias_20[isample2, iz] \
-                        * bias[isample3, iz, self._ik3, imu] \
+                        * bias[isample3, iz, self._ik3] \
                         * pk13 \
                 + bias_20[isample1, iz] \
-                        * bias[isample2, iz, self._ik2, imu] \
-                        * bias[isample3, iz, self._ik3, imu] \
+                        * bias[isample2, iz, self._ik2] \
+                        * bias[isample3, iz, self._ik3] \
                         * pk23 
         
         return Bggg_b20
@@ -215,13 +216,13 @@ class B3D(DataVector):
             fnl = self._cosmo_par.fnl
 
             t1_prim = 2.0 * fnl * alpha3 / (alpha1 * alpha2) 
-            t1_grav = 2.0 * self._grs_ingredients.get_F2(k1_array, k2_array, k3_array)
+            t1_grav = 2.0 * self._get_F2(k1_array, k2_array, k3_array)
 
             t2_prim = 2.0 * fnl * alpha2 / (alpha1 * alpha3) 
-            t2_grav = 2.0 * self._grs_ingredients.get_F2(k1_array, k3_array, k2_array)
+            t2_grav = 2.0 * self._get_F2(k1_array, k3_array, k2_array)
             
             t3_prim = 2.0 * fnl * alpha1 / (alpha2 * alpha3) 
-            t3_grav = 2.0 * self._grs_ingredients.get_F2(k2_array, k3_array, k1_array)
+            t3_grav = 2.0 * self._get_F2(k2_array, k3_array, k1_array)
             
             Bmmm_prim[iz,:] = t1_prim * pk12 + t2_prim * pk13 + t3_prim * pk23
             Bmmm_grav[iz,:] = t1_grav * pk12 + t2_grav * pk13 + t3_grav * pk23
@@ -230,43 +231,62 @@ class B3D(DataVector):
         self._internal_state['Bmmm_grav'] = Bmmm_grav
 
     def _get_pk12_23_13(self, iz):
-        matter_power = self._grs_ingredients.get('matter_power_with_AP') # shape (nz, nk)
+
+        matter_power = self._grs_ingredients.get('matter_power_without_AP') 
         (ik1, ik2, ik3) = self._triangle_spec.get_ik1_ik2_ik3()
-        pk12, pk23, pk13 = self._grs_ingredients.get_matter_power_quadratic_permutations(\
+
+        pk12, pk23, pk13 = self._get_matter_power_quadratic_permutations(\
             matter_power, iz, ik1, ik2, ik3) 
+
         return pk12, pk23, pk13
 
     def _get_alpha1_alpha2_alpha3(self, iz):
 
-        imu = 0 #TODO to handle later
-        alpha = self._grs_ingredients.get('alpha') # shape = (nz, nk, nmu)
+        alpha = self._grs_ingredients.get('alpha_without_AP') # shape = (nz, nk)
 
-        alpha1 = alpha[iz, self._ik1, imu]
-        alpha2 = alpha[iz, self._ik2, imu]
-        alpha3 = alpha[iz, self._ik3, imu]
+        alpha1 = alpha[iz, self._ik1]
+        alpha2 = alpha[iz, self._ik2]
+        alpha3 = alpha[iz, self._ik3]
 
         return (alpha1, alpha2, alpha3)
 
     def _get_k1_k2_k3_array(self, iz):
-        imu = 0 #TODO to handle later
-        k1_array = self._grs_ingredients.k_actual[iz, self._ik1, imu]
-        k2_array = self._grs_ingredients.k_actual[iz, self._ik2, imu]
-        k3_array = self._grs_ingredients.k_actual[iz, self._ik3, imu]
+
+        k1_array = self._data_spec.k[self._ik1]
+        k2_array = self._data_spec.k[self._ik2]
+        k3_array = self._data_spec.k[self._ik3]
+
         return (k1_array, k2_array, k3_array)
+
+    @staticmethod
+    def _get_F2(k1, k2, k3):  
+        dot_k1k2 = 0.5 * (-k1**2 - k2**2 + k3**2)
+        cos = dot_k1k2 / k1 / k2
+        ans = 5.0 / 7.0 + 0.5 * (k1 / k2 + k2 / k1) * cos + 2.0 / 7.0 * cos**2
+        return ans
+
+    @staticmethod
+    def _get_matter_power_quadratic_permutations(matter_power_z_k, iz, ik1, ik2, ik3):
+        
+        mp = matter_power_z_k[iz,:]
+        pk12 = mp[ik1] * mp[ik2]
+        pk23 = mp[ik2] * mp[ik3]
+        pk13 = mp[ik1] * mp[ik3]
+
+        return pk12, pk23, pk13
 
     def get_expected_Bggg_b10_equilateral_triangles_single_tracer(self, isample=0, iz=0, imu=0):
         """Returns a 1D numpy array for expected value of Bggg b10 terms 
         for equilateral triangles in single tracer specified by isample."""
 
         matter_power = self._grs_ingredients.get('matter_power_with_AP')
-        Pm = matter_power[iz, :, imu]
+        Pm = matter_power[iz, :]
         
-        bias = self._grs_ingredients.get('galaxy_bias') 
-        b = bias[isample, iz, :, imu]
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
+        b = bias[isample, iz, :]
 
-        alpha = self._grs_ingredients.get('alpha') 
-        imu = 0 # TODO handle later
-        alpha1 = alpha[iz, np.arange(self._data_spec.nk), imu]
+        alpha = self._grs_ingredients.get('alpha_without_AP') 
+        alpha1 = alpha[iz, np.arange(self._data_spec.nk)]
 
         fnl = self._cosmo_par.fnl
         
@@ -291,21 +311,21 @@ class B3D(DataVector):
             ik2 = iks[1]
             ik3 = iks[2]
 
-        bias = self._grs_ingredients.get('galaxy_bias') 
-        b_g1 = bias[isample1, iz, ik1, imu] 
-        b_g2 = bias[isample2, iz, ik2, imu] 
-        b_g3 = bias[isample3, iz, ik3, imu]
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
+        b_g1 = bias[isample1, iz, ik1] 
+        b_g2 = bias[isample2, iz, ik2] 
+        b_g3 = bias[isample3, iz, ik3]
 
-        matter_power = self._grs_ingredients.get('matter_power_with_AP')
-        Pm = matter_power[iz, :, imu]
+        matter_power = self._grs_ingredients.get('matter_power_without_AP')
+        Pm = matter_power[iz, :]
         pk12 = Pm[ik1] * Pm[ik2] 
         pk23 = Pm[ik2] * Pm[ik3]
         pk13 = Pm[ik1] * Pm[ik3]
 
-        alpha = self._grs_ingredients.get('alpha') # shape = (nz, nk, nmu)
-        alpha1 = alpha[iz, ik1, imu]
-        alpha2 = alpha[iz, ik2, imu]
-        alpha3 = alpha[iz, ik3, imu]
+        alpha = self._grs_ingredients.get('alpha_without_AP') # shape = (nz, nk, nmu)
+        alpha1 = alpha[iz, ik1]
+        alpha2 = alpha[iz, ik2]
+        alpha3 = alpha[iz, ik3]
 
         k1_array = self._data_spec.k[ik1]
         k2_array = self._data_spec.k[ik2]
@@ -313,11 +333,11 @@ class B3D(DataVector):
 
         fnl = self._cosmo_par.fnl
         t1 = 2.0 * fnl * alpha3 / (alpha1 * alpha2) + \
-                2.0 * self._grs_ingredients.get_F2(k1_array, k2_array, k3_array)
+                2.0 * self._get_F2(k1_array, k2_array, k3_array)
         t2 = 2.0 * fnl * alpha2 / (alpha1 * alpha3) + \
-                2.0 * self._grs_ingredients.get_F2(k1_array, k3_array, k2_array)
+                2.0 * self._get_F2(k1_array, k3_array, k2_array)
         t3 = 2.0 * fnl * alpha1 / (alpha2 * alpha3) + \
-                2.0 * self._grs_ingredients.get_F2(k2_array, k3_array, k1_array)
+                2.0 * self._get_F2(k2_array, k3_array, k1_array)
         Bmmm = t1 * pk12 + t2 * pk13 + t3 * pk23
 
         Bggg_b10 = Bmmm * b_g1 * b_g2 * b_g3
@@ -337,32 +357,34 @@ class B3D(DataVector):
             ik2 = iks[1]
             ik3 = iks[2]
 
-        bias = self._grs_ingredients.get('galaxy_bias') 
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
         bias_20 = self._grs_ingredients.get('galaxy_bias_20') 
 
-        matter_power = self._grs_ingredients.get('matter_power_with_AP')
-        Pm = matter_power[iz, :, imu]
+        matter_power = self._grs_ingredients.get('matter_power_without_AP')
+        Pm = matter_power[iz, :]
         pk12 = Pm[ik1] * Pm[ik2] 
         pk23 = Pm[ik2] * Pm[ik3]
         pk13 = Pm[ik1] * Pm[ik3]
         
-        Bggg_b20 = bias[isample1, iz, ik1, imu] \
-                        * bias[isample2, iz, ik2, imu] \
+        Bggg_b20 = bias[isample1, iz, ik1] \
+                        * bias[isample2, iz, ik2] \
                         * bias_20[isample3, iz] \
                         * pk12 \
-                + bias[isample1, iz, ik1, imu] \
+                + bias[isample1, iz, ik1] \
                         * bias_20[isample2, iz] \
-                        * bias[isample3, iz, ik3, imu] \
+                        * bias[isample3, iz, ik3] \
                         * pk13 \
                 + bias_20[isample1, iz] \
-                        * bias[isample2, iz, ik2, imu] \
-                        * bias[isample3, iz, ik3, imu] \
+                        * bias[isample2, iz, ik2] \
+                        * bias[isample3, iz, ik3] \
                         * pk23 
 
         return Bggg_b20
         
 
-class B3D_RSD(B3D): #No AP
+class B3D_RSD(B3D):
+
+    """No AP"""
 
     def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_spec):
         # TODO check that b3d_spec is instance of the right child class?
@@ -405,11 +427,9 @@ class B3D_RSD(B3D): #No AP
 
         Bggg_b10 = np.zeros((ntri, nori))
 
-        imu = 0 #TODO handle later
-
         k1, k2, k3 = self._get_k1_k2_k3_array(iz)
 
-        bias = self._grs_ingredients.get('galaxy_bias') 
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
         f_of_z = self._get_f_of_z(iz) 
 
         for iori in range(self._triangle_spec.nori):
@@ -419,9 +439,9 @@ class B3D_RSD(B3D): #No AP
             mu3 = self._triangle_spec.mu_array[:, iori, 2]
             assert mu1.size == self._ik1.size
             
-            Z1_k1 = bias[isample1, iz, self._ik1, imu] + f_of_z * mu1 ** 2
-            Z1_k2 = bias[isample2, iz, self._ik2, imu] + f_of_z * mu2 ** 2
-            Z1_k3 = bias[isample3, iz, self._ik3, imu] + f_of_z * mu3 ** 2
+            Z1_k1 = bias[isample1, iz, self._ik1] + f_of_z * mu1 ** 2
+            Z1_k2 = bias[isample2, iz, self._ik2] + f_of_z * mu2 ** 2
+            Z1_k3 = bias[isample3, iz, self._ik3] + f_of_z * mu3 ** 2
 
             fog = self._get_fog(iz, isample1, isample2, isample3, k1*mu1, k2*mu2, k3*mu3)
 
@@ -431,11 +451,9 @@ class B3D_RSD(B3D): #No AP
 
     def _get_Bggg_b20_at_iz(self, iz, isample1, isample2, isample3):
         (pk12, pk23, pk13) = self._get_pk12_23_13(iz)
-        bias = self._grs_ingredients.get('galaxy_bias') 
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
         bias_20 = self._grs_ingredients.get('galaxy_bias_20') 
         
-        imu = 0 #TODO handle later
-
         ntri = self._triangle_spec.ntri
         nori = self._triangle_spec.nori
 
@@ -451,9 +469,9 @@ class B3D_RSD(B3D): #No AP
             assert mu1.size == self._ik1.size
 
             f_of_z = self._get_f_of_z(iz)
-            Z1_k1 = bias[isample1, iz, self._ik1, imu] + f_of_z * mu1 ** 2
-            Z1_k2 = bias[isample2, iz, self._ik2, imu] + f_of_z * mu2 ** 2
-            Z1_k3 = bias[isample3, iz, self._ik3, imu] + f_of_z * mu3 ** 2
+            Z1_k1 = bias[isample1, iz, self._ik1] + f_of_z * mu1 ** 2
+            Z1_k2 = bias[isample2, iz, self._ik2] + f_of_z * mu2 ** 2
+            Z1_k3 = bias[isample3, iz, self._ik3] + f_of_z * mu3 ** 2
 
             #TODO need to factor Z1, Z2, Z3 into grs ingredients
 

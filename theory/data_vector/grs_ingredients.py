@@ -34,7 +34,9 @@ class GRSIngredients(object):
 
         self._allowed_ingredients = [\
             'alpha', \
+            'alpha_without_AP', \
             'galaxy_bias', \
+            'galaxy_bias_without_AP', \
             'galaxy_bias_20', \
             'gaussian_bias', \
             'AP', \
@@ -46,9 +48,6 @@ class GRSIngredients(object):
             'sigp', \
         ]
         self._ingredients = {}
-
-
-        self.logger.info('self._d.mu = {}'.format(self._d.mu))
 
     def _get_cosmo_product(self, cosmo_par, z):
         return CosmoProduct_FromCamb(cosmo_par, z)
@@ -124,21 +123,41 @@ class GRSIngredients(object):
 
         self._ingredients['alpha'] = alpha
 
-    def _calc_galaxy_bias(self, fnl=None):
+    def _calc_alpha_without_AP(self):
+        """Returns alpha without AP effect as 2d numpy array with shape (nz, nk) """
+
+        assert 'alpha' not in self._ingredients.keys()
+        
+        initial_power = self._get_initial_power(self._d.k)
+        matter_power = self.get('matter_power_without_AP')
+
+        expected_shape = (self._d.nz, self._d.nk)
+
+        assert initial_power.shape == (self._d.nk,), \
+            (initial_power.shape, (self._d.nk))
+
+        assert matter_power.shape == expected_shape, \
+            (matter_power.shape, expected_shape)
+
+        alpha = (5.0/3.0) * np.sqrt(matter_power/initial_power[np.newaxis, :])
+
+        assert alpha.shape == expected_shape, \
+            (alpha.shape, expected_shape)
+
+        self._ingredients['alpha_without_AP'] = alpha
+
+    def _calc_galaxy_bias(self):
         """Returns galaxy bias in a 4-d numpy array of shape (nsample, nz, nk, nmu)."""
 
         assert 'galaxy_bias' not in self._ingredients.keys()
 
-        #HACK
-        #delta_c = 0.0
         delta_c = 1.686
 
         gaussian_bias = self.get('gaussian_bias')[:, :, np.newaxis, np.newaxis]
 
         alpha = self.get('alpha')[np.newaxis, :, :, :]
 
-        fnl = fnl or self._fnl
-        galaxy_bias = gaussian_bias + 2.0*fnl*delta_c*(gaussian_bias-1.0)/alpha
+        galaxy_bias = gaussian_bias + 2.0*self._fnl*delta_c*(gaussian_bias-1.0)/alpha
 
         expected_shape = self._d.transfer_shape
         msg = ('galaxy_bias.shape = {}, expected ({})'
@@ -146,6 +165,28 @@ class GRSIngredients(object):
         assert galaxy_bias.shape == expected_shape, msg
 
         self._ingredients['galaxy_bias'] = galaxy_bias
+
+    def _calc_galaxy_bias_without_AP(self):
+        """Returns galaxy bias in a 4-d numpy array of shape (nsample, nz, nk)."""
+
+        assert 'galaxy_bias_without_AP' not in self._ingredients.keys()
+
+        delta_c = 1.686
+
+        gaussian_bias = self.get('gaussian_bias')[:, :, np.newaxis]
+
+        alpha = self.get('alpha_without_AP')[np.newaxis, :, :]
+
+        galaxy_bias = gaussian_bias + 2.0*self._fnl*delta_c*(gaussian_bias-1.0)/alpha
+
+        expected_shape = (self._d.nsample, self._d.nz, self._d.nk)
+
+        msg = ('galaxy_bias.shape = {}, expected ({})'
+               .format(galaxy_bias.shape, expected_shape))
+
+        assert galaxy_bias.shape == expected_shape, msg
+
+        self._ingredients['galaxy_bias_without_AP'] = galaxy_bias
 
     def _calc_galaxy_bias_20(self, fnl=None):
         """Returns 2d numpy array of shape (nsample, nz) for second-order galaxy 
@@ -353,23 +394,6 @@ class GRSIngredients(object):
         initial_power = (2.0 * np.pi**2)/(k**3) * np.exp(initial_power)
         
         return initial_power
-
-    @staticmethod
-    def get_F2(k1, k2, k3):  
-        dot_k1k2 = 0.5 * (-k1**2 - k2**2 + k3**2)
-        cos = dot_k1k2 / k1 / k2
-        ans = 5.0 / 7.0 + 0.5 * (k1 / k2 + k2 / k1) * cos + 2.0 / 7.0 * cos**2
-        return ans
-
-    @staticmethod
-    def get_matter_power_quadratic_permutations(matter_power, iz, ik1, ik2, ik3, imu1 = 0, imu2 = 0, imu3 = 0):
-        
-        mp = matter_power[iz,:,:]
-        pk12 = mp[ik1, imu1] * mp[ik2, imu2]
-        pk23 = mp[ik2, imu2] * mp[ik3, imu3]
-        pk13 = mp[ik1, imu1] * mp[ik3, imu3]
-
-        return pk12, pk23, pk13
 
 
     
