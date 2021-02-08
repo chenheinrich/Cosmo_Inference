@@ -28,11 +28,15 @@ class BisSNPlotter(TrianglePlotter):
         if self._do_run_checks is True:
             self._run_checks()
 
+        sigma_fnl = self._get_sigma_fnl()
+        print('sigma_fnl = %s'%sigma_fnl) #TODO put somewhere sensible
+
         nb = self._data_spec.nsample ** 3
 
         kwargs = {'plot_type': 'semilogy'}
         if isinstance(self._data_vec, B3D_RSD):
             for ib in range(nb):
+                self._plot_error(ib, **kwargs)
                 self._plot_sn_bis_rsd(ib, **kwargs)  
 
         #TODO might want to tighten this logic
@@ -72,21 +76,16 @@ class BisSNPlotter(TrianglePlotter):
             1) Difference: data_vec2 - data_vec 
             2) Difference/error: (data_vec2 - data_vec)/bis_var if bis_var is not None
         """
-
-        # plot B (fnl = 1) - B (fnl = 0)
-        #TODO eventually (plot B (fnl = 1) - B (fnl = 0)) / error
-        
-        #fname_ref = self._get_fname_fnl_ref(self._plot_dir)
-        #print('Loading bispectrum with fnl = 0 from {}'.format(fname_ref))
-        #bis_fnl_ref = os.path.join(fname_ref)
-        #y2 = np.load(bis_fnl_ref)
-
         if self._bis_var is None:
             bis_error = np.ones_like(self._data_vec.get('Bggg_b10_primordial'))
             yname_tag = 'diff_wrt_fnl_0'
+            title_tag = ''
         else:
             bis_error = self._bis_var.bis_error[:,:,:,np.newaxis]
             yname_tag = 'diff_over_error_wrt_fnl_0'
+            title_tag = '/$\sigma(B)$'
+
+        #print('bis_error[2, 10, :,:]', bis_error[2, 10, :,:])
 
         izs = np.arange(0, self._data_spec.nz, 10)
         dimension = 'tri'
@@ -113,14 +112,19 @@ class BisSNPlotter(TrianglePlotter):
         (isample1, isample2, isample3) = self._data_spec.dict_ib_to_isamples['%i'%ib]
         ylatex = ''
         yname = 'galaxy_bis_oriented_ABC_%i_%i_%i_%s'%(isample1, isample2, isample3, yname_tag)
-        ylim_clip = None
 
         if self._bis_var is None:
             ylim = [1e5, 1e12]
         else:
-            ylim = [1e-5, 1e5]
+            #ylim = [1e-2, 1e8]
+            ylim = None #HACK
+            
+        if self._bis_var is None:
+            ylim_clip = None
+        else:
+            ylim_clip = [1e-10, 1e10]
         
-        title = r'$\Delta B_{g_{%s}g_{%s}g_{%s}}$ ($f_{\rm NL} = %s$ vs 0)'%(isample1, isample2, isample3, fnl)
+        title = r'$\Delta B_{g_{%s}g_{%s}g_{%s}}$%s ($f_{\rm NL} = %s$ vs 0)'%(isample1, isample2, isample3, title_tag, fnl)
         xlim = [0, self._data_spec.triangle_spec.ntri]
 
         line_styles = ['-', '-', '-', '-']
@@ -130,6 +134,44 @@ class BisSNPlotter(TrianglePlotter):
             ylim=ylim, ylim_clip=ylim_clip, y2_list=y2_list, y3_list=y3_list, y4_list=y4_list, \
             line_styles=line_styles, **kwargs)
 
+    def _get_sigma_fnl(self):
+        diff = self._data_vec.get('galaxy_bis') - self._data_vec_ref.get('galaxy_bis')
+        bis_error = self._bis_var.bis_error[:,:,:,np.newaxis]
+        diff = diff/bis_error
+        sigma_fnl = (np.sum((diff)**2))**(-0.5)
+        return sigma_fnl
+
+
+    def _plot_error(self, ib, **kwargs):
+
+        """Plot error in bis_var"""
+        bis_error = self._bis_var.bis_error[:,:,:,np.newaxis]
+
+        izs = np.arange(0, self._data_spec.nz, 10)
+        dimension = 'tri'
+
+        y1_list = [bis_error[ib, iz, :, :] for iz in izs]
+
+        legend = [ r'error per mode']
+
+        (isample1, isample2, isample3) = self._data_spec.dict_ib_to_isamples['%i'%ib]
+        ylatex = ''
+        yname = 'galaxy_bis_error_per_mode_ABC_%i_%i_%i'%(isample1, isample2, isample3)
+
+        if self._bis_var is None:
+            ylim = [1e5, 1e12]
+        else:
+            ylim = None #[1e-5, 1e5]
+        
+        title = r'$\sigma(B_{g_{%s}g_{%s}g_{%s}})$ ($f_{\rm NL} = 0$)'%(isample1, isample2, isample3)
+        xlim = [0, self._data_spec.triangle_spec.ntri]
+
+        line_styles = ['-', '-', '-', '-']
+
+        self._plot_1D_with_orientation(dimension, y1_list, ylatex, yname, self._data_spec, \
+            xlim=xlim, plot_dir=self._plot_dir, izs=izs, legend=legend, title=title, \
+            ylim=ylim, \
+            line_styles=line_styles, **kwargs)
 
     def _plot_1D_with_orientation(self, dimension, y_list, ylatex, yname, data_spec,\
                 legend='', plot_type='plot', k=None, z=None, \
@@ -158,7 +200,6 @@ class BisSNPlotter(TrianglePlotter):
                 for iori in range(nori):
 
                     ax = fig.add_subplot(gs[iori, 0])
-
                     line, = self._draw_line(ax, plot_type, x, y[:, iori])
 
                     if y2_list is not None:
@@ -179,7 +220,8 @@ class BisSNPlotter(TrianglePlotter):
                         ax.set_title(title)
                         ax.legend(legend, bbox_to_anchor=(1.05, 1.0), ncol=2)
 
-                    self._add_zero_line(ax, color='black', ls='--', alpha=0.5)
+                    #if 'log' not in plot_type:
+                        #self._add_zero_line(ax, color='black', ls='--', alpha=0.5)
 
                     self._set_ylim_clipped(ax, ylim=ylim, ylim_clip=ylim_clip)
                     

@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import sys
 
 from theory.cosmo.cosmo_product import CosmoProduct_FromCobayaProvider
 from theory.cosmo.cosmo_product import CosmoProduct_FromCamb
@@ -16,7 +17,7 @@ class GRSIngredients(object):
             params_values_dict: has gaussian_bias_sample_<i>_z_<j> where i and j start at 1.
         """
 
-        self.logger = class_logger(self)
+        self._logger = class_logger(self)
 
         self._cosmo_par = cosmo_par
         self._cosmo_par_fid = cosmo_par_fid
@@ -88,10 +89,54 @@ class GRSIngredients(object):
         AP_perp, AP_para = self._get_AP_perp_and_para()
         return self._d.get_k_and_mu_actual(AP_perp, AP_para)
 
-    #TODO to finish
-    #def _get_survey_volume_array(self):
-    #    self._cosmo.get_comoving_radial_distance_at_z()
-    #    self._survey_par.
+    def _get_survey_volume_array(self):
+        """Returns 1d numpy array of shape (nz,) for the volume of the 
+        redshift bins.
+        """
+         #TODO abolish zmid calculations somewhere
+        zhi = self._survey_par.get_zhi_array()
+        zlo = self._survey_par.get_zlo_array()
+
+        d_hi = self._cosmo.get_comoving_radial_distance_at_z(zhi)
+        d_lo = self._cosmo.get_comoving_radial_distance_at_z(zlo)
+
+        V_array = (4.0 * np.pi)/3.0 * (d_hi**3 - d_lo**3)
+
+        return V_array
+
+    def _test_get_volume(self):
+       
+        zlo = np.array([0.65, 0.75, 0.85, 0.95, 1.05, 1.75])
+        zhi = np.array([0.75, 0.85, 0.95, 1.05, 1.15, 1.85])
+        zmid = np.array([0.70, 0.80, 0.9, 1.0, 1.1, 1.8])
+
+        V_array = np.zeros_like(zhi)
+        for i in range(zhi.size):
+            d_hi = self._cosmo.get_comoving_radial_distance_at_z(zhi[i])
+            d_lo = self._cosmo.get_comoving_radial_distance_at_z(zlo[i])
+            V_array[i] = (4.0 * np.pi)/3.0 * (d_hi**3 - d_lo**3) 
+        
+        DESI_area = 14000
+        fsky = DESI_area/180/180*np.pi/4.0
+        h = self._get_H0_fid()/100.0
+
+        V_array = V_array * h**3 * fsky/1e9
+
+        print('fsky', fsky)
+        print('V_array:', V_array)
+        print('Expected V (DESI) =', [2.63, 3.15, 3.65, 4.10, 4.52, 6.43], \
+            '(Gpc/h)^3 [up to cosmology differences]')
+        # https://arxiv.org/pdf/1611.00036.pdf Table 2.3
+
+        return V_array
+
+    def _get_number_density_array(self):
+        """Returns 2d numpy array of shape (nsample, nz) for the number density 
+        in (1/Mpc)^3 (not (h/Mpc)^3 as in input yaml)."""
+        h = self._get_H0_fid()/100.0
+        number_density_invMpc = h**3 * self._survey_par.get_number_density_array()
+        self._logger.debug('h = {}'.format(h))
+        return number_density_invMpc
 
     def _calc_AP(self):
         """Returns AP factor in an array same size as self._d.z."""
@@ -352,6 +397,11 @@ class GRSIngredients(object):
     def _get_H0(self):
         """Returns H0 in km/s/Mpc units."""
         H0 = self._cosmo.get_H0()
+        return H0
+    
+    def _get_H0_fid(self):
+        """Returns H0 in km/s/Mpc units."""
+        H0 = self._cosmo_fid.get_H0()
         return H0
 
     def _get_sigma8_now(self):

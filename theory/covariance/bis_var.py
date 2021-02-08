@@ -4,7 +4,7 @@ from theory.data_vector.data_vector import P3D
 
 class Bispectrum3DVariance():
 
-    def __init__(self, p3d, data_spec_bis):
+    def __init__(self, p3d, data_spec_bis, dict_bis_var, do_cvl_noise=False):
         assert isinstance(p3d, P3D)
         self._p3d = p3d
 
@@ -12,44 +12,53 @@ class Bispectrum3DVariance():
         self._data_spec_ps = self._p3d._data_spec
 
         self._data_spec_bis = data_spec_bis
+        self._do_folded_signal = self._data_spec_bis.do_folded_signal
         self._triangle_spec = self._data_spec_bis.triangle_spec
 
-        #HACK revive when we need number density and volume
-        #self._number_density_in_invMpc = self._get_number_density_in_invMpc()
-        #self._survey_volume_array = self._get_survey_volume_array()
+        self._fsky = dict_bis_var['fsky']
+        self._survey_volume_array = self._get_survey_volume_array()
+
+        self._do_cvl_noise = dict_bis_var['do_cvl_noise']
+        self._ps_noise = self._get_noise()
 
         self._bis_error = self._get_Bggg_error()
 
-    #TODO Use getter?
     @property
     def bis_error(self):
         return self._bis_error
 
     def _get_Bggg_error(self):
-        """4d numpy array of shape (nb, nz, ntri, nori)"""
+        """3d numpy array of shape (nb, nz, ntri)"""
     
         nsample = self._data_spec_bis.nsample
         nb = nsample**3
         nz = self._data_spec_bis.nz
         ntri = self._triangle_spec.ntri
-        #nori = self._triangle_spec.nori
 
-        Bggg_error = np.zeros((nb, nz, ntri))
+        Bggg_var = np.zeros((nb, nz, ntri))
         
         for iz in range(nz):
             ib = 0
             for isample1 in range(nsample):
                 for isample2 in range(nsample):
                     for isample3 in range(nsample):
-                        Bggg_error[ib, iz, :] =  self._get_Bggg_error_diagonal(iz, isample1, isample2, isample3)
+                        Bggg_var[ib, iz, :] =  self._get_Bggg_var_diagonal(iz, isample1, isample2, isample3)
                         ib = ib + 1
 
-        return Bggg_error
+        Nmodes = self._get_Nmodes()[np.newaxis, :, :]
+        V = self._survey_volume_array[np.newaxis, :, np.newaxis]
+        Bggg_var *= V / Nmodes
+        
+        return np.sqrt(Bggg_var)
 
-    def _get_Bggg_error_diagonal(self, iz, isample1, isample2, isample3):
+    def _get_Bggg_var_diagonal(self, iz, isample1, isample2, isample3):
         """1d numpy array of shape (ntri,), no mu-dependence"""
 
-        imu = 0 #TODO make sure handling correctly.
+        imu = 0 #TODO handled currently now, but need to eliminate later
+        # Need to make galaxy_power without AP effects
+        # and call that. 
+        # TODO Need to do this properly; is there FOG suppression now?
+        # maybe have a power spectrum version that is good for covariance?
 
         (ik1_array, ik2_array, ik3_array) = self._triangle_spec.get_ik1_ik2_ik3()
         var = np.zeros(self._triangle_spec.ntri)
@@ -61,43 +70,66 @@ class Bispectrum3DVariance():
             var[itri] = self._get_observed_ps(iz, isample1, isample1, ik1, imu) \
                 * self._get_observed_ps(iz, isample2, isample2, ik2, imu) \
                 * self._get_observed_ps(iz, isample3, isample3, ik3, imu)
+
             #TODO ignore other 5 terms for now, so not accurate for isoceles and equilateral!!
-            #fsky = 0.75 #HACK need to put this in properly
+            # use below if need to refine
+            #choose_terms_1 = np.array([1., 0., 0., 0., 0., 0.])
+            #choose_terms_1to6 = np.array([1., 1., 1., 1., 1., 1.])
+            #choose_terms_1and2 = np.array([1., 1., 0., 0., 0., 0.])
+            #choose_terms_1and3 = np.array([1., 0., 1., 0., 0., 0.])
+            #choose_terms_equilateral = choose_terms_1to6
+            #choose_terms_isoceles_k1_k2 = choose_terms_1and3
+            #choose_terms_isoceles_k2_k3 = choose_terms_1and2
+            #choose_terms_scalene = choose_terms_1
 
-        #var /= (fsky * self._survey_volume_array[iz])
-        
-        return np.sqrt(var)
+        return var
+    
+    def _get_Nmodes(self):
+        """1d numpy array of shape (nz, ntri) for the number of modes in each triangle shape bin."""
 
-    #TODO to be completed!!
-    #def _get_survey_volume_array(self):
-     #   """Returns 1d numpy array of shape (nz, ) for the volume of the 
-     #   redshift bins.
+        if self._do_folded_signal is True:
+            nori = self._data_spec_bis.triangle_spec.nori 
+            Sigma = self._data_spec_bis.Sigma_scaled_to_4pi
+            assert np.allclose(nori * Sigma, 1)
+        else:
+            Sigma = self._data_spec_bis.Sigma
 
-      #  Note: The calculation is approximate: We do not integrate dV over
-      #  dz, but instead integrate dchi and use the bin center for the area.
-      #  """
-        
-        # TODO might want to have more finely integrated volume
-        # this would require getting comoving_radial_distance from camb
-        # at more redshift values.
-        # Might want to decouple this from requirements in theory module
-        # where this is requested for now.
-        #d_lo = self._p3d._grs_ingredients.get('comoving_radial_distance')
-        #d_hi = self._p3d._grs_ingredients.get('comoving_radial_distance')
-        #d_mid = self._p3d._grs_ingredients.get('comoving_radial_distance')
-        #dist = d_mid
-        #V = (4.0 * np.pi) * dist**2 * (d_hi - d_lo)
-        #return V
+        (k1, k2, k3) = self._data_spec_bis.triangle_spec.get_k1_k2_k3()
+        (dk1, dk2, dk3) = self._data_spec_bis.get_dk1_dk2_dk3()
+
+        K_triangle = 8.0 * (np.pi * np.pi) * (k1 * k2 * k3) * (dk1 * dk2 * dk3) * Sigma
+        V = self._survey_volume_array
+
+        Nmodes = (V**2)[:, np.newaxis] / (2*np.pi)**6 * K_triangle
+
+        return Nmodes
+
+    def _get_survey_volume_array(self):
+        """Returns 1d numpy array of shape (nz,) for the volume of the 
+        redshift bins in units of (Mpc)^3 with fsky included."""
+        return self._fsky * self._p3d._grs_ingredients._get_survey_volume_array() 
 
     def _get_observed_ps(self, iz, isample1, isample2, ik, imu):
+
         ips = self._data_spec_ps._dict_isamples_to_ips['%i_%i'%(isample1, isample2)]
         ps = self._galaxy_ps[ips, iz, ik, imu]
-        #if isample1 == isample2:
-        #    ps += self._get_noise(isample1, iz)
+
+        if isample1 == isample2:
+            if self._do_cvl_noise is False:
+                ps += self._ps_noise[isample1, iz]
+
         return ps
 
-    def _get_noise(self, isample, iz):
-        return 1.0/self._number_density_in_invMpc[isample, iz]
+    def _get_noise(self):
+        """"Returns 2d numpy array of shape (nsample, nz) for the power spectrum
+        noise, where noise = 1/number density, and is in unit of (Mpc)^3."""
+
+        number_density = self._p3d._grs_ingredients._get_number_density_array()
+        noise = 1./number_density
+
+        return noise
+
+    
 
 
 

@@ -66,23 +66,28 @@ class TrianglePlotter():
 
     @staticmethod
     def _set_ylim_clipped(ax, ylim=None, ylim_clip=None):
+
         if ylim is not None:
             ax.set_ylim(ylim)
-        if ylim_clip is None:
-            ax.set_ylim(ylim)
-        else:
-            ylim = ax.get_ylim()
-
-            if ylim_clip[0] is not None:
-                clipped_ylim_lo = max(ylim[0], ylim_clip[0])
+            return 
+        else:   
+            if ylim_clip is None:
+                ax.set_ylim(ylim)
+                return 
             else:
-                clipped_ylim_lo = ylim[0]
+                ylim = ax.get_ylim()
 
-            if ylim_clip[1] is not None:
-                clipped_ylim_hi = min(ylim[1], ylim_clip[1])
-            else:
-                clipped_ylim_hi = ylim[1]
-                
-            ylim = [clipped_ylim_lo, clipped_ylim_hi]
-            ax.set_ylim(ylim)
+                if ylim_clip[0] is not None:
+                    clipped_ylim_lo = max(ylim[0], ylim_clip[0])
+                else:
+                    clipped_ylim_lo = ylim[0]
+
+                if ylim_clip[1] is not None:
+                    clipped_ylim_hi = min(ylim[1], ylim_clip[1])
+                else:
+                    clipped_ylim_hi = ylim[1]
+                    
+                ylim = [clipped_ylim_lo, clipped_ylim_hi]
+                ax.set_ylim(ylim)
+                return 
 

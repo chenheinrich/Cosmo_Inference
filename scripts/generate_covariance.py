@@ -67,12 +67,15 @@ class CovCalculator():
                 ips = ips + 1
 
     def load_number_density(self):
-        """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
-        expecting number density in survey_par_file are given in h/Mpc."""
+        """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of (1/Mpc)^3,
+        expecting number density in survey_par_file are given in (h/Mpc)^3."""
         # TODO want to put h * number_density in the survey par maybe?
         self.survey_par = SurveyPar(self.args['survey_par_file'])
         h = self.data['H0'] / 100.0 
         self.number_density = h * self.survey_par.get_number_density_array()
+        # TODO MISTAKE!! should be h**3 * self.survey_par.get_number_density_array()
+        # TODO test change in results with this
+        # TODO any tests need to be rewritten?
 
     def get_and_save_invcov(self):
         self.get_cov()
@@ -245,6 +248,18 @@ class CovCalculator():
         d_mid = self.data['comoving_radial_distance']
         dist = d_mid
         V = (4.0 * np.pi) * dist**2 * (d_hi - d_lo)
+        return V
+
+    #TODO change this and test change
+    #TODO Might want to decouple this from requirements in theory module
+        # where this is requested for now.
+    #TODO delete zmid calculations?
+    def get_survey_volume_array_correct(self):
+        """Returns 1d numpy array of shape (nz, ) for the volume of the 
+        redshift bins in Mpc^3 (no h^{-3})."""
+        d_lo = self.data['comoving_radial_distance_lo']
+        d_hi = self.data['comoving_radial_distance_hi']
+        V = (4.0 * np.pi/3.0) * (d_hi**3 - d_lo**3)
         return V
 
     def test_dictionaries_are_constructed_correctly(self):

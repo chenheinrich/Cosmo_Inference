@@ -11,6 +11,8 @@ from theory.data_vector.data_spec import DataSpecPowerSpectrum
 from theory.data_vector.data_vector import DataVector, P3D, B3D
 from theory.utils import file_tools
 
+from theory.utils.profiler import profiler
+
 def get_data_vec_ps(info):
     cosmo_par_file = info['cosmo_par_file']
     cosmo_par_fid_file = info['cosmo_par_fid_file']
@@ -204,7 +206,7 @@ def plot_1D(dimension, y_list, ylatex, yname, data_spec,
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory.get_ps ./inputs_theory/ps.yaml
+        python3 -m theory.scripts.get_ps ./inputs_theory/get_ps.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

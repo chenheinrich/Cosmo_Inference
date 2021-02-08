@@ -12,6 +12,8 @@ from theory.utils import file_tools
 from theory.plotting.bis_plotter import BisPlotter
 from theory.plotting.triangle_spec_plotter import TriangleSpecPlotter
 
+from theory.utils.profiler import profiler
+
 def get_data_spec(info):
     survey_par_file = info['survey_par_file']
     data_spec_dict = info['Bispectrum3D'] 
@@ -40,10 +42,17 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
+@profiler
+def save_galaxy_bis(info):
+    data_vec = get_data_vec_bis(info)
+    fn = get_fn(info)
+    file_tools.save_file_npy(fn, data_vec.get('galaxy_bis'))
+    return data_vec
+
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory.get_bis ./inputs_theory/single_bis.yaml 
+        python3 -m theory.scripts.get_bis ./inputs_theory/get_bis.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -61,10 +70,8 @@ if __name__ == '__main__':
     triangle_plotter = TriangleSpecPlotter(data_spec._triangle_spec, plot_dir=info['plot_dir'])
     triangle_plotter.make_plots()
 
-    data_vec = get_data_vec_bis(info)
-    fn = get_fn(info)
-    file_tools.save_file_npy(fn, data_vec.get('galaxy_bis'))
-       
+    data_vec = save_galaxy_bis(info)
+
     bis_plotter = BisPlotter(data_vec, data_spec, plot_dir=info['plot_dir'], do_run_checks=False)
     bis_plotter.make_plots()
 

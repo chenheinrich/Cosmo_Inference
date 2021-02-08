@@ -1,6 +1,7 @@
 import numpy as np
 
 from theory.utils.misc import evaluate_string_to_float
+from theory.utils.logging import class_logger
 from theory.data_vector.triangle_spec import TriangleSpec, TriangleSpecTheta1Phi12
 
 class DataSpec():
@@ -18,6 +19,7 @@ class DataSpec():
     """
 
     def __init__(self, survey_par, data_spec_dict):
+        self._logger = class_logger(self)
         self._survey_par = survey_par
         self._dict = data_spec_dict
         self._setup_specs()
@@ -61,9 +63,14 @@ class DataSpec():
         return dk
 
     def _setup_mu(self):
-        nmu = self._dict['nmu'] #TODO HACK have to see how this works
+        nmu = self._dict['nmu'] 
 
-        if nmu == -1:
+        if nmu == -1: 
+            #TODO setting mu = 0 still leaves k_actual = k_ref (H_ref/ H_actual)
+            # this could be useful for not including FoG effects and Kaiser
+            # perhaps could that a debug setting instead.
+            #Changed all bispectrum to use no AP effects
+            # Might need to change this depending on what we decide about AP.
             self._mu = np.array([0.0])
         else:
             self._mu_edges = np.linspace(0, 1, nmu + 1)
@@ -80,8 +87,12 @@ class DataSpec():
         self._nk = self._k.size
         self._nmu = self._mu.size
 
-        #TODO think about how to treat this nmu = -1 case: #assert self._nmu == self._dict['nmu'] 
-        assert self._nk == self._dict['nk'] #- 1 #TODO to be changed so input nk means nkbin
+        if self._dict['nmu'] == -1:
+            assert self._nmu == 1, (self._nmu, 'expect 1')
+        else:
+            assert self._nmu == self._dict['nmu'], (self._nmu, 'expect input value', self._dict['nmu'])
+
+        assert self._nk == self._dict['nk'] #TODO to be changed so input nk means nkbin
     
     def _setup_shape(self):
         self._shape = (self._nps, self._nz, self._nk, self._nmu)
@@ -141,10 +152,6 @@ class DataSpec():
     @property
     def nsample(self):
         return self._nsample
-
-    @property
-    def triangle_spec(self):
-        return self._triangle_spec
     
     def get_k_actual_perp_and_para(self, ap_perp, ap_para, z=None):
         """Return two 3-d numpy arrays of shape (nz, nk, mu) 
@@ -224,7 +231,15 @@ class DataSpecBispectrum(DataSpec):
     @property
     def nb(self):
         return self._nb
-        
+    
+    @property
+    def ntri(self):
+        return self.triangle_spec.ntri
+
+    @property
+    def triangle_spec(self):
+        return self._triangle_spec
+
     @property
     def dict_isamples_to_ib(self):
         """Returns an integer for ib (the bispectrum index) given a string 
@@ -250,22 +265,35 @@ class DataSpecBispectrum(DataSpec):
                     dict_isamples_to_ib['%i_%i_%i'%(isample1, isample2, isample3)] = ib
                     dict_ib_to_isamples['%i'%ib] = (isample1, isample2, isample3)
                     ib = ib + 1
-        nb = nsample**3 #TODO need to treat self._nps in power spectrum version
+        nb = nsample**3 
         assert ib == nb
         
         return dict_isamples_to_ib, dict_ib_to_isamples, nb
+    
+    def get_dk1_dk2_dk3(self):
+        (ik1, ik2, ik3) = self.triangle_spec.get_ik1_ik2_ik3() 
+        return (self._dk[ik1], self._dk[ik2], self._dk[ik3])
 
 class DataSpecBispectrumOriented(DataSpecBispectrum):
 
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)
         
+        (self._min_cos_theta1, self._max_cos_theta1, self._min_phi12, self._max_phi12) \
+            = self._get_min_max_angles(data_spec_dict)
         self._theta1, self._phi12, self._cos_theta1 = self._setup_angles(data_spec_dict)
+        
         self._triangle_spec = TriangleSpecTheta1Phi12(self._k, self._theta1, self._phi12, \
-            set_mu_to_zero = data_spec_dict['debug_settings']['set_mu_to_zero']) #TODO to clean up a bit more
+            set_mu_to_zero = data_spec_dict['debug_settings']['set_mu_to_zero']) 
     
         self._debug_sigp = data_spec_dict['debug_settings']['sigp']
         self._debug_f_of_z = data_spec_dict['debug_settings']['f_of_z']
+
+        self.do_folded_signal = data_spec_dict['do_folded_signal']
+
+    @property
+    def nori(self):
+        return self._triangle_spec.nori
 
     @property
     def theta1(self):
@@ -279,33 +307,69 @@ class DataSpecBispectrumOriented(DataSpecBispectrum):
     def cos_theta1(self):
         return self._cos_theta1
 
+    @property
+    def Sigma_scaled_to_4pi(self):
+        total_omega_over_4pi = (self._max_cos_theta1 - self._min_cos_theta1) \
+            * (self._max_phi12 - self._min_phi12)/(4.*np.pi)
+        return (self.Sigma/total_omega_over_4pi)
+
+    @property
+    def Sigma(self):
+        dmu1 = self.triangle_spec.dmu1
+        dphi12 = self.triangle_spec.dphi12
+        Sigma = dmu1 * dphi12 / (4.0*np.pi) 
+        return Sigma
+
+    @property
+    def shape_bis(self):
+        shape_bis = (self.nb, self.nz, self.ntri, self.nori)
+        return shape_bis
+    
+    @property
+    def shape_bis_transfer(self):
+        shape_bis_transfer = (self.nsample, self.nz, self.ntri, self.nori)
+        return shape_bis_transfer
+
     def _setup_angles(self, data_spec_dict):
 
         """Returns theta1 and phi12 given min max and number of bins of cos(theta1) and phi12. """
         
         if data_spec_dict['triangle_orientation'] == 'theta1_phi12':
             
-            min_cos_theta1 = -1.0 if 'min_cos_theta1' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['min_cos_theta1'])
-            max_cos_theta1 = 1.0 if 'max_cos_theta1' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['max_cos_theta1'])
-            min_phi12 = 0 if 'min_phi12' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['min_phi12'])
-            max_phi12 = 2. * np.pi if 'max_phi12' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['max_phi12'])
+            (min_cos_theta1, max_cos_theta1, min_phi12, max_phi12) = self._get_min_max_angles(data_spec_dict)
             
-            print('min_cos_theta1, max_cos_theta1', min_cos_theta1, max_cos_theta1)
-            print('min_phi12, max_phi12', min_phi12, max_phi12)
+            self._logger.info('Using cos_theta1 in [{}, {}]'.format(min_cos_theta1, max_cos_theta1))
+            self._logger.info('Using phi12 in [{}, {}]'.format(min_phi12, max_phi12))
             
             cos_theta1 = self._get_bin_centers_from_nbin(min_cos_theta1, max_cos_theta1, data_spec_dict['nbin_cos_theta1'])
             theta1 = np.arccos(cos_theta1) 
             phi12 = self._get_bin_centers_from_nbin(min_phi12, max_phi12, data_spec_dict['nbin_phi12'])
 
-            print('cos_theta1, theta1, phi12', cos_theta1, theta1, phi12)
-            print('theta1_in_deg', theta1 / np.pi * 180.0)
-            print('phi12 in deg', phi12 / np.pi * 180.0)
+            self._logger.info('theta1_in_deg = {}'.format(theta1 / np.pi * 180.0))
+            self._logger.info('phi12 in deg = {}'.format(phi12 / np.pi * 180.0))
             
             return theta1, phi12, cos_theta1
+    
+    def _get_min_max_angles(self, data_spec_dict):
+
+        if data_spec_dict['triangle_orientation'] == 'theta1_phi12':
+
+            min_cos_theta1 = -1.0 if 'min_cos_theta1' not in data_spec_dict.keys() \
+                else evaluate_string_to_float(data_spec_dict['min_cos_theta1'])
+
+            max_cos_theta1 = 1.0 if 'max_cos_theta1' not in data_spec_dict.keys() \
+                else evaluate_string_to_float(data_spec_dict['max_cos_theta1'])
+
+            min_phi12 = 0 if 'min_phi12' not in data_spec_dict.keys() \
+                else evaluate_string_to_float(data_spec_dict['min_phi12'])
+
+            max_phi12 = 2.*np.pi if 'max_phi12' not in data_spec_dict.keys() \
+                else evaluate_string_to_float(data_spec_dict['max_phi12'])
+
+            return (min_cos_theta1, max_cos_theta1, min_phi12, max_phi12)
+
+        else:
+            raise NotImplementedError
             
     @staticmethod
     def _get_bin_centers_from_nbin(min_value, max_value, nbin):

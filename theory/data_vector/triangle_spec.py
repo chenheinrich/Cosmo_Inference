@@ -81,12 +81,22 @@ class TriangleSpec():
         return self._indices_k2_equal_k3
 
     def get_ik1_ik2_ik3(self):
-        """Returns a tuple of 3 elements, each being a 1d numpy array for ik1, ik2, ik3 respectively."""
+        """Returns a tuple of 3 elements, each being a 1d numpy array of length ntri 
+        for ik1, ik2, ik3."""
         tri_index_array = self.tri_index_array
         ik1 = tri_index_array[:,0].astype(int)
         ik2 = tri_index_array[:,1].astype(int)
         ik3 = tri_index_array[:,2].astype(int)
         return (ik1, ik2, ik3)
+
+    def get_k1_k2_k3(self):
+        """Returns a tuple of 3 elements, each being a 1d numpy array of length ntri 
+        for k1, k2, k3."""
+        tri_array = self.tri_array
+        k1 = tri_array[:,0]
+        k2 = tri_array[:,1]
+        k3 = tri_array[:,2]
+        return (k1, k2, k3)
 
     def _get_tri_info(self):
         """Find eligible triangles and create the dictionaries and arrays used in this class."""
@@ -118,15 +128,15 @@ class TriangleSpec():
 
                     k3 = k3_array[ik3]
                     tri_dict_tuple2index['%i, %i, %i'%(ik1, ik2, ik3)] = itri
-                    tri_index_array[itri] = [ik1, ik2, ik3]
-                    tri_array[itri] = [k1, k2, k3]
+                    tri_index_array[itri,:] = [ik1, ik2, ik3]
+                    tri_array[itri,:] = [k1, k2, k3]
                     itri = itri + 1
 
         ntri = itri
         assert np.all(tri_index_array[ntri:-1, :] == 0)
 
         tri_index_array = tri_index_array[:ntri, :]
-        tri_index_array = tri_index_array[:ntri, :]
+        tri_array = tri_array[:ntri, :]
 
         assert len(indices_k2_equal_k3) == self._nk * (self._nk + 1)/2, \
             (len(indices_k2_equal_k3), self._nk * (self._nk + 1)/2)
@@ -157,6 +167,9 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
     z' // k1, 
     x' in the same plane as los and k1, and k1 cross x' in the same direction as los x k1. 
     y' \perp z, y \perp x, such that x, y, z form a right-handed coordinates.
+
+    Note: Currently dtheta1 and dphi12 calculations assumes linear spacing 
+    for the input cos(theta1) and phi12.
     """
 
     def __init__(self, k, theta1, phi12, set_mu_to_zero=False):
@@ -179,6 +192,10 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
         self._ntheta1 = self._theta1.size
         self._nphi12 = self._phi12.size
 
+        #TODO might need a function to setup the most general case of theta1, phi12 input
+        self._dmu1 = np.cos(self._theta1[1]) - np.cos(self._theta1[0])
+        self._dphi12 = self._phi12[1] - self._phi12[0]
+
         self._nori = self._ntheta1 * self._nphi12
 
         self._angle_array = self._get_angle_array()
@@ -194,6 +211,16 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
     def theta1(self):
         """1d numpy array for the input theta1."""
         return self._theta1 
+
+    @property
+    def dmu1(self):
+        """A float for the dmu1 = d(cos(theta1)), assuming linear spacing in mu1."""
+        return self._dmu1
+    
+    @property
+    def dphi12(self):
+        """A float for the dphi12, assuming linear spacing in phi12."""
+        return self._dphi12
     
     @property
     def phi12(self):

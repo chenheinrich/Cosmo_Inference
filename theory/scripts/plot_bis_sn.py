@@ -91,13 +91,16 @@ if __name__ == '__main__':
 
     data_spec_bis = get_data_spec_bis(info)
     data_vec = get_data_vec_bis(info)
+
+    cosmo_par_fid_file = info['cosmo_par_fid_file']
    
-    info['cosmo_par_file'] = info['cosmo_par_fid_file']
+    info['cosmo_par_file'] = cosmo_par_fid_file 
     data_vec2 = get_data_vec_bis(info)
     
     if info['plot_with_error'] is True:
+        info['cosmo_par_file'] = cosmo_par_fid_file 
         p3d = get_data_vec_ps(info)
-        bis_var = Bispectrum3DVariance(p3d, data_spec_bis)
+        bis_var = Bispectrum3DVariance(p3d, data_spec_bis, info['Bispectrum3DVariance'])
     else:
         bis_var = None
     

@@ -1,6 +1,6 @@
 run_name: 'bis_rsd'
 
-cosmo_par_file: './inputs/cosmo_pars/planck2018_fiducial.yaml' #fiducial
+cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml' #fiducial
 
 cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
@@ -18,10 +18,11 @@ Bispectrum3D:
   min_phi12: 0
   max_phi12: 'np.pi'
   nbin_phi12: 4
+  do_folded_signal: True 
   debug_settings:
     set_mu_to_zero: False
     sigp: null
     f_of_z: null
 
 #plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0/'
-plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0_test_no_AP/' #set_mu_to_zero/' #set_deltac_to_zero/'
+plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_1_test_no_AP_optimized/' #set_mu_to_zero/' #set_deltac_to_zero/'

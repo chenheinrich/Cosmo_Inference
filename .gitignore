@@ -11,6 +11,7 @@ cosmo
 docker_interactive
 
 # User generated files
+*profiler/
 *chains/
 *.png
 demo*
