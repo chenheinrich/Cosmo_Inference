@@ -85,10 +85,40 @@ class P3D(DataVector):
 
 class B3D(DataVector):
 
-    """No AP"""
+    """ 
+    .. module:: B3D
+
+    :Synopsis: :class:`B3D is a base class for 3D galaxy bispectrum calculation, 
+        derived from the :class:`DataVector.
+
+    Attributes: 
+    
+        self._state: A dictionary that stores the main results, 
+            retrievable via self.get(key).
+
+        self._allowed_names: A list of strings for a name that can be 
+            called with "self.get(name)"; these are the allowed keys 
+            of the dictionary "self._state".
+
+        self._internal_state: A dictionary that stores the intermediate 
+            results, not meant to be retrievable from outside the class, 
+            but for resuse of intermdiate results such as matter bispectra.
+
+        self._internal_allowed_names: A list of strings for a name that 
+            can be called with "self._get(name)", these are the allowed 
+            keys of the dictionary "self._internal_state".
+        
+    """
 
     def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_spec):
         
+        """Inits B3D with cosmo_par, cosmo_par_fid, survey_par, b3d_spec.
+        
+        We check that b3d_spec is an instance of DataSpecBispectrum.
+
+        We setup triangle spec.
+        """ #TODO may need to simplify naming DataSpecBispectrum, and other input args
+
         assert isinstance(b3d_spec, DataSpecBispectrum)
 
         super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_spec)
@@ -100,7 +130,7 @@ class B3D(DataVector):
         self._internal_state = {}
         self._internal_allowed_names = ['Bmmm_prim', 'Bmmm_grav']
 
-        self._triangle_spec = self._get_triangle_spec()
+        self._triangle_spec = self._data_spec.triangle_spec
         (self._ik1, self._ik2, self._ik3) = self._get_ik1_ik2_ik3()
 
     def get(self, name):
@@ -125,9 +155,6 @@ class B3D(DataVector):
             raise NameNotAllowedError(name, self._internal_allowed_names)
         return 
 
-    def _get_triangle_spec(self):
-        return self._data_spec.triangle_spec
-
     def _get_ik1_ik2_ik3(self):
         return self._triangle_spec.get_ik1_ik2_ik3()
 
@@ -137,9 +164,6 @@ class B3D(DataVector):
         b10_prim = self._get_Bggg(term_name='b10_prim')  
         b10_tot = b10_grav + b10_prim
         b20 = self._get_Bggg(term_name='b20')  
-
-        #print('b10_grav', b10_grav)
-        #print('b10_prim', b10_prim)
 
         self._state['Bggg_b10_gravitational'] = b10_grav
         self._state['Bggg_b10_primordial'] = b10_prim
@@ -210,8 +234,8 @@ class B3D(DataVector):
     def _calc_Bmmm(self):
         """Matter bispectrum: 2d numpy array of shape (nz, ntri)."""
 
-        Bmmm_prim = np.zeros((self._data_spec.nz, self._data_spec.triangle_spec.ntri))
-        Bmmm_grav = np.zeros((self._data_spec.nz, self._data_spec.triangle_spec.ntri))
+        Bmmm_prim = np.zeros((self._data_spec.nz, self._triangle_spec.ntri))
+        Bmmm_grav = np.zeros((self._data_spec.nz, self._triangle_spec.ntri))
 
         for iz in range(self._data_spec.nz):
 
@@ -399,6 +423,7 @@ class B3D_RSD(B3D):
         super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_spec)
 
         assert isinstance(self._data_spec, DataSpecBispectrumOriented)
+
         self._triangle_spec = self._data_spec.triangle_spec
         print('self.triangle_spec.nori', self._triangle_spec.nori)
         print('self.triangle_spec.theta1', self._triangle_spec.theta1)
@@ -414,23 +439,38 @@ class B3D_RSD(B3D):
 
         if term_name in allowed_term_name:
 
-            #nb = self._data_spec.nsample**3
-            #nz = self._data_spec.nz
-            #ntri = self._triangle_spec.ntri
-            #nori = self._triangle_spec.nori
+            nb = self._data_spec.nsample**3
+            nz = self._data_spec.nz
+            ntri = self._triangle_spec.ntri
+            nori = self._triangle_spec.nori
 
-            #for iz in range(self._data_spec.nz):
-            #    ib = 0
-            #    for isample1 in range(self._data_spec.nsample):
-            #        for isample2 in range(self._data_spec.nsample):
-            #            for isample3 in range(self._data_spec.nsample):
-            #                Bggg[ib, iz, :, :] =  getattr(self, '_get_Bggg_' + term_name + '_at_iz')(iz, isample1, isample2, isample3)
-            #                ib = ib + 1
+            Bggg = np.zeros((nb, nz, ntri, nori))
+            for iz in range(self._data_spec.nz):
+                ib = 0
+                for isample1 in range(self._data_spec.nsample):
+                    for isample2 in range(self._data_spec.nsample):
+                        for isample3 in range(self._data_spec.nsample):
+                            Bggg_tmp =  getattr(self, '_get_Bggg_' + term_name + '_at_iz')(iz, isample1, isample2, isample3)
+                            Bggg[ib, iz, :, :] = Bggg_tmp
+                            ib = ib + 1
+            return Bggg
+        else:
+            raise NotImplementedError
+
+    # NEW
+    def _get_Bggg_optimized(self, term_name='b10'):
+        """3d numpy array of shape (nb, nz, ntri)"""
+
+        allowed_term_name = ['b10_prim', 'b10_grav', 'b20']
+
+        if term_name in allowed_term_name:
+
             Bggg = getattr(self, '_get_Bggg_' + term_name)()
             return Bggg
         else:
             raise NotImplementedError
 
+    #NEW
     def _get_Bggg_b10_prim(self):
         
         nb = self._data_spec.nsample**3
@@ -455,6 +495,7 @@ class B3D_RSD(B3D):
 
         return Bggg_b10
 
+    #NEW
     def _get_Bggg_b10_grav(self):
         
         nb = self._data_spec.nsample**3
@@ -479,6 +520,7 @@ class B3D_RSD(B3D):
 
         return Bggg_b10
 
+    #NEW
     def _get_Bggg_b20(self):
 
         bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
@@ -524,34 +566,6 @@ class B3D_RSD(B3D):
                     )
                             
         return Bggg_b20
-
-    def _get_Bggg_b10_with_Bmmm_at_iz(self, iz, isample1, isample2, isample3, Bmmm_iz):
-
-        ntri = self._triangle_spec.ntri
-        nori = self._triangle_spec.nori
-
-        Bggg_b10 = np.zeros((ntri, nori))
-
-        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
-        f_of_z = self._f_array[iz]
-
-        for iori in range(self._triangle_spec.nori):
-            
-            mu1 = self._triangle_spec.mu_array[:, iori, 0]
-            mu2 = self._triangle_spec.mu_array[:, iori, 1]
-            mu3 = self._triangle_spec.mu_array[:, iori, 2]
-            assert mu1.size == self._ik1.size
-            
-            Z1_k1 = bias[isample1, iz, self._ik1] + f_of_z * mu1 ** 2
-            Z1_k2 = bias[isample2, iz, self._ik2] + f_of_z * mu2 ** 2
-            Z1_k3 = bias[isample3, iz, self._ik3] + f_of_z * mu3 ** 2
-
-            #fog = self._get_fog(iz, isample1, isample2, isample3, k1*mu1, k2*mu2, k3*mu3)
-
-            ib = self._data_spec.dict_isamples_to_ib['%s_%s_%s'%(isample1, isample2, isample3)]
-            Bggg_b10[:, iori] = Bmmm_iz *  Z1_k1 * Z1_k2 * Z1_k3 * self._fog_all[ib, iz, :, iori]
-
-        return Bggg_b10
 
     def _get_Z1_for_k1_k2_k3(self):
 
@@ -603,6 +617,7 @@ class B3D_RSD(B3D):
 
             return fog
 
+    #OLD
     def _get_fog(self, iz, isample1, isample2, isample3, k1mu1, k2mu2, k3mu3):
 
         if self._data_spec._debug_sigp is not None:
@@ -624,6 +639,56 @@ class B3D_RSD(B3D):
         fog = np.exp(- 0.5 * (sigp_kmu_squared))
 
         return fog
+
+    #OLD
+    def _get_Bggg_b10_prim_at_iz(self, iz, isample1, isample2, isample3):
+       
+        return self._get_Bggg_b10_with_Bmmm_at_iz(\
+            iz, isample1, isample2, isample3, self._get('Bmmm_prim')[iz,:])
+
+    #OLD
+    def _get_Bggg_b10_grav_at_iz(self, iz, isample1, isample2, isample3):
+
+        return self._get_Bggg_b10_with_Bmmm_at_iz(\
+            iz, isample1, isample2, isample3, self._get('Bmmm_grav')[iz,:])
+
+    #OLD
+    def _get_Bggg_b10_with_Bmmm_at_iz(self, iz, isample1, isample2, isample3, Bmmm_iz):
+
+        bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
+        
+        ntri = self._triangle_spec.ntri
+        nori = self._triangle_spec.nori
+
+        Bggg_b10 = np.zeros((ntri, nori))
+
+        f_of_z = self._f_array[iz]
+
+        for iori in range(self._triangle_spec.nori):
+
+            mu1 = self._triangle_spec.mu_array[:, iori, 0]
+            mu2 = self._triangle_spec.mu_array[:, iori, 1]
+            mu3 = self._triangle_spec.mu_array[:, iori, 2]
+            assert mu1.size == self._ik1.size
+
+            Z1_k1 = bias[isample1, iz, self._ik1] + f_of_z * mu1 ** 2
+            Z1_k2 = bias[isample2, iz, self._ik2] + f_of_z * mu2 ** 2
+            Z1_k3 = bias[isample3, iz, self._ik3] + f_of_z * mu3 ** 2
+
+            #TODO could factor Z1, Z2, Z3 into a separate function 
+            # if profiling determs it to be bottle neck.
+
+            #fog = self._get_fog(iz, isample1, isample2, isample3, k1*mu1, k2*mu2, k3*mu3)
+
+            ib = self._data_spec.dict_isamples_to_ib['%s_%s_%s'%(isample1, isample2, isample3)]
+            fog = self._fog_all[ib, iz, :, iori]
+
+            Bggg_b10[:, iori] = Bmmm_iz * Z1_k1 * Z1_k2 * Z1_k3 * fog \
+                * bias[isample1, iz, self._ik1] \
+                * bias[isample2, iz, self._ik2] \
+                * bias[isample3, iz, self._ik3] \
+
+        return Bggg_b10
 
     def _get_Bggg_b20_at_iz(self, iz, isample1, isample2, isample3):
         (pk12, pk23, pk13) = self._get_pk12_23_13(iz)

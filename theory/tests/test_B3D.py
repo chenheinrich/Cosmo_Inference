@@ -2,6 +2,7 @@ import pytest
 import os
 import copy
 import numpy as np
+import yaml 
 
 CWD = os.getcwd()
 info = {}
@@ -17,9 +18,35 @@ info['Bispectrum3D'] = {
 }
 info['plot_dir'] = './plots/theory/bispectrum/'
 
-from theory.get_bis import get_data_vec_bis, get_data_spec
+from theory.scripts.get_bis import get_data_vec_bis, get_data_spec
 data_vec = get_data_vec_bis(info)
 data_spec = get_data_spec(info)
+
+@pytest.mark.debug
+@pytest.mark.parametrize("cosmo_par_file, fn_expected", \
+    [
+        ('./inputs/cosmo_pars/planck2018_fiducial.yaml', './theory/tests/data/bis_rsd_fnl_0.npy'), \
+        ('./inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './theory/tests/data/bis_rsd_fnl_1.npy'), \
+    ]
+)
+
+def test_B3D_RSD(cosmo_par_file, fn_expected):
+
+    with open("./theory/tests/inputs/get_bis_rsd.yaml", 'r') as f:
+        info_rsd = yaml.safe_load(f)
+
+    info_rsd['cosmo_par_file'] = cosmo_par_file
+
+    from theory.scripts.get_bis_rsd import get_data_vec_bis
+    data_vec_b3d_rsd = get_data_vec_bis(info_rsd)
+
+    exp = np.load(fn_expected)
+    galaxy_bis = data_vec_b3d_rsd.get('galaxy_bis')
+    print('galaxy_bis - exp')
+
+    #assert exp.shape == galaxy_bis.shape, ('Shapes of calculated vs imported data vector are not same')
+    assert np.allclose(exp, galaxy_bis)
+
 
 @pytest.mark.parametrize("data_vec, data_spec, isample, iz, imu", \
     [
@@ -63,7 +90,7 @@ def test_Bggg_b10_general_triangles_multi_tracer(data_vec, data_spec, isample1, 
 
 @pytest.mark.parametrize("data_vec, data_spec, isample1, isample2, isample3, iz, imu, itri", \
     [
-    (data_vec, data_spec, 0, 4, 2, 5, 0, None), \
+        (data_vec, data_spec, 0, 4, 2, 5, 0, None), \
     ]
 )
 

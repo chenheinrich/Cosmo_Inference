@@ -25,4 +25,4 @@ Bispectrum3D:
     f_of_z: null
 
 #plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0/'
-plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_fiducial_test_no_AP_optimized_new_fog_Z1_functions/' #set_mu_to_zero/' #set_deltac_to_zero/'
+plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/unit_tests/' #set_mu_to_zero/' #set_deltac_to_zero/'
