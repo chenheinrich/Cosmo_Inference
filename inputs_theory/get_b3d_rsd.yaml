@@ -1,12 +1,12 @@
 run_name: 'bis_rsd'
 
-cosmo_par_file: './inputs/cosmo_pars/planck2018_fiducial.yaml' #fiducial
+cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml' #fiducial
 
 cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
 survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
 
-Bispectrum3D: 
+Bispectrum3DRSD: 
   nk: 21 # number of k points (to be changed into bins)
   nmu: -1 # number of mu bins 
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
@@ -25,4 +25,4 @@ Bispectrum3D:
     f_of_z: null
 
 #plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0/'
-plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_fiducial_test_no_AP_optimized_new_fog_Z1_functions/' #set_mu_to_zero/' #set_deltac_to_zero/'
+plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/debug_fnl_1_no_AP_optimized_new_code_fixed_fog/' #set_mu_to_zero/' #set_deltac_to_zero/'

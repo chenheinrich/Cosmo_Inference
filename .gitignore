@@ -9,6 +9,7 @@ venv
 cosmo
 *.DS_Store
 docker_interactive
+*debug.py
 
 # User generated files
 *profiler/

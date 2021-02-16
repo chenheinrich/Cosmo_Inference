@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
-from theory.data_vector.data_spec import DataSpecPowerSpectrum
-from theory.data_vector.data_vector import DataVector, P3D, B3D
+from theory.data_vector.data_spec import PowerSpectrum3DSpec
+from theory.data_vector.data_vector import PowerSpectrum3D
 from theory.utils import file_tools
 
 from theory.utils.profiler import profiler
@@ -23,13 +23,14 @@ def get_data_vec_ps(info):
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecPowerSpectrum(survey_par, data_spec_dict)
-    #TODO need to clean up DataSpecPowerSpectrum vs DataSpecBispectrum and refactor
+    data_spec = PowerSpectrum3DSpec(survey_par, data_spec_dict)
+    #TODO need to clean up PowerSpectrum3DSpec vs Bispectrum3DBaseSpec and refactor
 
-    data_vec = P3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    data_vec = PowerSpectrum3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     
     return data_vec
 
+@profiler
 def get_ps(info):
     data_vec = get_data_vec_ps(info)
     galaxy_ps = data_vec.get('galaxy_ps')
@@ -66,7 +67,7 @@ def plot_galaxy_ps(d1, d2, info):
     survey_par_file = info['survey_par_file']
     data_spec_dict = info['PowerSpectrum3D'] 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecPowerSpectrum(survey_par, data_spec_dict)
+    data_spec = PowerSpectrum3DSpec(survey_par, data_spec_dict)
 
     axis_names = ['ps', 'z', 'k', 'mu']
     yname = 'galaxy_ps'

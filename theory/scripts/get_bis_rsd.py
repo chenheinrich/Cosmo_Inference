@@ -6,8 +6,8 @@ import pickle
 
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
-from theory.data_vector.data_spec import DataSpecBispectrum, DataSpecBispectrumOriented
-from theory.data_vector.data_vector import DataVector, B3D, B3D_RSD
+from theory.data_vector.data_spec import Bispectrum3DRSDSpec
+from theory.data_vector.data_vector import Bispectrum3DRSD
 from theory.utils import file_tools
 from theory.plotting.bis_plotter import BisPlotter
 from theory.plotting.triangle_spec_plotter import TriangleSpecTheta1Phi12Plotter
@@ -16,30 +16,31 @@ from theory.utils.profiler import profiler
 
 def get_data_spec(info):
     survey_par_file = info['survey_par_file']
-    data_spec_dict = info['Bispectrum3D'] 
+    data_spec_dict = info['Bispectrum3DRSD'] 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecBispectrumOriented(survey_par, data_spec_dict)
+    data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
     return data_spec
 
-def get_data_vec_bis(info):
+def get_b3d_rsd(info):
     
     cosmo_par_file = info['cosmo_par_file']
     cosmo_par_fid_file = info['cosmo_par_fid_file']
     survey_par_file = info['survey_par_file']
-    data_spec_dict = info['Bispectrum3D'] 
+    data_spec_dict = info['Bispectrum3DRSD'] 
 
     cosmo_par = CosmoPar(cosmo_par_file)
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecBispectrumOriented(survey_par, data_spec_dict)
+    data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
 
-    data_vec = B3D_RSD(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    b3d_rsd = Bispectrum3DRSD(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     
-    return data_vec
+    return b3d_rsd
 
+@profiler
 def save_galaxy_bis_rsd(info):
-    data_vec = get_data_vec_bis(info)
+    data_vec = get_b3d_rsd(info)
     fn = get_fn(info)
     galaxy_bis = get_galaxy_bis(data_vec)
     file_tools.save_file_npy(fn, galaxy_bis)

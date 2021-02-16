@@ -1,11 +1,11 @@
 import numpy as np
 
-from theory.data_vector.data_vector import P3D
+from theory.data_vector.data_vector import PowerSpectrum3D
 
 class Bispectrum3DVariance():
 
     def __init__(self, p3d, data_spec_bis, dict_bis_var, do_cvl_noise=False):
-        assert isinstance(p3d, P3D)
+        assert isinstance(p3d, PowerSpectrum3D)
         self._p3d = p3d
 
         self._galaxy_ps = self._p3d.get('galaxy_ps')

@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
 
-from theory.data_vector.data_spec import DataSpecPowerSpectrum, DataSpecBispectrumOriented
-from theory.data_vector.data_vector import DataVector, P3D, B3D, B3D_RSD
+from theory.data_vector.data_spec import PowerSpectrum3DSpec, Bispectrum3DRSDSpec
+from theory.data_vector.data_vector import DataVector, PowerSpectrum3D, Bispectrum3DRSD
 
 from theory.covariance.bis_var import Bispectrum3DVariance
 from theory.plotting.bis_sn_plotter import BisSNPlotter
@@ -26,9 +26,9 @@ def get_data_vec_ps(info):
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecPowerSpectrum(survey_par, data_spec_dict)
+    data_spec = PowerSpectrum3DSpec(survey_par, data_spec_dict)
 
-    data_vec = P3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    data_vec = PowerSpectrum3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     
     return data_vec
 
@@ -41,7 +41,7 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
-def get_data_vec_bis(info):
+def get_b3d_rsd(info):
     
     cosmo_par_file = info['cosmo_par_file']
     cosmo_par_fid_file = info['cosmo_par_fid_file']
@@ -52,11 +52,11 @@ def get_data_vec_bis(info):
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecBispectrumOriented(survey_par, data_spec_dict)
+    data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
 
-    data_vec = B3D_RSD(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    b3d_rsd = Bispectrum3DRSD(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     
-    return data_vec
+    return b3d_rsd
 
 def get_bis_plotter_fnl(info):
     #galaxy_ps = get_ps(info)
@@ -69,7 +69,7 @@ def get_data_spec_bis(info):
     survey_par_file = info['survey_par_file']
     data_spec_dict = info['Bispectrum3D'] 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = DataSpecBispectrumOriented(survey_par, data_spec_dict)
+    data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
     return data_spec
 
 if __name__ == '__main__':
@@ -90,12 +90,12 @@ if __name__ == '__main__':
     print('info', info)
 
     data_spec_bis = get_data_spec_bis(info)
-    data_vec = get_data_vec_bis(info)
+    data_vec = get_b3d_rsd(info)
 
     cosmo_par_fid_file = info['cosmo_par_fid_file']
    
     info['cosmo_par_file'] = cosmo_par_fid_file 
-    data_vec2 = get_data_vec_bis(info)
+    data_vec2 = get_b3d_rsd(info)
     
     if info['plot_with_error'] is True:
         info['cosmo_par_file'] = cosmo_par_fid_file 

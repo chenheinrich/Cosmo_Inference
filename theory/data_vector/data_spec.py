@@ -198,7 +198,7 @@ class DataSpec():
 
         return (k_actual, mu_actual)
 
-class DataSpecPowerSpectrum(DataSpec):
+class PowerSpectrum3DSpec(DataSpec):
 
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)
@@ -221,7 +221,7 @@ class DataSpecPowerSpectrum(DataSpec):
         
         return dict_isamples_to_ips, dict_ips_to_isamples, nps
 
-class DataSpecBispectrum(DataSpec):
+class Bispectrum3DBaseSpec(DataSpec):
 
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)
@@ -274,7 +274,7 @@ class DataSpecBispectrum(DataSpec):
         (ik1, ik2, ik3) = self.triangle_spec.get_ik1_ik2_ik3() 
         return (self._dk[ik1], self._dk[ik2], self._dk[ik3])
 
-class DataSpecBispectrumOriented(DataSpecBispectrum):
+class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
 
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)

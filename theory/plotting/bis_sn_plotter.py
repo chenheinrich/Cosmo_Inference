@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 from theory.utils import file_tools
-from theory.data_vector.data_vector import DataVector, B3D, B3D_RSD
+from theory.data_vector.data_vector import Bispectrum3DBase, Bispectrum3DRSD
 from theory.plotting.triangle_plotter import TrianglePlotter
 
 class BisSNPlotter(TrianglePlotter):
@@ -34,13 +34,13 @@ class BisSNPlotter(TrianglePlotter):
         nb = self._data_spec.nsample ** 3
 
         kwargs = {'plot_type': 'semilogy'}
-        if isinstance(self._data_vec, B3D_RSD):
+        if isinstance(self._data_vec, Bispectrum3DRSD):
             for ib in range(nb):
                 self._plot_error(ib, **kwargs)
                 self._plot_sn_bis_rsd(ib, **kwargs)  
 
         #TODO might want to tighten this logic
-        elif isinstance(self._data_vec, B3D):
+        elif isinstance(self._data_vec, Bispectrum3DBase):
             for ib in range(nb):
                 self._plot_galaxy_bis(ib)   
 
