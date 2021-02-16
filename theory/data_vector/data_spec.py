@@ -152,7 +152,11 @@ class DataSpec():
     @property
     def nsample(self):
         return self._nsample
-    
+
+    @property
+    def triangle_spec(self):
+        return self._triangle_spec
+
     def get_k_actual_perp_and_para(self, ap_perp, ap_para, z=None):
         """Return two 3-d numpy arrays of shape (nz, nk, mu) 
         for the actual values of k_perp and k_para to line-of-sight,
@@ -224,21 +228,21 @@ class PowerSpectrum3DSpec(DataSpec):
 class Bispectrum3DBaseSpec(DataSpec):
 
     def __init__(self, survey_par, data_spec_dict):
-        super().__init__(survey_par, data_spec_dict)
+        super().__init__(survey_par, data_spec_dict) 
+        
         self._dict_isamples_to_ib, self._dict_ib_to_isamples, self._nb = \
-            self._get_multi_tracer_config_all(self.nsample) 
-    
+            self._get_multi_tracer_config_all(self.nsample)
+
+        self._setup_ntri()
+        self._overwrite_shape_for_b3d_base()
+        
     @property
     def nb(self):
         return self._nb
     
     @property
     def ntri(self):
-        return self.triangle_spec.ntri
-
-    @property
-    def triangle_spec(self):
-        return self._triangle_spec
+        return self._ntri
 
     @property
     def dict_isamples_to_ib(self):
@@ -270,6 +274,16 @@ class Bispectrum3DBaseSpec(DataSpec):
         
         return dict_isamples_to_ib, dict_ib_to_isamples, nb
     
+    def _setup_ntri(self):
+        self._ntri = self.triangle_spec.ntri
+
+    def _setup_nb(self):
+        self._nb = self.nsample**3
+
+    def _overwrite_shape_for_b3d_base(self):
+        self._shape = (self.nb, self.nz, self.ntri)
+        self._transfer_shape = (self.nsample, self.nz, self.ntri)
+
     def get_dk1_dk2_dk3(self):
         (ik1, ik2, ik3) = self.triangle_spec.get_ik1_ik2_ik3() 
         return (self._dk[ik1], self._dk[ik2], self._dk[ik3])
@@ -291,9 +305,12 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
 
         self.do_folded_signal = data_spec_dict['do_folded_signal']
 
+        self._setup_nori()
+        self._overwrite_shape_for_b3d_rsd()
+
     @property
     def nori(self):
-        return self._triangle_spec.nori
+        return self._nori
 
     @property
     def theta1(self):
@@ -319,16 +336,6 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
         dphi12 = self.triangle_spec.dphi12
         Sigma = dmu1 * dphi12 / (4.0*np.pi) 
         return Sigma
-
-    @property
-    def shape_bis(self):
-        shape_bis = (self.nb, self.nz, self.ntri, self.nori)
-        return shape_bis
-    
-    @property
-    def shape_bis_transfer(self):
-        shape_bis_transfer = (self.nsample, self.nz, self.ntri, self.nori)
-        return shape_bis_transfer
 
     def _setup_angles(self, data_spec_dict):
 
@@ -376,4 +383,11 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
         edges = np.linspace(min_value, max_value, nbin+1)
         center = (edges[1:] + edges[:-1])/2.0
         return center
+
+    def _setup_nori(self):
+        self._nori = self._triangle_spec.nori
+
+    def _overwrite_shape_for_b3d_rsd(self):
+        self._shape = (self.nb, self.nz, self.ntri, self.nori)
+        self._transfer_shape = (self.nsample, self.nz, self.ntri, self.nori)
     

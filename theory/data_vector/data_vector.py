@@ -110,20 +110,20 @@ class Bispectrum3DBase(DataVector):
         
     """
 
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_spec):
+    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_base_spec):
         
-        """Inits Bispectrum3DBase with cosmo_par, cosmo_par_fid, survey_par, b3d_spec.
+        """Inits Bispectrum3DBase with cosmo_par, cosmo_par_fid, survey_par, b3d_base_spec.
         
         Checks:
-        - We check that b3d_spec is an instance of Bispectrum3DBaseSpec.
+        - We check that b3d_base_spec is an instance of Bispectrum3DBaseSpec.
 
         Setups:
         - We setup self._triangle_spec, ik1, ik2, ik3
-        """ #TODO may need to simplify naming Bispectrum3DBaseSpec, and other input args
+        """ 
 
-        assert isinstance(b3d_spec, Bispectrum3DBaseSpec)
+        assert isinstance(b3d_base_spec, Bispectrum3DBaseSpec)
 
-        super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_spec)
+        super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_base_spec)
 
         self._state = {}
         self._allowed_names = ['galaxy_bis', 'Bggg_b10', 'Bggg_b20', \
@@ -178,9 +178,9 @@ class Bispectrum3DBase(DataVector):
     
         nb = self._data_spec.nsample**3
         nz = self._data_spec.nz
-        ntri = self._triangle_spec.ntri
+        ntri = self._data_spec.ntri
 
-        Bggg = np.zeros((nb, nz, ntri))
+        Bggg = np.zeros(self._data_spec.shape)
         
         for iz in range(self._data_spec.nz):
             ib = 0
@@ -312,15 +312,16 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
     """No AP"""
 
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_spec):
+    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_rsd_spec):
         
-        assert isinstance(b3d_spec, Bispectrum3DRSDSpec)
+        assert isinstance(b3d_rsd_spec, Bispectrum3DRSDSpec)
 
-        super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_spec)
+        super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_rsd_spec)
 
         assert isinstance(self._data_spec, Bispectrum3DRSDSpec)
 
         self._triangle_spec = self._data_spec.triangle_spec
+        print('self.data_spec.nori', self._data_spec.nori)
         print('self.triangle_spec.nori', self._triangle_spec.nori)
         print('self.triangle_spec.theta1', self._triangle_spec.theta1)
 
@@ -483,7 +484,8 @@ class Bispectrum3DRSD(Bispectrum3DBase):
             + self._f_array[np.newaxis, :, np.newaxis, np.newaxis]\
             * self._triangle_spec.mu_array[np.newaxis, np.newaxis, :, :, 2] ** 2
 
-        assert Z1_k1.shape == self._data_spec.shape_bis_transfer
+        assert Z1_k1.shape == self._data_spec.transfer_shape, \
+            (Z1_k1.shape, self._data_spec.transfer_shape)
 
         return (Z1_k1, Z1_k2, Z1_k3)
 
