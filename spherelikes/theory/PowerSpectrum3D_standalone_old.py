@@ -115,7 +115,7 @@ class ParGenerator(TheoryParGenerator):
         )
         return bias_params
 
-class PowerSpectrum3D(Theory):
+class PowerSpectrum3D_standalone_old(Theory):
 
     survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
     model_path = 'data/ps_base/ref.pickle'
