@@ -18,10 +18,12 @@ docker_interactive
 demo*
 plots/
 *.npy
+!theory/tests/data/*.npy
 data/unit_test
 analysis/inputs
 analysis/plots
 data/
+!theory/tests/data/
 job/
 out/
 inputs/cobaya_pars/chen
@@ -46,3 +48,4 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+

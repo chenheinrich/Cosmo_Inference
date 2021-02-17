@@ -24,7 +24,6 @@ def get_data_vec_ps(info):
 
     survey_par = SurveyPar(survey_par_file)
     data_spec = PowerSpectrum3DSpec(survey_par, data_spec_dict)
-    #TODO need to clean up PowerSpectrum3DSpec vs Bispectrum3DBaseSpec and refactor
 
     data_vec = PowerSpectrum3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
     

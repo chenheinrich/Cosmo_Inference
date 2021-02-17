@@ -1,0 +1,16 @@
+run_name: 'bis'
+
+cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_10.yaml' #fiducial
+
+cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
+
+survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
+
+Bispectrum3DBase: 
+  nk: 21 # number of k points (to be changed into bins)
+  nmu: -1 # number of mu bins 
+  kmin: 0.0007 # equivalent to 0.001 h/Mpc
+  kmax: 0.14 # equivalent to 0.2 h/Mpc
+
+#plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0/'
+plot_dir: './plots/theory/bispectrum/debug_fnl_10_test_no_AP_new_code/' #set_mu_to_zero/' #set_deltac_to_zero/'

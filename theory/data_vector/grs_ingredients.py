@@ -2,8 +2,8 @@ import numpy as np
 import copy
 import sys
 
-from theory.cosmo.cosmo_product import CosmoProduct_FromCobayaProvider
-from theory.cosmo.cosmo_product import CosmoProduct_FromCamb
+from theory.data_vector.cosmo_product import CosmoProduct_FromCobayaProvider
+from theory.data_vector.cosmo_product import CosmoProduct_FromCamb
 from theory.utils import constants
 from theory.utils.errors import NameNotAllowedError
 from theory.utils.logging import class_logger
