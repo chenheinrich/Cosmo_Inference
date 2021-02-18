@@ -6,8 +6,8 @@ import pickle
 
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
-from theory.data_vector.data_spec import Bispectrum3DBaseSpec
-from theory.data_vector.data_vector import Bispectrum3DBase
+from theory.data_vector import Bispectrum3DBaseSpec
+from theory.data_vector import Bispectrum3DBase
 from theory.utils import file_tools
 from theory.plotting.bis_plotter import BisPlotter
 from theory.plotting.triangle_spec_plotter import TriangleSpecPlotter

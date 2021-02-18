@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
 from theory.data_vector.data_spec import PowerSpectrum3DSpec
-from theory.data_vector.data_vector import PowerSpectrum3D
+from theory.data_vector import PowerSpectrum3D
+from theory.data_vector import GRSIngredientsCreator
 from theory.utils import file_tools
 
 from theory.utils.profiler import profiler
@@ -25,7 +26,16 @@ def get_data_vec_p3d(info):
     survey_par = SurveyPar(survey_par_file)
     data_spec = PowerSpectrum3DSpec(survey_par, data_spec_dict)
 
-    data_vec = PowerSpectrum3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    creator = GRSIngredientsCreator()
+    #TODO next: test this
+    option = 'FromCamb'
+    grs_ingredients = creator.create(option, survey_par, data_spec,
+        cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
+
+    #data_vec = PowerSpectrum3D(cosmo_par, \
+    #    cosmo_par_fid, survey_par, data_spec, \
+    #    grs_ingredients=grs_ingredients)
+    data_vec = PowerSpectrum3D(grs_ingredients, survey_par, data_spec)
     
     return data_vec
 
@@ -33,11 +43,12 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
-@profiler
+#@profiler
 def save_galaxy_ps(info):
     data_vec = get_data_vec_p3d(info)
     fn = get_fn(info)
     file_tools.save_file_npy(fn, data_vec.get('galaxy_ps'))
+    print('Saved galaxy_ps to file: {}'.format(fn))
     return data_vec
 
 if __name__ == '__main__':

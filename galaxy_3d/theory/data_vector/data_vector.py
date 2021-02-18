@@ -11,16 +11,14 @@ from theory.utils.profiler import profiler
 
 class DataVector():
 
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, data_spec):
+    def __init__(self, grs_ingredients, survey_par, data_spec):
 
         self.logger = class_logger(self)
 
-        self._cosmo_par = cosmo_par
-        self._cosmo_par_fid = cosmo_par_fid
         self._survey_par = survey_par
         self._data_spec = data_spec
 
-        self._grs_ingredients = self._get_grs_ingredients()
+        self._grs_ingredients = grs_ingredients
 
     def calculate(self):
         pass
@@ -28,18 +26,13 @@ class DataVector():
     def save(self, fn):
         pass
 
-    def _get_grs_ingredients(self):
-        grs_ing = GRSIngredients(self._cosmo_par, self._cosmo_par_fid, self._survey_par, self._data_spec)
-        return grs_ing
-
-
 class PowerSpectrum3D(DataVector):
 
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, p3d_spec):
+    def __init__(self, grs_ingredients, survey_par, p3d_spec):
 
         assert isinstance(p3d_spec, PowerSpectrum3DSpec)
 
-        super().__init__(cosmo_par, cosmo_par_fid, survey_par, p3d_spec)
+        super().__init__(grs_ingredients, survey_par, p3d_spec)
 
         self._state = {}
         self._allowed_names = ['galaxy_ps', 'galaxy_transfer']
@@ -69,7 +62,7 @@ class PowerSpectrum3D(DataVector):
                     * galaxy_transfer[j1, :, :, :] \
                     * galaxy_transfer[j2, :, :, :]
                 jj = jj + 1
-        assert jj == self._data_spec.nps
+        assert jj == self._data_spec.nps, (jj, self._data_spec.nps)
 
         self._state['galaxy_ps'] = galaxy_ps
 
@@ -110,9 +103,9 @@ class Bispectrum3DBase(DataVector):
         
     """
 
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_base_spec):
+    def __init__(self, grs_ingredients, survey_par, b3d_base_spec):
         
-        """Inits Bispectrum3DBase with cosmo_par, cosmo_par_fid, survey_par, b3d_base_spec.
+        """Inits Bispectrum3DBase with survey_par, b3d_base_spec.
         
         Checks:
         - We check that b3d_base_spec is an instance of Bispectrum3DBaseSpec.
@@ -123,7 +116,7 @@ class Bispectrum3DBase(DataVector):
 
         assert isinstance(b3d_base_spec, Bispectrum3DBaseSpec)
 
-        super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_base_spec)
+        super().__init__(grs_ingredients, survey_par, b3d_base_spec)
 
         self._state = {}
         self._allowed_names = ['galaxy_bis', 'Bggg_b10', 'Bggg_b20', \
@@ -245,7 +238,7 @@ class Bispectrum3DBase(DataVector):
             (alpha1, alpha2, alpha3) = self._get_alpha1_alpha2_alpha3(iz)
             (k1_array, k2_array, k3_array) = self._get_k1_k2_k3_array()
 
-            fnl = self._cosmo_par.fnl
+            fnl = self._grs_ingredients.get('fnl')
 
             t1_prim = 2.0 * fnl * alpha3 / (alpha1 * alpha2) 
             t1_grav = 2.0 * self._get_F2(k1_array, k2_array, k3_array)
@@ -312,11 +305,11 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
     """No AP"""
 
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, b3d_rsd_spec):
+    def __init__(self, grs_ingredients, survey_par, b3d_rsd_spec):
         
         assert isinstance(b3d_rsd_spec, Bispectrum3DRSDSpec)
 
-        super().__init__(cosmo_par, cosmo_par_fid, survey_par, b3d_rsd_spec)
+        super().__init__(grs_ingredients, survey_par, b3d_rsd_spec)
 
         assert isinstance(self._data_spec, Bispectrum3DRSDSpec)
 
@@ -541,7 +534,7 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         sigp_kmu_squared = (k1mu1*sigp1)**2 \
             + (k2mu2*sigp2) ** 2 \
             + (k3mu3*sigp3) ** 2
-        assert sigp_kmu_squared.shape == k1mu1.shape
+        assert sigp_kmu_squared.shape == k1mu1.shape, (sigp_kmu_squared.shape, k1mu1.shape)
 
         fog = np.exp(- 0.5 * (sigp_kmu_squared))
 

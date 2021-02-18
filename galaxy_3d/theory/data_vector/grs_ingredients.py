@@ -2,15 +2,61 @@ import numpy as np
 import copy
 import sys
 
+from theory.data_vector.cosmo_product import CosmoProductCreator
 from theory.data_vector.cosmo_product import CosmoProduct_FromCobayaProvider
 from theory.data_vector.cosmo_product import CosmoProduct_FromCamb
 from theory.utils import constants
 from theory.utils.errors import NameNotAllowedError
 from theory.utils.logging import class_logger
 
+class GRSIngredientsCreator():
+
+    """Create an instance of the GRSIngredients class given different input options"""
+
+    def create(self, option, survey_par, data_spec, \
+            cosmo_par=None, cosmo_par_fid=None, \
+            provider=None, z=None, nonlinear=None, \
+            **params_values_dict):
+        
+        cosmo_creator = CosmoProductCreator()
+        z = survey_par.get_zmid_array()
+
+        option_fid = 'FromCamb'
+        cosmo_fid = cosmo_creator.create(option_fid, cosmo_par=cosmo_par_fid, z=z)
+
+        cosmo = cosmo_creator.create(option, cosmo_par=cosmo_par, \
+            provider=provider, z=z, nonlinear=nonlinear)
+
+        print('testing get_angular...', cosmo.get_angular_diameter_at_z([1.0]))
+    
+        params_values_dict = self._get_params_values_dict(option, params_values_dict, cosmo_par)
+
+        return GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
+
+    def _get_params_values_dict(self, option, params_values_dict, cosmo_par):
+        if option == 'FromCobayaProvider':
+            return params_values_dict
+        elif option == 'FromCamb':
+            return self._get_params_values_dict_from_cosmo_par(cosmo_par)
+        else:
+            raise ValueError('GRSIngredientsCreator: \
+                option can only be "FromCobayaProvider" or "FromCamb".')
+        #TODO Might be able to simplify multiple cosmo parameter passing channels
+        # cosmo_par and **params_values_dict.
+
+    @staticmethod
+    def _get_params_values_dict_from_cosmo_par(cosmo_par):
+        params_values_dict = {
+            'As': cosmo_par.As,\
+            'ns': cosmo_par.ns,\
+            'nrun': cosmo_par.nrun,\
+            'fnl': cosmo_par.fnl,\
+        }
+        return params_values_dict
+
 class GRSIngredients(object):
 
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, data_spec, **params_values_dict):
+    def __init__(self, cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict):
        
         """
         Args:
@@ -19,16 +65,12 @@ class GRSIngredients(object):
 
         self._logger = class_logger(self)
 
-        self._cosmo_par = cosmo_par
-        self._cosmo_par_fid = cosmo_par_fid
+        self._cosmo = cosmo
+        self._cosmo_fid = cosmo_fid
         self._survey_par = survey_par
         self._d = data_spec
-        self._params_values_dict = params_values_dict 
-        self._fnl = cosmo_par.fnl
+        self._params_values_dict = params_values_dict
         
-        self._cosmo = self._get_cosmo_product(self._cosmo_par, z=self._d.z)
-        self._cosmo_fid = self._get_cosmo_product(self._cosmo_par_fid, z=self._d.z)
-
         ap_perp, ap_para = self._get_AP_perp_and_para()
         self._k_actual, self._mu_actual = self._d.get_k_and_mu_actual(ap_perp, ap_para)
         self._k_actual_perp, self._k_actual_para = self._d.get_k_actual_perp_and_para(ap_perp, ap_para)
@@ -47,12 +89,10 @@ class GRSIngredients(object):
             'fog', \
             'fog_using_ref_cosmology',\
             'sigp', \
+            'fnl', \
         ]
-        self._ingredients = {}
+        self._ingredients = {'fnl': params_values_dict['fnl'] }
 
-    def _get_cosmo_product(self, cosmo_par, z):
-        return CosmoProduct_FromCamb(cosmo_par, z)
-    
     def _get_matter_power_at_z_and_ks(self, z, ks):
         matter_power = self._cosmo.get_matter_power_at_z_and_k(z, ks)
         return matter_power
@@ -202,7 +242,7 @@ class GRSIngredients(object):
 
         alpha = self.get('alpha')[np.newaxis, :, :, :]
 
-        galaxy_bias = gaussian_bias + 2.0*self._fnl*delta_c*(gaussian_bias-1.0)/alpha
+        galaxy_bias = gaussian_bias + 2.0*self.get('fnl')*delta_c*(gaussian_bias-1.0)/alpha
 
         expected_shape = self._d.transfer_shape
         msg = ('galaxy_bias.shape = {}, expected ({})'
@@ -222,7 +262,7 @@ class GRSIngredients(object):
 
         alpha = self.get('alpha_without_AP')[np.newaxis, :, :]
 
-        galaxy_bias = gaussian_bias + 2.0*self._fnl*delta_c*(gaussian_bias-1.0)/alpha
+        galaxy_bias = gaussian_bias + 2.0*self.get('fnl')*delta_c*(gaussian_bias-1.0)/alpha
 
         expected_shape = (self._d.nsample, self._d.nz, self._d.nk)
 
@@ -431,10 +471,11 @@ class GRSIngredients(object):
 
         k_pivot_in_invMpc = 0.05 
 
-        As = self._cosmo_par.As 
-        ns = self._cosmo_par.ns
-        nrun = self._cosmo_par.nrun
-
+        #TODO how to handle this?
+        As = self._params_values_dict['As']
+        ns = self._params_values_dict['ns']
+        nrun = self._params_values_dict['nrun']
+    
         print('As, ns, nrun', As, ns, nrun)
 
         lnk = np.log(k / k_pivot_in_invMpc)
@@ -445,8 +486,6 @@ class GRSIngredients(object):
         
         return initial_power
 
-
-    
 class GRSIngredientsForBispectrum(GRSIngredients): #No AP
 
     def __init__(self, cosmo_par, cosmo_par_fid, survey_par, data_spec, **params_values_dict):
