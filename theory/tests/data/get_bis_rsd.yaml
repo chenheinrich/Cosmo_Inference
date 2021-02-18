@@ -24,5 +24,4 @@ Bispectrum3DRSD:
     sigp: null
     f_of_z: null
 
-#plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0/'
-plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/debug_fnl_1_no_AP_optimized_new_code_fixed_fog/' #set_mu_to_zero/' #set_deltac_to_zero/'
+plot_dir: './plots/theory/unit_tests/bispectrum_oriented_theta1_phi12_2_4/' 
