@@ -8,8 +8,8 @@ import yaml
 @pytest.mark.debug
 @pytest.mark.parametrize("yaml_file, cosmo_par_file, fn_expected", \
     [
-        ("./theory/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './theory/tests/data/bis_base_fnl_0.npy'), \
-        ("./theory/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './theory/tests/data/bis_base_fnl_1.npy'), \
+        ("./galaxy_3d/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './galaxy_3d/tests/data/bis_base_fnl_0.npy'), \
+        ("./galaxy_3d/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './galaxy_3d/tests/data/bis_base_fnl_1.npy'), \
     ]
 )
 def test_Bispectrum3DBase_mu_set_to_zero(yaml_file, cosmo_par_file, fn_expected):
@@ -121,7 +121,7 @@ def get_expected_Bggg_b10_general(self, \
     k2_array = self._data_spec.k[ik2]
     k3_array = self._data_spec.k[ik3]
 
-    fnl = self._cosmo_par.fnl
+    fnl = self._grs_ingredients.get('fnl')
     t1 = 2.0 * fnl * alpha3 / (alpha1 * alpha2) + \
             2.0 * self._get_F2(k1_array, k2_array, k3_array)
     t2 = 2.0 * fnl * alpha2 / (alpha1 * alpha3) + \
@@ -166,7 +166,7 @@ def get_expected_Bggg_b10_equilateral_triangles_single_tracer(self, isample=0, i
     alpha = self._grs_ingredients.get('alpha_without_AP') 
     alpha1 = alpha[iz, np.arange(self._data_spec.nk)]
 
-    fnl = self._cosmo_par.fnl
+    fnl = self._grs_ingredients.get('fnl')
     
     F2_equilateral = 0.2857142857142857
     Bmmm_equilateral = 3.0 * (2.0 * F2_equilateral * Pm ** 2)

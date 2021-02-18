@@ -8,6 +8,7 @@ from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
 from theory.data_vector import Bispectrum3DBaseSpec
 from theory.data_vector import Bispectrum3DBase
+from theory.data_vector import GRSIngredientsCreator
 from theory.utils import file_tools
 from theory.plotting.bis_plotter import BisPlotter
 from theory.plotting.triangle_spec_plotter import TriangleSpecPlotter
@@ -34,7 +35,12 @@ def get_b3d_base(info):
     survey_par = SurveyPar(survey_par_file)
     data_spec = Bispectrum3DBaseSpec(survey_par, data_spec_dict)
 
-    data_vec = Bispectrum3DBase(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    creator = GRSIngredientsCreator()
+    option = 'FromCamb'
+    grs_ingredients = creator.create(option, survey_par, data_spec,
+        cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
+
+    data_vec = Bispectrum3DBase(grs_ingredients, survey_par, data_spec)
     
     return data_vec
 

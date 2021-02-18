@@ -6,8 +6,9 @@ import pickle
 
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
-from theory.data_vector.data_spec import Bispectrum3DRSDSpec
-from theory.data_vector.data_vector import Bispectrum3DRSD
+from theory.data_vector import Bispectrum3DRSDSpec
+from theory.data_vector import Bispectrum3DRSD
+from theory.data_vector import GRSIngredientsCreator
 from theory.utils import file_tools
 from theory.plotting.bis_plotter import BisPlotter
 from theory.plotting.triangle_spec_plotter import TriangleSpecTheta1Phi12Plotter
@@ -34,9 +35,14 @@ def get_b3d_rsd(info):
     survey_par = SurveyPar(survey_par_file)
     data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
 
-    b3d_rsd = Bispectrum3DRSD(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    creator = GRSIngredientsCreator()
+    option = 'FromCamb'
+    grs_ingredients = creator.create(option, survey_par, data_spec,
+        cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
+
+    data_vec = Bispectrum3DRSD(grs_ingredients, survey_par, data_spec)
     
-    return b3d_rsd
+    return data_vec
 
 @profiler
 def save_galaxy_bis_rsd(info):

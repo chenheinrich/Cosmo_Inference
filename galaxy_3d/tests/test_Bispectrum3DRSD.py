@@ -7,8 +7,8 @@ import yaml
 @pytest.mark.debug
 @pytest.mark.parametrize("yaml_file, cosmo_par_file, fn_expected", \
     [
-        ("./theory/tests/data/get_bis_rsd.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './theory/tests/data/bis_rsd_fnl_0.npy'), \
-        ("./theory/tests/data/get_bis_rsd.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './theory/tests/data/bis_rsd_fnl_1.npy'), \
+        ("./galaxy_3d/tests/data/get_bis_rsd.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './galaxy_3d/tests/data/bis_rsd_fnl_0.npy'), \
+        ("./galaxy_3d/tests/data/get_bis_rsd.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './galaxy_3d/tests/data/bis_rsd_fnl_1.npy'), \
     ]
 )
 def test_Bispectrum3DRSD(yaml_file, cosmo_par_file, fn_expected):
