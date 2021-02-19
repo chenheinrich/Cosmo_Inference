@@ -16,7 +16,7 @@ from spherelikes.utils import constants
 from spherelikes.params_generator import TheoryParGenerator
 
 from galaxy_3d.theory.data_vector import PowerSpectrum3D
-from galaxy_3d.theory.data_vector import GRSIngredients
+from galaxy_3d.theory.data_vector import GRSIngredientsCreator
 from galaxy_3d.theory.data_vector import PowerSpectrum3DSpec
 from galaxy_3d.theory.params.cosmo_par import CosmoPar
 from galaxy_3d.theory.params.survey_par import SurveyPar
@@ -235,21 +235,19 @@ class PowerSpectrum3D_standalone(Theory):
         self.logger.debug('self.data_spec_dict: {}'.format(self.data_spec_dict))
 
         self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
+        cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
 
-        #cosmo_par = CosmoPar(self.cosmo_par_fid_file) 
-        #TODO need to modify this
-        cosmo_par = None
-
-        self.logger.debug('params_values_dict', params_values_dict)
+        self.logger.debug('params_values_dict = {}'.format(params_values_dict))
         self.logger.debug('About to get grs_ingredients')
-        grs_ingredients = GRSIngredients(cosmo_par, \
-            self.cosmo_par_fid, self.survey_par, self.data_spec, \
-            provider=self.provider, fnl=params_values_dict['fnl'])
+        
+        creator = GRSIngredientsCreator()
+        grs_ingredients = creator.create('FromCobayaProvider',\
+            self.survey_par, self.data_spec, \
+            cosmo_par_fid=cosmo_par_fid, \
+            provider=self.provider, **params_values_dict)
 
         self.logger.debug('About to get PowerSpectrum3D')
-        data_vec = PowerSpectrum3D(cosmo_par, \
-            self.cosmo_par_fid, self.survey_par, self.data_spec,\
-            grs_ingredients=grs_ingredients)
+        data_vec = PowerSpectrum3D(grs_ingredients, self.survey_par, self.data_spec)
 
         galaxy_ps = data_vec.get('galaxy_ps')
 

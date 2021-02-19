@@ -3,32 +3,32 @@ import copy
 import sys
 
 from theory.data_vector.cosmo_product import CosmoProductCreator
-from theory.data_vector.cosmo_product import CosmoProduct_FromCobayaProvider
-from theory.data_vector.cosmo_product import CosmoProduct_FromCamb
 from theory.utils import constants
 from theory.utils.errors import NameNotAllowedError
 from theory.utils.logging import class_logger
 
 class GRSIngredientsCreator():
 
-    """Create an instance of the GRSIngredients class given different input options"""
+    def __init__(self):
+        self.logger = class_logger(self)
 
     def create(self, option, survey_par, data_spec, \
             cosmo_par=None, cosmo_par_fid=None, \
             provider=None, z=None, nonlinear=None, \
             **params_values_dict):
+
+        """Returns an instance of the GRSIngredients class given different input options"""
         
         cosmo_creator = CosmoProductCreator()
         z = survey_par.get_zmid_array()
 
         option_fid = 'FromCamb'
-        cosmo_fid = cosmo_creator.create(option_fid, cosmo_par=cosmo_par_fid, z=z)
+        cosmo_fid = cosmo_creator.create(option_fid, z, cosmo_par=cosmo_par_fid)
 
-        cosmo = cosmo_creator.create(option, cosmo_par=cosmo_par, \
-            provider=provider, z=z, nonlinear=nonlinear)
+        cosmo = cosmo_creator.create(option, z, \
+            cosmo_par=cosmo_par, \
+            provider=provider, nonlinear=nonlinear)
 
-        print('testing get_angular...', cosmo.get_angular_diameter_at_z([1.0]))
-    
         params_values_dict = self._get_params_values_dict(option, params_values_dict, cosmo_par)
 
         return GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
@@ -63,7 +63,7 @@ class GRSIngredients(object):
             params_values_dict: has gaussian_bias_sample_<i>_z_<j> where i and j start at 1.
         """
 
-        self._logger = class_logger(self)
+        self.logger = class_logger(self)
 
         self._cosmo = cosmo
         self._cosmo_fid = cosmo_fid
@@ -472,11 +472,14 @@ class GRSIngredients(object):
         k_pivot_in_invMpc = 0.05 
 
         #TODO how to handle this?
-        As = self._params_values_dict['As']
-        ns = self._params_values_dict['ns']
-        nrun = self._params_values_dict['nrun']
+        #TODO probably want to have access to PS class of camb
+        # This will be important when we have modified initial PS
+
+        As = self._cosmo.get_param('As')
+        ns = self._cosmo.get_param('ns')
+        nrun = self._cosmo.get_param('nrun')
     
-        print('As, ns, nrun', As, ns, nrun)
+        self.logger.debug('As = {}, ns = {}, nrun = {}'.format(As, ns, nrun))
 
         lnk = np.log(k / k_pivot_in_invMpc)
 

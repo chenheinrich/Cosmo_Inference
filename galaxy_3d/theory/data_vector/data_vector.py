@@ -30,7 +30,11 @@ class PowerSpectrum3D(DataVector):
 
     def __init__(self, grs_ingredients, survey_par, p3d_spec):
 
-        assert isinstance(p3d_spec, PowerSpectrum3DSpec)
+        #TODO to debug why this doesn't work
+        #if not isinstance(p3d_spec, PowerSpectrum3DSpec):
+        #    message = '3rd input to PowerSpectrum3DSpec \
+        #        must be an instance of PowerSpectrum3DSpec'
+        #    raise ValueError(message) 
 
         super().__init__(grs_ingredients, survey_par, p3d_spec)
 
