@@ -10,4 +10,5 @@ from .triangle_spec import TriangleSpec
 from .triangle_spec import TriangleSpecTheta1Phi12
 
 from .grs_ingredients import GRSIngredientsCreator
-from .grs_ingredients import GRSIngredientsForBispectrum
+
+from .cosmo_interface import CosmoInterfaceCreator

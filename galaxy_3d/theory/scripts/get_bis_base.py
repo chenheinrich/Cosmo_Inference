@@ -36,7 +36,7 @@ def get_b3d_base(info):
     data_spec = Bispectrum3DBaseSpec(survey_par, data_spec_dict)
 
     creator = GRSIngredientsCreator()
-    option = 'FromCamb'
+    option = 'Camb'
     grs_ingredients = creator.create(option, survey_par, data_spec,
         cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
 

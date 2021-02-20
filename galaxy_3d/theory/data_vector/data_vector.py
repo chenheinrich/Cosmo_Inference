@@ -118,7 +118,8 @@ class Bispectrum3DBase(DataVector):
         - We setup self._triangle_spec, ik1, ik2, ik3
         """ 
 
-        assert isinstance(b3d_base_spec, Bispectrum3DBaseSpec)
+        #TODO decide what to do
+        #assert isinstance(b3d_base_spec, Bispectrum3DBaseSpec)
 
         super().__init__(grs_ingredients, survey_par, b3d_base_spec)
 
@@ -311,11 +312,9 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
     def __init__(self, grs_ingredients, survey_par, b3d_rsd_spec):
         
-        assert isinstance(b3d_rsd_spec, Bispectrum3DRSDSpec)
+        #assert isinstance(b3d_rsd_spec, Bispectrum3DRSDSpec)
 
         super().__init__(grs_ingredients, survey_par, b3d_rsd_spec)
-
-        assert isinstance(self._data_spec, Bispectrum3DRSDSpec)
 
         self._triangle_spec = self._data_spec.triangle_spec
         print('self.data_spec.nori', self._data_spec.nori)

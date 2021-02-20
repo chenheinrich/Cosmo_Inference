@@ -27,7 +27,7 @@ def get_data_vec_p3d(info):
     data_spec = PowerSpectrum3DSpec(survey_par, data_spec_dict)
 
     creator = GRSIngredientsCreator()
-    option = 'FromCamb'
+    option = 'Camb'
     grs_ingredients = creator.create(option, survey_par, data_spec,
         cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
 
@@ -39,13 +39,16 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
-#@profiler
-def save_galaxy_ps(info):
+@profiler
+def get_galaxy_ps(info):
     data_vec = get_data_vec_p3d(info)
+    return data_vec.get('galaxy_ps')
+
+def save_galaxy_ps(info):
+    galaxy_ps = get_galaxy_ps(info)
     fn = get_fn(info)
-    file_tools.save_file_npy(fn, data_vec.get('galaxy_ps'))
+    file_tools.save_file_npy(fn, galaxy_ps)
     print('Saved galaxy_ps to file: {}'.format(fn))
-    return data_vec
 
 if __name__ == '__main__':
     """

@@ -128,15 +128,12 @@ class PowerSpectrum3D_standalone(Theory):
     cosmo_par_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
     
-    #TODO no longer needed
-    #model_path = 'data/ps_base/ref.pickle'
     plot_dir = 'plots/'
 
+    # TODO Think about class variable logic afterward
     survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
     survey_par = SurveyPar(survey_par_file)
 
-    #HACK
-    #survey_par = SurveyPar(survey_par_file)
     nz = survey_par.get_nz()
     nsample = survey_par.get_nsample()
     params = get_params_for_survey_par(survey_par, fix_to_default=False)
@@ -197,32 +194,13 @@ class PowerSpectrum3D_standalone(Theory):
                 'sigma8': None,
                 'CAMBdata': None,
             }
-        if 'galaxy_transfer' in requirements:
-            return{
-                'Pk_interpolator': spec_Pk,
-                'Cl': {'tt': 2500},
-                'H0': None,
-                'angular_diameter_distance': {'z': z_list},
-                'Hubble': {'z': z_list},
-                'omegam': None,
-                'As': None,
-                'ns': None,
-                'fsigma8': {'z': z_list},
-                'sigma8': None,
-                'CAMBdata': None,
-            }
-        if 'AP_factor' in requirements:
-            return{
-                'angular_diameter_distance': {'z': z_list},
-                'Hubble': {'z': z_list},
-            }
 
     def get_can_provide_params(self):
         return ['derived_param']
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False
+        nonlinear = False # TODO to hook later
 
         self.logger.debug('Calculating k and mu actual using AP factors.')
 
@@ -237,11 +215,10 @@ class PowerSpectrum3D_standalone(Theory):
         self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
         cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
 
-        self.logger.debug('params_values_dict = {}'.format(params_values_dict))
         self.logger.debug('About to get grs_ingredients')
         
         creator = GRSIngredientsCreator()
-        grs_ingredients = creator.create('FromCobayaProvider',\
+        grs_ingredients = creator.create('Cobaya',\
             self.survey_par, self.data_spec, \
             cosmo_par_fid=cosmo_par_fid, \
             provider=self.provider, **params_values_dict)
@@ -251,20 +228,7 @@ class PowerSpectrum3D_standalone(Theory):
 
         galaxy_ps = data_vec.get('galaxy_ps')
 
-        #TODO I"m here 
-
-        #print('Calculating matter power')
-        #state['matter_power'] = self._calc_matter_power(
-        #    nonlinear=nonlinear)
-
-        #print('Calculating galaxy transfer')
-        #state['galaxy_transfer'] = self._calc_galaxy_transfer(
-        #    **params_values_dict)
-
-        #print('Calculating AP factor')
-        #state['AP_factor'] = self._calc_AP_factor()
-
-        print('Calculating galaxy_ps')
+        self.logger.debug('About to galaxy_ps')
         state['galaxy_ps'] = galaxy_ps
 
         # TODO placeholder for any derived paramter from this module
@@ -272,7 +236,3 @@ class PowerSpectrum3D_standalone(Theory):
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']
-
-    #HACK
-    #def get_galaxy_transfer(self):
-    #    return self._current_state['galaxy_transfer']

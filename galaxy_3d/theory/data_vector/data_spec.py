@@ -293,9 +293,12 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)
         
+        triangle_orientation_dict = data_spec_dict['triangle_orientation_info']
+
         (self._min_cos_theta1, self._max_cos_theta1, self._min_phi12, self._max_phi12) \
-            = self._get_min_max_angles(data_spec_dict)
-        self._theta1, self._phi12, self._cos_theta1 = self._setup_angles(data_spec_dict)
+            = self._get_min_max_angles(triangle_orientation_dict)
+        self._theta1, self._phi12, self._cos_theta1 = \
+            self._setup_angles(triangle_orientation_dict)
         
         self._triangle_spec = TriangleSpecTheta1Phi12(self._k, self._theta1, self._phi12, \
             set_mu_to_zero = data_spec_dict['debug_settings']['set_mu_to_zero']) 
@@ -303,7 +306,7 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
         self._debug_sigp = data_spec_dict['debug_settings']['sigp']
         self._debug_f_of_z = data_spec_dict['debug_settings']['f_of_z']
 
-        self.do_folded_signal = data_spec_dict['do_folded_signal']
+        self.do_folded_signal = triangle_orientation_dict['do_folded_signal']
 
         self._setup_nori()
         self._overwrite_shape_for_b3d_rsd()
@@ -337,41 +340,41 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
         Sigma = dmu1 * dphi12 / (4.0*np.pi) 
         return Sigma
 
-    def _setup_angles(self, data_spec_dict):
+    def _setup_angles(self, tri_ori_dict):
 
         """Returns theta1 and phi12 given min max and number of bins of cos(theta1) and phi12. """
         
-        if data_spec_dict['triangle_orientation'] == 'theta1_phi12':
+        if tri_ori_dict['parametrization_name'] == 'theta1_phi12':
             
-            (min_cos_theta1, max_cos_theta1, min_phi12, max_phi12) = self._get_min_max_angles(data_spec_dict)
+            (min_cos_theta1, max_cos_theta1, min_phi12, max_phi12) = self._get_min_max_angles(tri_ori_dict)
             
             self._logger.info('Using cos_theta1 in [{}, {}]'.format(min_cos_theta1, max_cos_theta1))
             self._logger.info('Using phi12 in [{}, {}]'.format(min_phi12, max_phi12))
             
-            cos_theta1 = self._get_bin_centers_from_nbin(min_cos_theta1, max_cos_theta1, data_spec_dict['nbin_cos_theta1'])
+            cos_theta1 = self._get_bin_centers_from_nbin(min_cos_theta1, max_cos_theta1, tri_ori_dict['nbin_cos_theta1'])
             theta1 = np.arccos(cos_theta1) 
-            phi12 = self._get_bin_centers_from_nbin(min_phi12, max_phi12, data_spec_dict['nbin_phi12'])
+            phi12 = self._get_bin_centers_from_nbin(min_phi12, max_phi12, tri_ori_dict['nbin_phi12'])
 
             self._logger.info('theta1_in_deg = {}'.format(theta1 / np.pi * 180.0))
             self._logger.info('phi12 in deg = {}'.format(phi12 / np.pi * 180.0))
             
             return theta1, phi12, cos_theta1
     
-    def _get_min_max_angles(self, data_spec_dict):
+    def _get_min_max_angles(self, tri_ori_dict):
 
-        if data_spec_dict['triangle_orientation'] == 'theta1_phi12':
+        if tri_ori_dict['parametrization_name'] == 'theta1_phi12':
 
-            min_cos_theta1 = -1.0 if 'min_cos_theta1' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['min_cos_theta1'])
+            min_cos_theta1 = -1.0 if 'min_cos_theta1' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['min_cos_theta1'])
 
-            max_cos_theta1 = 1.0 if 'max_cos_theta1' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['max_cos_theta1'])
+            max_cos_theta1 = 1.0 if 'max_cos_theta1' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['max_cos_theta1'])
 
-            min_phi12 = 0 if 'min_phi12' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['min_phi12'])
+            min_phi12 = 0 if 'min_phi12' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['min_phi12'])
 
-            max_phi12 = 2.*np.pi if 'max_phi12' not in data_spec_dict.keys() \
-                else evaluate_string_to_float(data_spec_dict['max_phi12'])
+            max_phi12 = 2.*np.pi if 'max_phi12' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['max_phi12'])
 
             return (min_cos_theta1, max_cos_theta1, min_phi12, max_phi12)
 

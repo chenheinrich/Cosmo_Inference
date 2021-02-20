@@ -2,7 +2,7 @@ import numpy as np
 import copy
 import sys
 
-from theory.data_vector.cosmo_product import CosmoProductCreator
+from theory.data_vector.cosmo_interface import CosmoInterfaceCreator
 from theory.utils import constants
 from theory.utils.errors import NameNotAllowedError
 from theory.utils.logging import class_logger
@@ -19,10 +19,10 @@ class GRSIngredientsCreator():
 
         """Returns an instance of the GRSIngredients class given different input options"""
         
-        cosmo_creator = CosmoProductCreator()
+        cosmo_creator = CosmoInterfaceCreator()
         z = survey_par.get_zmid_array()
 
-        option_fid = 'FromCamb'
+        option_fid = 'Camb'
         cosmo_fid = cosmo_creator.create(option_fid, z, cosmo_par=cosmo_par_fid)
 
         cosmo = cosmo_creator.create(option, z, \
@@ -34,13 +34,13 @@ class GRSIngredientsCreator():
         return GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
 
     def _get_params_values_dict(self, option, params_values_dict, cosmo_par):
-        if option == 'FromCobayaProvider':
+        if option == 'Cobaya':
             return params_values_dict
-        elif option == 'FromCamb':
+        elif option == 'Camb':
             return self._get_params_values_dict_from_cosmo_par(cosmo_par)
         else:
-            raise ValueError('GRSIngredientsCreator: \
-                option can only be "FromCobayaProvider" or "FromCamb".')
+            raise ValueError("GRSIngredientsCreator: \
+                option can only be 'Cobaya' or 'Camb'.")
         #TODO Might be able to simplify multiple cosmo parameter passing channels
         # cosmo_par and **params_values_dict.
 
@@ -175,7 +175,7 @@ class GRSIngredients(object):
         in (1/Mpc)^3 (not (h/Mpc)^3 as in input yaml)."""
         h = self._get_H0_fid()/100.0
         number_density_invMpc = h**3 * self._survey_par.get_number_density_array()
-        self._logger.debug('h = {}'.format(h))
+        self.logger.debug('h = {}'.format(h))
         return number_density_invMpc
 
     def _calc_AP(self):
@@ -488,9 +488,3 @@ class GRSIngredients(object):
         initial_power = (2.0 * np.pi**2)/(k**3) * np.exp(initial_power)
         
         return initial_power
-
-class GRSIngredientsForBispectrum(GRSIngredients): #No AP
-
-    def __init__(self, cosmo_par, cosmo_par_fid, survey_par, data_spec, **params_values_dict):
-       super().__init__(cosmo_par, cosmo_par_fid, survey_par, data_spec, **params_values_dict)
-

@@ -149,12 +149,11 @@ class BisPlotter(TrianglePlotter):
         yname = 'galaxy_bis_oriented_ABC_%i_%i_%i'%(isample1, isample2, isample3)
         ylatex = r'$B_{g_{%s}g_{%s}g_{%s}}$'%(isample1, isample2, isample3)
 
-        fnl = self._data_vec._cosmo_par.fnl
+        fnl = self._data_vec._grs_ingredients.get('fnl')
         title = r'$B_{g_{%s}g_{%s}g_{%s}}$, $f_{\rm NL} = %s$'%(isample1, isample2, isample3, fnl)
 
         nori = self._data_vec._triangle_spec.nori
         
-
         xlim = [0, self._data_spec.triangle_spec.ntri]
 
         #TODO set this flag somewhere else
