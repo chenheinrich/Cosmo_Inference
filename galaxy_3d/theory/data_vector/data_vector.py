@@ -56,8 +56,6 @@ class PowerSpectrum3D(DataVector):
         matter_power = self._grs_ingredients.get('matter_power_with_AP')
         galaxy_transfer = self.get('galaxy_transfer')
 
-        print('AP = ', AP)
-
         jj = 0
         for j1 in range(self._data_spec.nsample):
             for j2 in range(j1, self._data_spec.nsample):
@@ -317,9 +315,8 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         super().__init__(grs_ingredients, survey_par, b3d_rsd_spec)
 
         self._triangle_spec = self._data_spec.triangle_spec
-        print('self.data_spec.nori', self._data_spec.nori)
-        print('self.triangle_spec.nori', self._triangle_spec.nori)
-        print('self.triangle_spec.theta1', self._triangle_spec.theta1)
+        self.logger.debug('Initiating Bispectrum3DRSD class with\
+            nori = {}'.format(self._data_spec.nori))
 
         self._f_array = self._get_f_array()
         self._fog_all = self._get_fog_all()
@@ -428,7 +425,6 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         pk23 = np.array(pks)[:,:,1]
         pk13 = np.array(pks)[:,:,2]
         assert pks.shape == (nz, ntri, 3), (pks.shape, (nz, ntri, 3))
-        print('pks.shape', pks.shape)
 
         Bggg_b20 = np.zeros((nb, nz, ntri, nori))
 

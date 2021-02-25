@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+from theory.utils.logging import class_logger
 
 class AnglesNotInRangeError(Exception):
 
@@ -14,6 +15,7 @@ class TriangleSpec():
     """Class managing a list of k1, k2, k3 satisfying triangle inequalities given discretized k list."""
 
     def __init__(self, k):
+        self.logger = class_logger(self)
         self._k = k
         self._nk = k.size
         self._tri_dict_tuple2index, self._tri_index_array, self._tri_array, self._ntri, \
@@ -175,12 +177,12 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
     def __init__(self, k, theta1, phi12, set_mu_to_zero=False):
         super().__init__(k)
         self._set_mu_to_zero = set_mu_to_zero
-        print('You have set self._set_mu_to_zero to {}'.format(self._set_mu_to_zero)) #TODO use logger
+        self.logger.info('You have set self._set_mu_to_zero to {}'.format(self._set_mu_to_zero)) 
         
         try:
             self._check_input_angle_range(theta1, phi12)
         except AnglesNotInRangeError as e:
-            print(e.message)
+            self.logger.error(e.message)
             sys.exit() #TODO do real error handling
 
         self._theta1 = theta1

@@ -446,7 +446,7 @@ class GRSIngredients(object):
 
     def _get_sigma8_now(self):
         sigma8_now = self._cosmo.get_sigma8_now()
-        print('sigma8 today:', sigma8_now)
+        self.logger.debug('sigma8 today:', sigma8_now)
         return sigma8_now
 
     def _get_f(self):

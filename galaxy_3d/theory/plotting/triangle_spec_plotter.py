@@ -7,10 +7,12 @@ import numpy as np
 from theory.data_vector.triangle_spec import TriangleSpecTheta1Phi12
 from theory.data_vector.triangle_spec import TriangleSpec
 from theory.plotting.triangle_plotter import TrianglePlotter 
+from theory.utils.logging import class_logger
 
 class TriangleSpecPlotter(TrianglePlotter):
 
     def __init__(self, triangle_spec, plot_dir):
+        self.logger = class_logger(self) #TODO maybe should be an indepedent class instead of subclass
         super().__init__(triangle_spec, plot_dir)
 
     def make_plots(self):
@@ -112,7 +114,7 @@ class TriangleSpecTheta1Phi12Plotter(TriangleSpecPlotter):
             plot_name = os.path.join(self._plot_dir, 'plot_triangle_theta12.pdf')
 
         plt.savefig(plot_name)
-        print('Saved plot: {}'.format(plot_name))
+        self.logger.info('Saved plot: {}'.format(plot_name))
 
 
     def _plot_mu(self, plot_type='plot', plot_name=None):
@@ -168,6 +170,6 @@ class TriangleSpecTheta1Phi12Plotter(TriangleSpecPlotter):
             plot_name = os.path.join(self._plot_dir, 'plot_triangle_orientation_mu.pdf')
 
         plt.savefig(plot_name)
-        print('Saved plot: {}'.format(plot_name))
+        self.logger.info('Saved plot: {}'.format(plot_name))
 
 

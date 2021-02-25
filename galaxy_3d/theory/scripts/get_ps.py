@@ -65,6 +65,6 @@ if __name__ == '__main__':
 
     with open(command_line_args.config_file) as file:
         info = yaml.load(file, Loader=yaml.FullLoader)
-    print('info', info)
+    print('info = {}'.format(info))
 
     save_galaxy_ps(info)
