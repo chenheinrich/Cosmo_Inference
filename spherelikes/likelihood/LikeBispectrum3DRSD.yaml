@@ -1,0 +1,11 @@
+invcov_path: "./data/covariance/invcov.npy"
+sim_data_path: "./data/sim_data/sim_data.pickle"
+is_reference_likelihood: True
+# Aliases for automatic covariance matrix
+aliases: [like_bis_3d]
+# Speed in evaluations/second (after theory inputs calculated).
+speed: 500
+params:
+  my_foreground_amp:
+    value: 1.0
+    latex: A^{f}_{\rm{mine}}
