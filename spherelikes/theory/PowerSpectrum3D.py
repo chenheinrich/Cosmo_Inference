@@ -15,9 +15,9 @@ from spherelikes.utils import constants
 #from spherelikes.params import SurveyPar
 from spherelikes.params_generator import TheoryParGenerator
 
-from galaxy_3d.theory.data_vector import Bispectrum3DRSD
-from galaxy_3d.theory.data_vector import Bispectrum3DRSDSpec
+from galaxy_3d.theory.data_vector import PowerSpectrum3D as PowerSpectrum3D_standalone
 from galaxy_3d.theory.data_vector import GRSIngredientsCreator
+from galaxy_3d.theory.data_vector import PowerSpectrum3DSpec
 from galaxy_3d.theory.params.cosmo_par import CosmoPar
 from galaxy_3d.theory.params.survey_par import SurveyPar
 
@@ -122,7 +122,7 @@ class ParGenerator(TheoryParGenerator):
         )
         return bias_params
 
-class Bispectrum3DRSD_standalone(Theory):
+class PowerSpectrum3D(Theory):
 
     #TODO hook this up using camb provider etc
     cosmo_par_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
@@ -138,16 +138,12 @@ class Bispectrum3DRSD_standalone(Theory):
     nsample = survey_par.get_nsample()
     params = get_params_for_survey_par(survey_par, fix_to_default=False)
 
-    nk = 2  # number of k points (to be changed into bins)
-    nmu = 2  # number of mu bins
+    nk = 2  # 21  # 211  # number of k points (to be changed into bins)
+    nmu = 2  # 5  # number of mu bins
 
     h = 0.68
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
-
-    #TODO see what to do here
-    triangle_orientation_info = {}
-    debug_settings = {}
 
     is_reference_model = False
     do_test = False
@@ -175,6 +171,9 @@ class Bispectrum3DRSD_standalone(Theory):
 
     def must_provide(self, **requirements):
         z_list = self.survey_par.get_zmid_array()
+        #HACK (to work with model)
+        z_list_2 = self.survey_par.get_zlo_array()
+        z_list_3 = self.survey_par.get_zhi_array()
         self.logger.debug('z_list = {}'.format(z_list))
         #z_list = self.z_list #TODO find way to pass this properly
         k_max = 8.0
@@ -184,7 +183,7 @@ class Bispectrum3DRSD_standalone(Theory):
             'k_max': k_max,  # 1/Mpc
             'nonlinear': nonlinear,
         }
-        if 'galaxy_bis' in requirements:
+        if 'galaxy_ps' in requirements:
             return {
                 'Pk_interpolator': spec_Pk,
                 'Cl': {'tt': 2500},
@@ -197,6 +196,8 @@ class Bispectrum3DRSD_standalone(Theory):
                 'fsigma8': {'z': z_list},
                 'sigma8': None,
                 'CAMBdata': None,
+                #HACK (to work with model.py)
+                'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
             }
 
     def get_can_provide_params(self):
@@ -213,12 +214,10 @@ class Bispectrum3DRSD_standalone(Theory):
             'nmu': self.nmu, # number of mu bins
             'kmin': self.kmin, # equivalent to 0.001 h/Mpc
             'kmax': self.kmax, # equivalent to 0.2 h/Mpc
-            'triangle_orientation_info': self.triangle_orientation_info,
-            'debug_settings': self.debug_settings
         }
         self.logger.debug('self.data_spec_dict: {}'.format(self.data_spec_dict))
 
-        self.data_spec = Bispectrum3DRSDSpec(self.survey_par, self.data_spec_dict)
+        self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
         cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
 
         self.logger.debug('About to get grs_ingredients')
@@ -229,16 +228,16 @@ class Bispectrum3DRSD_standalone(Theory):
             cosmo_par_fid=cosmo_par_fid, \
             provider=self.provider, **params_values_dict)
 
-        self.logger.debug('About to get Bispectrum3DRSD')
-        data_vec = Bispectrum3DRSD(grs_ingredients, self.survey_par, self.data_spec)
+        self.logger.debug('About to get PowerSpectrum3D_standalone')
+        data_vec = PowerSpectrum3D_standalone(grs_ingredients, self.survey_par, self.data_spec)
 
-        galaxy_bis = data_vec.get('galaxy_bis')
+        galaxy_ps = data_vec.get('galaxy_ps')
 
-        self.logger.debug('About to galaxy_bis')
-        state['galaxy_bis'] = galaxy_bis
+        self.logger.debug('About to galaxy_ps')
+        state['galaxy_ps'] = galaxy_ps
 
         # TODO placeholder for any derived paramter from this module
         state['derived'] = {'derived_param': 1.0}
 
-    def get_galaxy_bis(self):
-        return self._current_state['galaxy_bis']
+    def get_galaxy_ps(self):
+        return self._current_state['galaxy_ps']

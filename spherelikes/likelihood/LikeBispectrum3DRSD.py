@@ -6,7 +6,7 @@ import sys
 from cobaya.likelihood import Likelihood
 
 from spherelikes.utils.log import LoggedError, class_logger
-
+from theory.utils.profiler import profiler
 
 class LikeBispectrum3DRSD(Likelihood): 
     #TODO might subclass from a common base class in the future
@@ -25,6 +25,7 @@ class LikeBispectrum3DRSD(Likelihood):
         return {'galaxy_bis': None,
                 'derived_param': None}
 
+    @profiler
     def logp(self, **params_values):
         """
         Taking a dictionary of (sampled) nuisance parameter values params_values
@@ -40,30 +41,45 @@ class LikeBispectrum3DRSD(Likelihood):
             chi2 = 0.0
         else:
             #delta = self.simulated_data - self.get_sampled_data()
+            print('Getting sampled data')
             delta = self.get_sampled_data()
+            #HACK
+            #delta = delta[:, :, :, 0]
+            print('delta.shape = {}'.format(delta.shape))
+            (nb, nz, ntri, nori) = (125, 11, 76, 8)
 
             # TODO turn into official error handling
             #print('delta.shape = {}'.format(delta.shape))
             #print('self.invcov.shape = {}'.format(self.invcov.shape))
             #print('    expecting ({},{})'.format(
             #    np.prod(delta.shape), np.prod(delta.shape)))
-
-            #HACK
-            self.invcov = np.zeros(np.prod(delta.shape), np.prod(delta.shape))
-            tmp = np.matmul(self.invcov, delta.ravel())
-            chi2 = np.matmul(delta.ravel(), tmp)
-
-            print('tmp.shape = {}'.format(tmp.shape))
+            
+            chi2 = 0
+            for iz in range(nz):
+                for itri in range(ntri):
+                    for iori in range(nori):
+                        #delta_tmp = (delta[:, iz, itri, iori]).ravel()
+                        delta_tmp = delta[:, iz, itri, iori]
+                        invcov_tmp = self.invcov[:, :, iz, itri, iori]
+                        tmp = np.matmul(invcov_tmp, delta_tmp.ravel())
+                        chi2 = chi2 + np.matmul(delta_tmp.ravel(), tmp)
+            
             print('chi2 = {}'.format(chi2))
-
+            
         return -chi2 / 2
 
     def setup(self):
         self.logger.info('Setting up likelihood ...')
 
         if self.is_reference_likelihood is False:
-            self.simulated_data = self.load_simulated_data()
-            self.invcov = self.load_invcov()
+            #HACK
+            #self.simulated_data = self.load_simulated_data()
+            (nb, nz, ntri, nori) = (125, 11, 76, 8)
+            self.simulated_data = np.zeros((nb, nz, ntri, nori))
+            #HACK
+            #self.invcov = self.load_invcov()
+            #self.invcov = np.ones((nb*nori, nb*nori, nz, ntri))
+            self.invcov = np.ones((nb, nb, nz, ntri, nori))
         else:
             print('==> Not loading inverse covariance and simulated data vector.')
 
