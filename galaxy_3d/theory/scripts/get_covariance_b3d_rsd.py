@@ -25,7 +25,12 @@ if __name__ == '__main__':
     print('info = {}'.format(info))
 
     cov_calculator = Bispectrum3DRSDCovarianceCalculator(info)
-    invcov = cov_calculator.get_invcov()
-    #TODO save
+    
+    fn_cov = os.path.join(info['plot_dir'], 'cov.npy')
+    fn_invcov = os.path.join(info['plot_dir'], 'invcov.npy')
+    
+    cov_calculator.get_and_save_cov(fn_cov)
+    cov_calculator.get_and_save_invcov(fn_invcov)
 
+    #TODO add test to make inverse went well
     

@@ -17,6 +17,13 @@ class Bispectrum3DRSDCovarianceCalculator():
         self.logger = class_logger(self)
         self._info = info
 
+        # TODO test consistency p and b:
+        #[PowerSpectrum3D]
+        #nk: 11 # number of k points (to be changed into bins)
+        #nmu: -1 # number of mu bins
+        #kmin: 0.0007 # equivalent to 0.001 h/Mpc
+        #kmax: 0.14 # equivalent to 0.2 h/Mpc
+
         self._p3d = self._get_p3d()
         self._galaxy_ps = self._p3d.get('galaxy_ps_without_AP_no_fog_no_kaiser') # (nsample, nz, nk)
         
@@ -48,12 +55,35 @@ class Bispectrum3DRSDCovarianceCalculator():
 
     #@profiler
     def get_invcov(self):
-        self.cov = self.get_cov()
+        nz = self._b3d_rsd_spec.nz
+        ntri = self._b3d_rsd_spec.ntri
+
         invcov = np.zeros_like(self.cov)
-        nblock = self.cov.shape[2]
-        for iblock in range(nblock):
-            invcov[:,:,iblock] = scipy.linalg.inv(self.cov[:,:,iblock])
+
+        for iz in range(nz):
+            for itri in range(ntri):
+                invcov[:, :, iz, itri] = scipy.linalg.inv(self.cov[:, :, iz, itri])
         return invcov
+
+    def get_and_save_invcov(self, fn):
+        self.invcov = self.get_invcov()
+        self.save_invcov(fn)
+        return self.invcov
+
+    def get_and_save_cov(self, fn):
+        self.cov = self.get_cov()
+        self.save_cov(fn)
+        return self.cov
+
+    def save_cov(self, fn):
+        self.save_file(fn, self.cov, name='covariance')
+
+    def save_invcov(self, fn):
+        self.save_file(fn, self.invcov, name='inverse covariance')
+
+    def save_file(self, fn, data, name = ''):
+        np.save(fn, data)
+        print('Saved file {}: {}'.format(name, fn))
 
     @profiler
     def get_cov(self):
@@ -69,8 +99,8 @@ class Bispectrum3DRSDCovarianceCalculator():
         cov = np.zeros((block_size, block_size, nz, ntri))
 
         iblock = 0
-        for iz in range(self._b3d_rsd_spec.nz):
-            for itri in range(self._b3d_rsd_spec.ntri):
+        for iz in range(nz):
+            for itri in range(ntri):
                 cov[:, :, iz, itri] = self.get_cov_smallest_nondiagonal_block(iz, itri)
                 cov = cov * self._cov_rescale[iblock]
                 print('iz=%s, itri=%i, ib=0, imu=0'%(iz, itri), cov[0, 0, iz, itri])
@@ -120,6 +150,7 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         return noise
 
+    @profiler
     def get_cov_smallest_nondiagonal_block(self, iz, itri):
 
         nori = self._b3d_rsd_spec.nori

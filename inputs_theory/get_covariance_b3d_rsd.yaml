@@ -8,7 +8,7 @@ survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
 
 Bispectrum3DRSDCovariance:
   Bispectrum3DRSD: 
-    nk: 21 # number of k points (to be changed into bins)
+    nk: 11 # number of k points (to be changed into bins)
     nmu: -1 # number of mu bins 
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
@@ -26,11 +26,11 @@ Bispectrum3DRSDCovariance:
       sigp: null
       f_of_z: null
   PowerSpectrum3D: 
-    nk: 21 # number of k points (to be changed into bins)
+    nk: 11 # number of k points (to be changed into bins)
     nmu: -1 # number of mu bins
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
   do_cvl_noise: False
   fsky: 0.75
 
-plot_dir: './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/' 
+plot_dir: './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/' 
