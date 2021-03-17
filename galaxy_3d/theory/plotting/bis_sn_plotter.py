@@ -44,7 +44,6 @@ class BisSNPlotter(TrianglePlotter):
             for ib in range(nb):
                 self._plot_galaxy_bis(ib)   
 
-
     def _plot_galaxy_bis(self, ib):
 
         izs = np.arange(0, self._data_spec.nz, 10)

@@ -9,6 +9,7 @@ class Bispectrum3DVariance():
         self._p3d = p3d
 
         self._galaxy_ps = self._p3d.get('galaxy_ps')
+        
         self._data_spec_ps = self._p3d._data_spec
 
         self._data_spec_bis = data_spec_bis
@@ -112,6 +113,7 @@ class Bispectrum3DVariance():
     def _get_observed_ps(self, iz, isample1, isample2, ik, imu):
 
         ips = self._data_spec_ps._dict_isamples_to_ips['%i_%i'%(isample1, isample2)]
+        
         ps = self._galaxy_ps[ips, iz, ik, imu]
 
         if isample1 == isample2:

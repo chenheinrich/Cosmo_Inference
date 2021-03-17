@@ -8,7 +8,8 @@ from cobaya.likelihood import Likelihood
 from spherelikes.utils.log import LoggedError, class_logger
 
 
-class LikeBispectrum3DRSD(Likelihood):
+class LikeBispectrum3DRSD(Likelihood): 
+    #TODO might subclass from a common base class in the future
 
     def initialize(self):
         """
@@ -91,12 +92,15 @@ class LikeBispectrum3DRSD(Likelihood):
 
     def load_simulated_data(self):
         try:
-            results = pickle.load(open(self.sim_data_path, 'rb'))
-            return results['galaxy_bis'] #TODO to change
+            return self.load_npy_file(self.sim_data_path) 
         except FileNotFoundError as e:
             msg = '%s' % e + '\n Simulated data vector does not exist.' \
                 + '\n Run python scripts/generate_data.py first.'
             raise LoggedError(self.logger, msg)
+
+    def load_npy_file(self, path):
+        results = np.load(path)
+        return results
 
     def get_sampled_data(self):
         galaxy_bis = self.provider.get_galaxy_bis()

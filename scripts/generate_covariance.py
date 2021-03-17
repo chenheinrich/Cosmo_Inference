@@ -13,6 +13,9 @@ from spherelikes.model import ModelCalculator
 from spherelikes.utils.log import class_logger
 from spherelikes.params import SurveyPar
 
+from theory.utils.profiler import profiler
+from scripts.invert_matrix import invert_block_matrix
+
 
 class CovCalculator():
 
@@ -79,7 +82,9 @@ class CovCalculator():
 
     def get_and_save_invcov(self):
         self.get_cov()
-        self.get_invcov()
+        #HACK
+        #self.get_invcov()
+        self.get_invcov2()
         self.do_inv_test(self.cov, self.invcov)
         self.save()
 
@@ -95,6 +100,8 @@ class CovCalculator():
         """
         # Careful: Do not change elements in self.data_1d, it would modify self.data
         # from outside of this class since it is created w/ np.ravel().
+        #TODO make a copy of self.data_1d to solve this problem??
+
         self.get_data_1d()
         self.shape = self.galaxy_ps.shape
         ntot = np.prod(self.shape)
@@ -111,12 +118,25 @@ class CovCalculator():
                     = block
 
         self.block_size = block_size
+        self.logger.info('self.shape = {}'.format(self.shape))
+        self.logger.info('self.block_size = {}'.format(self.block_size))
 
         return self.cov
 
+    @profiler
     def get_invcov(self, rescale=1.0):
         try:
             self.invcov = np.linalg.inv(self.cov * rescale)
+            self.logger.debug(
+                'self.invcov.shape = {}'.format(self.invcov.shape))
+            return self.invcov
+        except Exception as e:
+            self.logger.error('Error: {}'.format(e))
+
+    @profiler
+    def get_invcov2(self):
+        try:
+            self.invcov = invert_block_matrix(self.cov, self.nps)
             self.logger.debug(
                 'self.invcov.shape = {}'.format(self.invcov.shape))
             return self.invcov
@@ -158,6 +178,7 @@ class CovCalculator():
         """Flatten the 4d numpy array self.galaxy_ps into 1d data vector,
         to facilitate the computation of the covariance matrix."""
 
+        #TODO make a copy of self.galaxy_ps first, and then ravel to solve this problem??
         self.data_1d = self.galaxy_ps.ravel()
 
         msg = 'self.data_1d.size = {}, expect {}'\

@@ -3,17 +3,14 @@ debug: True
 sampler:
   mcmc:
     max_tries: 10000000
-    drag: true
-    oversample_power: 1
-    #covmat: "./data/ps_base_v27/ps_base_v27_chain.covmat"
 
-output: chains/debug/debug_standalone_b3d_rsd_base_vary_all_but_w0_wa_mnu_optimized_mcmc_settings/ps_base
+output: chains/ps_base_profiling_covariance/ps_base
 
 likelihood:
-  spherelikes.likelihood.LikeBispectrum3DRSD:
+  spherelikes.likelihood.LikePowerSpectrum3D:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
-    invcov_path: "./data/b3d_rsd_v27/invcov.npy"
-    sim_data_path: "./data/b3d_rsd_v27/sim_data.npy"
+    invcov_path: "./data/ps_base_v27/invcov.npy"
+    sim_data_path: "./data/ps_base_v27/sim_data.pickle"
 
 theory:
   camb:
@@ -28,32 +25,18 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.Bispectrum3DRSD_standalone:
+  spherelikes.theory.PowerSpectrum3D_standalone:
     stop_at_error: True
 
-    is_reference_model: False # if calculating reference model for AP, set to True
+    #is_reference_model: False # if calculating reference model for AP, set to True
     survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
     #model_path: "./data/ps_base_v27/ref.pickle"
 
-    nk: 21 # number of k points 
-    nmu: 5 # number of mu bins
+    nk: 21 # 21  # 211  # number of k points (to be changed into bins)
+    nmu: 5 # 5  # number of mu bins
 
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
-
-    triangle_orientation_info: 
-      parametrization_name: 'theta1_phi12' #TODO make this a separate dictionary for triangle orientation object
-      min_cos_theta1: 0.0
-      max_cos_theta1: 1.0
-      nbin_cos_theta1: 2
-      min_phi12: 0
-      max_phi12: 'np.pi'
-      nbin_phi12: 4
-      do_folded_signal: True 
-    debug_settings:
-      set_mu_to_zero: False
-      sigp: null
-      f_of_z: null
 
     do_test: False
     do_test_plot: True
@@ -71,48 +54,20 @@ params:
     propose: 0.001
     latex: f_{\rm{NL}}
   logA:
-    prior:
-      min: 1.61
-      max: 3.91
-    ref:
-      dist: norm
-      loc: 3.0447
-      scale: 0.01
-    proposal: 0.001
+    value: 3.0447
     latex: \log(10^{10} A_\mathrm{s})
     drop: true
   As:
     value: "lambda logA: 1e-10*np.exp(logA)"
     latex: A_\mathrm{s}
   ns:
-    prior:
-      min: 0.8
-      max: 1.2
-    ref:
-      dist: norm
-      loc: 0.965
-      scale: 0.005
-    proposal: 0.0001
+    value: 0.96589
     latex: n_\mathrm{s}
   nrun:
-    prior:
-      min: -0.1 
-      max: 0.1
-    ref:
-      dist: norm
-      loc: 0.0
-      scale: 0.001
-    proposal: 0.0001
+    value: 0
     latex: \rm{d}n_s/\rm{d\,ln\,} k
   theta_MC_100:
-    prior:
-      min: 0.5
-      max: 10
-    ref:
-      dist: norm
-      loc: 1.041
-      scale: 0.0003
-    proposal: 0.00003
+    value: 1.040920
     latex: 100\theta_\mathrm{MC}
     drop: true
     renames: theta
@@ -124,24 +79,10 @@ params:
     min: 20
     max: 100
   ombh2:
-    prior:
-      min: 0.005
-      max: 0.05
-    ref:
-      dist: norm
-      loc: 0.0224
-      scale: 0.0001
-    proposal: 0.0001
+    value: 0.022377
     latex: \Omega_\mathrm{b} h^2
   omch2:
-    prior:
-      min: 0.001
-      max: 0.99
-    ref:
-      dist: norm
-      loc: 0.12
-      scale: 0.001
-    proposal: 0.0005
+    value: 0.12010
     latex: \Omega_\mathrm{c} h^2
   omegam:
     latex: \Omega_\mathrm{m}
@@ -157,14 +98,7 @@ params:
     derived: "lambda omeganu, H0: omeganu*(H0/100)**2"
     latex: \Omega_{\nu} h^2
   omegak:
-    prior:
-      min: -0.1
-      max: 0.1
-    ref:
-      dist: norm
-      loc: 0.0
-      scale: 0.0001
-    proposal: 0.00001
+    value: 0
     latex: \Omega_\mathrm{K}
   omega_de:
     latex: \Omega_\Lambda
@@ -182,15 +116,7 @@ params:
     derived: "lambda DH: 10**5*DH"
     latex: 10^5 \mathrm{D}/\mathrm{H}
   tau:
-    prior:
-      dist: norm
-      loc: 0.0544
-      scale: 0.008
-    ref:
-      dist: norm
-      loc: 0.0544
-      scale: 0.008
-    proposal: 0.001
+    value: 0.0543
     latex: \tau_\mathrm{reio}
   zre:
     latex: z_\mathrm{re}

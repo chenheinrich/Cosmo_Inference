@@ -39,7 +39,14 @@ class PowerSpectrum3D(DataVector):
         super().__init__(grs_ingredients, survey_par, p3d_spec)
 
         self._state = {}
-        self._allowed_names = ['galaxy_ps', 'galaxy_transfer']
+        self._allowed_names = [\
+            'galaxy_ps', \
+            'galaxy_ps_without_AP',\
+            'galaxy_ps_without_AP_no_fog_no_kaiser', \
+            'galaxy_transfer', \
+            'galaxy_transfer_without_AP', \
+            'galaxy_transfer_without_AP_no_fog_no_kaiser'\
+            ]
         
     def get(self, name):
         if name in self._allowed_names:
@@ -48,6 +55,14 @@ class PowerSpectrum3D(DataVector):
             return self._state[name]
         else:
             raise NameNotAllowedError(name, self._allowed_names)
+
+    def get_ips(self, isample1, isample2):
+        """Returns index of power spectrum given indices of 2 galaxy samples"""
+        return self._data_spec.get_ips(isample1, isample2)
+
+    def get_isamples(self, ips):
+        """Returns a tuple of 2 galaxy sample indices given index of power spectrum"""
+        return self._data_spec.get_isamples(ips)
 
     def _calc_galaxy_ps(self):
         galaxy_ps = np.zeros(self._data_spec.shape)
@@ -67,7 +82,7 @@ class PowerSpectrum3D(DataVector):
         assert jj == self._data_spec.nps, (jj, self._data_spec.nps)
 
         self._state['galaxy_ps'] = galaxy_ps
-
+    
     def _calc_galaxy_transfer(self):
 
         bias = self._grs_ingredients.get('galaxy_bias')
@@ -77,6 +92,66 @@ class PowerSpectrum3D(DataVector):
         galaxy_transfer = bias * kaiser * fog
 
         self._state['galaxy_transfer'] = galaxy_transfer
+
+    def _calc_galaxy_ps_without_AP(self):
+        galaxy_ps_without_AP = np.zeros(self._data_spec.shape)
+
+        #(nz, nk)
+        matter_power_without_AP = self._grs_ingredients.get('matter_power_without_AP')
+        galaxy_transfer_without_AP = self.get('galaxy_transfer_without_AP')
+
+        jj = 0
+        for j1 in range(self._data_spec.nsample):
+            for j2 in range(j1, self._data_spec.nsample):
+                galaxy_ps_without_AP[jj] = \
+                    matter_power_without_AP[np.newaxis, :, :, np.newaxis] \
+                    * galaxy_transfer_without_AP[j1, :, :, :] \
+                    * galaxy_transfer_without_AP[j2, :, :, :]
+                jj = jj + 1
+        assert jj == self._data_spec.nps, (jj, self._data_spec.nps)
+
+        self._state['galaxy_ps_without_AP'] = galaxy_ps_without_AP
+
+    def _calc_galaxy_transfer_without_AP(self):
+
+        bias_without_AP = self._grs_ingredients.get('galaxy_bias_without_AP') #(nsample, nz, nk)
+        kaiser_without_AP = self._grs_ingredients.get('kaiser_without_AP') #(nsample, nz, nk, nmu)
+        fog = self._grs_ingredients.get('fog') #not affected by AP
+
+        galaxy_transfer_without_AP = bias_without_AP[:, :, :, np.newaxis] \
+            * kaiser_without_AP * fog
+
+        self._state['galaxy_transfer_without_AP'] = galaxy_transfer_without_AP
+
+
+    def _calc_galaxy_ps_without_AP_no_fog_no_kaiser(self):
+        """Calculates and stores 3d numpy array of shape (nsample, nz, nk)
+        for the galaxy power spectrum without AP effects and
+        without fog and Kaiser terms, so there is no mu dependence, 
+        suitatble for e.g. bispectrum covariance calculations where mu
+        values needed may be different than that specified in here."""
+        galaxy_ps_without_AP = np.zeros(self._data_spec.shape[:3])
+
+        #(nz, nk)
+        matter_power_without_AP = self._grs_ingredients.get('matter_power_without_AP')
+        galaxy_transfer_without_AP = self.get('galaxy_transfer_without_AP_no_fog_no_kaiser')
+
+        jj = 0
+        for j1 in range(self._data_spec.nsample):
+            for j2 in range(j1, self._data_spec.nsample):
+                galaxy_ps_without_AP[jj] = \
+                    matter_power_without_AP[np.newaxis, :, :] \
+                    * galaxy_transfer_without_AP[j1, :, :] \
+                    * galaxy_transfer_without_AP[j2, :, :]
+                jj = jj + 1
+        assert jj == self._data_spec.nps, (jj, self._data_spec.nps)
+
+        self._state['galaxy_ps_without_AP_no_fog_no_kaiser'] = galaxy_ps_without_AP
+
+    def _calc_galaxy_transfer_without_AP_no_fog_no_kaiser(self):
+
+        bias_without_AP = self._grs_ingredients.get('galaxy_bias_without_AP') #(nsample, nz, nk)
+        self._state['galaxy_transfer_without_AP_no_fog_no_kaiser'] = bias_without_AP
 
 class Bispectrum3DBase(DataVector):
 
@@ -141,6 +216,14 @@ class Bispectrum3DBase(DataVector):
             return self._state[name]
         else:
             raise NameNotAllowedError(name, self._allowed_names)
+
+    def get_ips(self, isample1, isample2, isample3):
+        """Returns index of bispectrum given indices of 3 galaxy samples"""
+        return self._data_spec.get_ips(isample1, isample2, isample3)
+
+    def get_isamples(self, ib):
+        """Returns a tuple of 3 galaxy sample indices given index of bispectrum"""
+        return self._data_spec.get_isamples(ib)
 
     def _get(self, name):
         """"Private getter for intermediate states"""

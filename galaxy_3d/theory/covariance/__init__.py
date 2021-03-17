@@ -1,0 +1,1 @@
+from .b3d_rsd_covariance import Bispectrum3DRSDCovarianceCalculator

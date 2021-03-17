@@ -171,6 +171,9 @@ class PowerSpectrum3D_standalone(Theory):
 
     def must_provide(self, **requirements):
         z_list = self.survey_par.get_zmid_array()
+        #HACK (to work with model)
+        z_list_2 = self.survey_par.get_zlo_array()
+        z_list_3 = self.survey_par.get_zhi_array()
         self.logger.debug('z_list = {}'.format(z_list))
         #z_list = self.z_list #TODO find way to pass this properly
         k_max = 8.0
@@ -193,6 +196,8 @@ class PowerSpectrum3D_standalone(Theory):
                 'fsigma8': {'z': z_list},
                 'sigma8': None,
                 'CAMBdata': None,
+                #HACK (to work with model.py)
+                'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
             }
 
     def get_can_provide_params(self):

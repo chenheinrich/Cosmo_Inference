@@ -18,6 +18,7 @@ def get_data_vec_p3d(info):
     cosmo_par_file = info['cosmo_par_file']
     cosmo_par_fid_file = info['cosmo_par_fid_file']
     survey_par_file = info['survey_par_file']
+    print('info', info)
     data_spec_dict = info['PowerSpectrum3D'] 
 
     cosmo_par = CosmoPar(cosmo_par_file)

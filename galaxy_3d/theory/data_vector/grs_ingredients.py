@@ -86,6 +86,7 @@ class GRSIngredients(object):
             'matter_power_with_AP',\
             'matter_power_without_AP',\
             'kaiser', \
+            'kaiser_without_AP', \
             'fog', \
             'fog_using_ref_cosmology',\
             'sigp', \
@@ -179,7 +180,8 @@ class GRSIngredients(object):
         return number_density_invMpc
 
     def _calc_AP(self):
-        """Returns AP factor in an array same size as self._d.z."""
+        """Returns 1d numpy array of size nz for the volume factor 
+        in the power spectrum due to AP effects."""
         assert 'AP' not in self._ingredients.keys()
         AP_perp, AP_para = self._get_AP_perp_and_para()
         AP = (AP_perp)**2 * (AP_para)
@@ -252,9 +254,11 @@ class GRSIngredients(object):
         self._ingredients['galaxy_bias'] = galaxy_bias
 
     def _calc_galaxy_bias_without_AP(self):
-        """Returns galaxy bias in a 4-d numpy array of shape (nsample, nz, nk)."""
+        """Returns galaxy bias in a 3d numpy array of shape (nsample, nz, nk)."""
 
         assert 'galaxy_bias_without_AP' not in self._ingredients.keys()
+
+        expected_shape = (self._d.nsample, self._d.nz, self._d.nk)
 
         delta_c = 1.686
 
@@ -263,8 +267,6 @@ class GRSIngredients(object):
         alpha = self.get('alpha_without_AP')[np.newaxis, :, :]
 
         galaxy_bias = gaussian_bias + 2.0*self.get('fnl')*delta_c*(gaussian_bias-1.0)/alpha
-
-        expected_shape = (self._d.nsample, self._d.nz, self._d.nk)
 
         msg = ('galaxy_bias.shape = {}, expected ({})'
                .format(galaxy_bias.shape, expected_shape))
@@ -374,6 +376,26 @@ class GRSIngredients(object):
         
         self._ingredients['kaiser'] = kaiser
 
+    def _calc_kaiser_without_AP(self):
+        """Returns a 4-d numpy array of shape (nsample, nz, nk, nmu) for RSD Kaiser factor
+        without AP.
+
+        Note: we return one factor of
+            kaiser = (1 + f(z)/b_j(k,z) * mu^2)
+        for the galaxy density, not power spectrum.
+        """
+        f = self._get_f() # (nz, )
+        bias_without_AP = self.get('galaxy_bias_without_AP') #(nsample, nz, nk)
+        
+        # (nsample, nz, nk, nmu)
+        kaiser = 1.0 + f[np.newaxis, :, np.newaxis, np.newaxis] / bias_without_AP [:, :, :, np.newaxis]\
+            * (self._d.mu ** 2)[np.newaxis, np.newaxis, np.newaxis, :]
+
+        expected_shape = self._d.transfer_shape
+        assert kaiser.shape == expected_shape, (kaiser.shape, expected_shape)
+        
+        self._ingredients['kaiser_without_AP'] = kaiser_without_AP
+
     def _calc_fog(self):  
         """Returns 4-d numpy array of shape (nsample, nz, nk, nmu) for the blurring
         due to redshift error exp(-arg^2/2) where arg = (1+z) * sigz * k_parallel * c /H(z). """
@@ -395,10 +417,11 @@ class GRSIngredients(object):
 
         self._ingredients['fog'] = fog
 
-
     def _calc_fog_using_reference_cosmology(self):  
         """Returns 4-d numpy array of shape (nsample, nz, nk, nmu) for the blurring
-        due to redshift error exp(-arg^2/2) where arg = (1+z) * sigz * k_parallel * c /H(z). """
+        due to redshift error exp(-arg^2/2) where arg = (1+z) * sigz * k_parallel * c /H(z).
+        Should be the same as calc_fog since (k/H)|_{ref} = (k/H)|_{actual}. 
+        """
 
         k_ref_para = self._d.k[:, np.newaxis] * self._d.mu[np.newaxis, :] 
         Hubble_ref = self._cosmo_fid.get_Hubble_at_z()

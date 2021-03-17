@@ -13,7 +13,7 @@ from cobaya.model import get_model
 from cobaya.tools import sort_cosmetic
 
 from spherelikes.params import CobayaPar, SurveyPar
-from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
+from spherelikes.theory.PowerSpectrum3D_standalone import make_dictionary_for_bias_params
 
 class ModelCalculator():
 
@@ -87,6 +87,7 @@ class ModelCalculator():
         z_hi = np.array(self.survey_pars['zbin_hi'])
         z_mid = 0.5 * (z_lo + z_hi)
 
+        #HACK
         d_lo = theory1.get_comoving_radial_distance(z_lo)
         d_hi = theory1.get_comoving_radial_distance(z_hi)
         d_mid = theory1.get_comoving_radial_distance(z_mid)
@@ -113,9 +114,10 @@ class ModelCalculator():
     def test_results(self):
         name = self.cobaya_par.get_spherex_theory()
         theory = self.model.theory[name]
-        ap = theory.get_AP_factor()
-        if self.is_reference_model is True:
-            assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
+        #HACK for new PS code
+        #ap = theory.get_AP_factor()
+        #if self.is_reference_model is True:
+        #    assert np.all(ap == np.ones(theory.nz)), (ap, np.ones(theory.nz))
 
     def load_results(self):
         results = pickle.load(open(self.fname, "rb"))
@@ -198,15 +200,18 @@ class ModelCalculator():
         name = self.cobaya_par.get_spherex_theory()
         theory = self.model.theory[name]
         theory.must_provide(galaxy_ps={}, ap={})
-        k = theory.k
-        mu = theory.mu
-        z = theory.z
-        nsample = theory.nsample
-        nps = theory.nps
-        dk = theory.dk
-        dmu = theory.dmu
-        aux = {'k': k, 'mu': mu, 'z': z, 'nsample': nsample,
-               'nps': nps, 'dk': dk, 'dmu': dmu}
+        data_spec = theory.data_spec
+        #k = theory.k
+        #mu = theory.mu
+        #z = theory.z
+        #nsample = theory.nsample
+        #nps = theory.nps
+        #dk = theory.dk
+        #dmu = theory.dmu
+        #HACK
+        aux = {'k': data_spec.k, 'mu': data_spec.mu, 'z': data_spec.z, \
+            'nsample': data_spec.nsample,\
+            'nps': data_spec.nps, 'dk': data_spec.dk, 'dmu': data_spec.dmu}
         return aux
 
 

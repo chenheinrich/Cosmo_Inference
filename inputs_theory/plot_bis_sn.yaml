@@ -12,14 +12,15 @@ Bispectrum3D:
   nmu: -1 # number of mu bins 
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
-  triangle_orientation: 'theta1_phi12' #TODO make this a separate dictionary for triangle orientation object
-  min_cos_theta1: 0.0
-  max_cos_theta1: 1.0
-  nbin_cos_theta1: 2
-  min_phi12: 0
-  max_phi12: 'np.pi'
-  nbin_phi12: 4
-  do_folded_signal: True #used by bis error only
+  triangle_orientation_info: 
+    parametrization_name: 'theta1_phi12' #TODO make this a separate dictionary for triangle orientation object
+    min_cos_theta1: 0.0
+    max_cos_theta1: 1.0
+    nbin_cos_theta1: 2
+    min_phi12: 0
+    max_phi12: 'np.pi'
+    nbin_phi12: 4
+    do_folded_signal: True #used by bis error only
   debug_settings:
     set_mu_to_zero: False
     sigp: null

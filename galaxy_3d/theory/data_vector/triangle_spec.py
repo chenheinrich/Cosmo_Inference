@@ -38,6 +38,7 @@ class TriangleSpec():
     def tri_dict_tuple2index(self):
         return self._tri_dict_tuple2index
 
+    #TODO make this no longer a property but use access function like get_ik1_ik2_ik3_for_itri()
     @property
     def tri_index_array(self):
         """Returns a 2d numpy array of shape (ntri, 3) for indices [ik1, ik2, ik3]
@@ -49,6 +50,15 @@ class TriangleSpec():
         """
         return self._tri_index_array
 
+    def get_ik1_ik2_ik3_for_itri(self, itri):
+        """Returns a tuple of size 3 for ik1, ik2, ik3 given triangle index itri"""
+        return tuple(self._tri_index_array[itri,:])
+
+    def get_k1_k2_k3_for_itri(self, itri):
+        """Returns a tuple of size 3 for k1, k2, k3 given triangle index itri"""
+        return tuple(self._tri_array[itri,:])
+
+    #TODO make this no longer a property but use access function like get_k1_k2_k3_for_itri()
     @property
     def tri_array(self):
         """Returns a 2d numpy array of shape (ntri, 3) for k values [k1, k2, k3]
@@ -86,7 +96,7 @@ class TriangleSpec():
         """Returns a tuple of 3 elements, each being a 1d numpy array of length ntri 
         for ik1, ik2, ik3."""
         tri_index_array = self.tri_index_array
-        ik1 = tri_index_array[:,0].astype(int)
+        ik1 = tri_index_array[:,0].astype(int) #TODO put this in tri_index_array directly
         ik2 = tri_index_array[:,1].astype(int)
         ik3 = tri_index_array[:,2].astype(int)
         return (ik1, ik2, ik3)
@@ -262,6 +272,10 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
             return np.zeros_like(self._oriented_triangle_info['mu'])
         else:
             return self._oriented_triangle_info['mu']
+
+    def get_mu1_mu2_m3_for_itri_and_iori(self, itri, iori):
+        """Returns a tuple for (mu1, mu2, mu3) given itri and iori"""
+        return tuple(self.mu_array[itri, iori, :])
 
     @staticmethod
     def _check_input_angle_range(theta1, phi12):

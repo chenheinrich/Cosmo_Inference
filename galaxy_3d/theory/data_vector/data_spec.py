@@ -30,6 +30,7 @@ class DataSpec():
         self._setup_sigz()
         self._setup_k()
         self._setup_mu()
+        self._setup_k_perp_and_para()
 
         self._setup_n()
         self._setup_shape()
@@ -80,6 +81,13 @@ class DataSpec():
             assert self._mu.size == self._dmu.size, ('mu and dmu do not have the same size: {}, {}'.format(
                 self._mu.size, self._dmu.size))
         
+    def _setup_k_perp_and_para(self):
+        """Assigns 2d numpy array of shape (nk, nmu) to self._k_perp and self._k_para
+        for k perpendicular and k parallel given k and mu array."""
+        self._k_perp = self.k[:, np.newaxis] * \
+            np.sqrt(1. - (self.mu**2)[np.newaxis, :])
+        self._k_para = self.k[:, np.newaxis] * self.mu[np.newaxis, :]
+
     def _setup_n(self):
         self._nsample = self._sigz.shape[0]
         self._nps = int(self._nsample * (self._nsample + 1) / 2)
@@ -116,6 +124,16 @@ class DataSpec():
     @property
     def mu(self):
         return self._mu
+
+    @property
+    def k_perp(self):
+        """2d numpy array of shape (nk, nmu)."""
+        return self._k_perp
+
+    @property
+    def k_para(self):
+        """2d numpy array of shape (nk, nmu)."""
+        return self._k_para
 
     @property
     def dk(self):
@@ -171,9 +189,8 @@ class DataSpec():
             assert ap_perp.shape == z.shape, (ap_perp.shape, z.shape)
             assert ap_para.shape == z.shape, (ap_para.shape, z.shape)
 
-        k_perp_ref = self.k[:, np.newaxis] * \
-            np.sqrt(1. - (self.mu**2)[np.newaxis, :])
-        k_para_ref = self.k[:, np.newaxis] * self.mu[np.newaxis, :]
+        k_perp_ref = self.k_perp
+        k_para_ref = self.k_para
 
         k_actual_perp = k_perp_ref[np.newaxis, :, :] * \
             ap_perp[:, np.newaxis, np.newaxis]
@@ -212,18 +229,33 @@ class PowerSpectrum3DSpec(DataSpec):
     
     @staticmethod
     def _get_multi_tracer_config_all(nsample):
+        """Assuming galaxy power spectrum is symmetric in the two galaxy samples, 
+        i.e. P^{ab} = P^{ba}, so that ab = 12 and ab = 21 give the same power
+        spectrum index ips, but a given ips only gives increasing galaxy sample 
+        indices, ab = 12.
+        """
         dict_isamples_to_ips = {}
         dict_ips_to_isamples = {}
         ips = 0
         for isample1 in range(nsample):
             for isample2 in range(isample1, nsample):
-                    dict_isamples_to_ips['%i_%i'%(isample1, isample2)] = ips
-                    dict_ips_to_isamples['%i'%ips] = (isample1, isample2)
-                    ips = ips + 1
+                dict_isamples_to_ips['%i_%i'%(isample1, isample2)] = ips
+                dict_isamples_to_ips['%i_%i'%(isample2, isample1)] = ips
+                dict_ips_to_isamples['%i'%ips] = (isample1, isample2)
+                ips = ips + 1
         nps = int(nsample * (nsample + 1)/2)
         assert ips == nps
         
         return dict_isamples_to_ips, dict_ips_to_isamples, nps
+
+    def get_ips(self, isample1, isample2):
+        """Returns index of power spectrum given indices of galaxy samples"""
+        return self._dict_isamples_to_ips['%i_%i'%(isample1, isample2)]
+        # TODO NEXT need to store in dict the opposite 1_0 too.
+    
+    def get_isamples(self, ips):
+        """Returns a tuple of 2 galaxy sample indices given the index of power spectrum"""
+        return self._dict_ips_to_isamples['%i'%(ips)]
 
 class Bispectrum3DBaseSpec(DataSpec):
 
@@ -244,6 +276,7 @@ class Bispectrum3DBaseSpec(DataSpec):
     def ntri(self):
         return self._ntri
 
+    #TODO abort and replace by get_ib()
     @property
     def dict_isamples_to_ib(self):
         """Returns an integer for ib (the bispectrum index) given a string 
@@ -251,6 +284,7 @@ class Bispectrum3DBaseSpec(DataSpec):
         """
         return self._dict_isamples_to_ib
 
+    #TODO abort and replace by get isamples
     @property
     def dict_ib_to_isamples(self):
         """Returns a tuple (isample1, isample2, isample3) given ib, 
@@ -287,6 +321,15 @@ class Bispectrum3DBaseSpec(DataSpec):
     def get_dk1_dk2_dk3(self):
         (ik1, ik2, ik3) = self.triangle_spec.get_ik1_ik2_ik3() 
         return (self._dk[ik1], self._dk[ik2], self._dk[ik3])
+
+    def get_ib(self, isample1, isample2, isample3):
+        """Returns the index of bispectrum given indices of 3 galaxy samples"""
+        return self._dict_isamples_to_ib['%i_%i_%i'%(isample1, isample2, isample3)]
+
+    def get_isamples(self, ib):
+        """Returns a tuple of 3 galaxy sample indices given index of bispectrum"""
+        return self._dict_ib_to_isamples['%i'%(ib)]
+
 
 class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
 
@@ -328,17 +371,24 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
         return self._cos_theta1
 
     @property
-    def Sigma_scaled_to_4pi(self):
-        total_omega_over_4pi = (self._max_cos_theta1 - self._min_cos_theta1) \
-            * (self._max_phi12 - self._min_phi12)/(4.*np.pi)
-        return (self.Sigma/total_omega_over_4pi)
-
-    @property
     def Sigma(self):
         dmu1 = self.triangle_spec.dmu1
         dphi12 = self.triangle_spec.dphi12
         Sigma = dmu1 * dphi12 / (4.0*np.pi) 
         return Sigma
+
+    @property
+    def Sigma_scaled_to_4pi(self):
+        """If do_folded_signal = True, one is choosing to calculate the signal 
+        in only part of the whole 4pi solid angle, because of symmetries. 
+        Then we assume that the covariance is reduced by a factor corresponding
+        to that allowed by the symmetry, and that the data vector is already
+        averaged over these modes with the same expected signal. In this case,
+        Nmodes propto Sigma is multiplied by (4pi)/total_omega, we put this 
+        facotr here in Sigma_scaled_to_4pi, dividing by total_omega_over_4pi."""
+        total_omega_over_4pi = (self._max_cos_theta1 - self._min_cos_theta1) \
+            * (self._max_phi12 - self._min_phi12)/(4.*np.pi)
+        return (self.Sigma/total_omega_over_4pi)
 
     def _setup_angles(self, tri_ori_dict):
 

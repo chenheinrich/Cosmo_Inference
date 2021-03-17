@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
 
-from theory.data_vector.data_spec import PowerSpectrum3DSpec, Bispectrum3DRSDSpec
-from theory.data_vector.data_vector import DataVector, PowerSpectrum3D, Bispectrum3DRSD
+from theory.data_vector import PowerSpectrum3DSpec, Bispectrum3DRSDSpec
+from theory.data_vector import PowerSpectrum3D, Bispectrum3DRSD
+from theory.data_vector import GRSIngredientsCreator
 
 from theory.covariance.bis_var import Bispectrum3DVariance
 from theory.plotting.bis_sn_plotter import BisSNPlotter
@@ -28,7 +29,12 @@ def get_data_vec_ps(info):
     survey_par = SurveyPar(survey_par_file)
     data_spec = PowerSpectrum3DSpec(survey_par, data_spec_dict)
 
-    data_vec = PowerSpectrum3D(cosmo_par, cosmo_par_fid, survey_par, data_spec)
+    creator = GRSIngredientsCreator()
+    option = 'Camb'
+    grs_ingredients = creator.create(option, survey_par, data_spec,
+        cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
+
+    data_vec = PowerSpectrum3D(grs_ingredients, survey_par, data_spec)
     
     return data_vec
 
@@ -54,8 +60,13 @@ def get_b3d_rsd(info):
     survey_par = SurveyPar(survey_par_file)
     data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
 
-    b3d_rsd = Bispectrum3DRSD(cosmo_par, cosmo_par_fid, survey_par, data_spec)
-    
+    creator = GRSIngredientsCreator()
+    option = 'Camb'
+    grs_ingredients = creator.create(option, survey_par, data_spec,
+        cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
+
+    b3d_rsd= Bispectrum3DRSD(grs_ingredients, survey_par, data_spec)
+
     return b3d_rsd
 
 def get_bis_plotter_fnl(info):
@@ -101,6 +112,12 @@ if __name__ == '__main__':
         info['cosmo_par_file'] = cosmo_par_fid_file 
         p3d = get_data_vec_ps(info)
         bis_var = Bispectrum3DVariance(p3d, data_spec_bis, info['Bispectrum3DVariance'])
+
+        #HACK
+        iz = 0
+        ib = 0
+        itri = 0
+        print('bis var for iz = %s, ib = %s, itri = %s: '%(iz, ib, itri), bis_var.bis_error[ib, iz, itri]**2)
     else:
         bis_var = None
     
