@@ -25,7 +25,7 @@ RUN pip3 install -r code/requirements.txt \
 &&  python3 -c "import spherelikes" 
 
 WORKDIR '/code'
-RUN pytest ./tests/ -v -m short 
-RUN pytest ./theory/tests/ -v
+#RUN pytest ./tests/ -v -m short 
+#RUN pytest ./theory/tests/ -v
 
-CMD ["python3", "scripts/run_chains.py", "./inputs/chains_pars/ps_base.yaml", "1", "-f", "-d", "-run_in_python"]
+#CMD ["python3", "scripts/run_chains.py", "./inputs/chains_pars/ps_base.yaml", "1", "-f", "-d", "-run_in_python"]

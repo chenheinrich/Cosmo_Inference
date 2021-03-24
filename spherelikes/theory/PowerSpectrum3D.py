@@ -32,7 +32,7 @@ def make_dictionary_for_base_params():
                 'propose': 0.001,
                 'latex': 'f_{\rm{NL}}',
                 },
-        'derived_param': {'derived': True},
+        'derived_param_p3d': {'derived': True},
     }
     return base_params
 

@@ -198,9 +198,6 @@ class GRSIngredients(Theory):
                 'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
             }
 
-    def get_can_provide_params(self):
-        return ['derived_param']
-
     def calculate(self, state, want_derived=True, **params_values_dict):
 
         nonlinear = False # TODO to hook later

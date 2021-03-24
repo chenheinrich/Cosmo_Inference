@@ -31,7 +31,7 @@ class CobayaPar():
         return spherex_theories
 
     def get_spherex_theory(self):
-        return self.get_spherex_theory_list()[0]
+        return 'spherelikes.theory.GRSIngredients'
 
     def get_survey_par(self):
         theory_name = self.get_spherex_theory()
