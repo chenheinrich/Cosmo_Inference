@@ -8,8 +8,8 @@ from cobaya.likelihood import Likelihood
 from spherelikes.utils.log import LoggedError, class_logger
 from theory.utils.profiler import profiler
 
-
-class LikePowerSpectrum3D(Likelihood):
+class LikeBispectrum3DBase(Likelihood): 
+    #TODO might subclass from a common base class in the future
 
     def initialize(self):
         """
@@ -22,10 +22,10 @@ class LikePowerSpectrum3D(Likelihood):
         """
         Returns dictionary specifying quantities calculated by a theory code are needed
         """
-        return {'galaxy_ps': None,
+        return {'galaxy_bis': None,
                 'derived_param': None}
 
-    @profiler
+    #@profiler
     def logp(self, **params_values):
         """
         Taking a dictionary of (sampled) nuisance parameter values params_values
@@ -41,19 +41,17 @@ class LikePowerSpectrum3D(Likelihood):
             chi2 = 0.0
         else:
             delta = self.simulated_data - self.get_sampled_data()
+            (nb, nz, ntri) = delta.shape
+            
+            chi2 = 0.0
 
-            # TODO turn into official error handling
-            print('delta.shape = {}'.format(delta.shape))
-            print('self.invcov.shape = {}'.format(self.invcov.shape))
-            print('    expecting ({},{})'.format(
-                np.prod(delta.shape), np.prod(delta.shape)))
-
-            tmp = np.matmul(self.invcov, delta.ravel())
-            chi2 = np.matmul(delta.ravel(), tmp)
-
-            print('tmp.shape = {}'.format(tmp.shape))
-            self.logger.debug('chi2 = {}'.format(chi2))
-
+            for iz in range(nz):
+                for itri in range(ntri):
+                    delta_tmp = delta[:, iz, itri]
+                    invcov_tmp = self.invcov[:, :, iz, itri]
+                    tmp = np.matmul(invcov_tmp, delta_tmp)
+                    chi2 += np.matmul(delta_tmp, tmp)
+        
         return -chi2 / 2
 
     def setup(self):
@@ -71,38 +69,52 @@ class LikePowerSpectrum3D(Likelihood):
 
         self.logger.info('Loading invcov ...')
 
-        n = np.prod(self.simulated_data.shape)
-        expected_shape = (n, n)
+        (nb, nz, ntri) = self.simulated_data.shape
+
+        expected_shape = (nb, nb, nz, ntri)
 
         try:
+            
             invcov = np.load((self.invcov_path), allow_pickle=True)
-            print('Done loading invcov.')
+            self.logger.info('Done loading invcov.')
+
             if invcov.shape != expected_shape:
-                msg = 'Inverse covariance at %s does not match data vector dimensions. \n' % self.invcov_path \
-                    + 'Loaded invcov has shape %s, but expecting %s (from simulated_data with shape %s).' %\
-                    (invcov.shape, expected_shape, self.simulated_data.shape)
+
+                msg = 'Inverse covariance at %s does not match data vector dimensions. \n'\
+                         % self.invcov_path \
+                    + 'Loaded invcov has shape %s, but expecting shape = %s \
+                        given cov_type = %s and simulated_data with shape %s.' %\
+                        (invcov.shape, expected_shape, \
+                        self.cov_type, self.simulated_data.shape)
+
                 raise LoggedError(self.logger, msg)
+            
             return invcov
+
         except FileNotFoundError as e:
             msg = '%s \n' % e \
                 + 'Inverse covariance matrix does not exist. Run python scripts/generate_covariance.py first.'
             raise LoggedError(self.logger, msg)
 
     def load_simulated_data(self):
+        
         try:
-            #HACK needs proper transition
-            results = pickle.load(open(self.sim_data_path, 'rb'))
-            return results['galaxy_ps']
+            return self.load_npy_file(self.sim_data_path) 
+
         except FileNotFoundError as e:
             msg = '%s' % e + '\n Simulated data vector does not exist.' \
                 + '\n Run python scripts/generate_data.py first.'
             raise LoggedError(self.logger, msg)
 
+    def load_npy_file(self, path):
+        results = np.load(path)
+        return results
+
     def get_sampled_data(self):
-        galaxy_ps = self.provider.get_galaxy_ps()
+        galaxy_bis = self.provider.get_galaxy_bis()
         nuisance_model = self.get_nuisance_model()
-        sample = galaxy_ps + nuisance_model
+        sample = galaxy_bis + nuisance_model
         return sample
 
-    def get_nuisance_model(self):
+    def get_nuisance_model(self): #TODO to implement
         return 0.0

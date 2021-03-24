@@ -49,6 +49,10 @@ class PowerSpectrum3D(DataVector):
             ]
         
     def get(self, name):
+        """Call self._calc_<name> to calculate and store quantity <name>
+        in self._state[name], if it hasn't been calculated before; 
+        otherwise, return directly from what is stored in self._state.
+        """
         if name in self._allowed_names:
             if name not in self._state.keys():
                 getattr(self, '_calc_'+name)()
@@ -507,7 +511,9 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         pk12 = np.array(pks)[:,:,0]
         pk23 = np.array(pks)[:,:,1]
         pk13 = np.array(pks)[:,:,2]
-        assert pks.shape == (nz, ntri, 3), (pks.shape, (nz, ntri, 3))
+        
+        if pks.shape != (nz, ntri, 3):
+            self.logger.error('Assertion error {} vs {}'.format(pks.shape, (nz, ntri, 3)))
 
         Bggg_b20 = np.zeros((nb, nz, ntri, nori))
 
@@ -559,8 +565,9 @@ class Bispectrum3DRSD(Bispectrum3DBase):
             + self._f_array[np.newaxis, :, np.newaxis, np.newaxis]\
             * self._triangle_spec.mu_array[np.newaxis, np.newaxis, :, :, 2] ** 2
 
-        assert Z1_k1.shape == self._data_spec.transfer_shape, \
-            (Z1_k1.shape, self._data_spec.transfer_shape)
+        if Z1_k1.shape != self._data_spec.transfer_shape:
+            self.logger.error('Assertion error {} vs {}'.format(
+                Z1_k1.shape, self._data_spec.transfer_shape))
 
         return (Z1_k1, Z1_k2, Z1_k3)
 
@@ -616,7 +623,10 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         sigp_kmu_squared = (k1mu1*sigp1)**2 \
             + (k2mu2*sigp2) ** 2 \
             + (k3mu3*sigp3) ** 2
-        assert sigp_kmu_squared.shape == k1mu1.shape, (sigp_kmu_squared.shape, k1mu1.shape)
+        
+        if sigp_kmu_squared.shape != k1mu1.shape:
+            self.logger.error('Assertion error {} vs {}'.format(
+                sigp_kmu_squared.shape, k1mu1.shape))
 
         fog = np.exp(- 0.5 * (sigp_kmu_squared))
 
@@ -630,7 +640,7 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         if debug_f is not None:
             f_array = debug_f * np.ones_like(z_array)
         else:
-            f_array = self._grs_ingredients._get_f()
+            f_array = self._grs_ingredients.get('growth_rate_f')
 
         self.logger.debug('f_array = {}'.format(f_array))
 

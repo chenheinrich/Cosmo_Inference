@@ -3,14 +3,17 @@ debug: True
 sampler:
   mcmc:
     max_tries: 10000000
+    drag: true
+    oversample_power: 1
+    #covmat: "./data/ps_base_v27/ps_base_v27_chain.covmat"
 
-output: chains/ps_base/ps_base
+output: chains/debug/debug_grs_ingredients_bis_alone/bis_base
 
 likelihood:
-  spherelikes.likelihood.LikePowerSpectrum3D:
+  spherelikes.likelihood.LikeBispectrum3DBase:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
-    invcov_path: "./data/ps_base/invcov.npy"
-    sim_data_path: "./data/ps_base/sim_data.pickle"
+    invcov_path: "./data/debug_grs_ingredients/nk_11/bis_base_v27/invcov.npy"
+    sim_data_path: "./data/debug_grs_ingredients/nk_11/bis_base_v27/sim_data.npy"
 
 theory:
   camb:
@@ -25,18 +28,27 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.PowerSpectrum3D :
+  spherelikes.theory.GRSIngredients:
     stop_at_error: True
 
-    nk: 21 # 21  # 211  # number of k points (to be changed into bins)
-    nmu: 5 # 5  # number of mu bins
+    is_reference_model: False # if calculating reference model for AP, set to True
+    survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
+    #model_path: "./data/ps_base_v27/ref.pickle"
+
+    nk: 11 # number of k points 
+    nmu: 5 # number of mu bins
 
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
-    kmax: 0.14 # equivalent to 0.02 h/Mpc
+    kmax: 0.14 # equivalent to 0.2 h/Mpc
 
-    do_test: False
-    do_test_plot: True
-    test_plot_names:
+  spherelikes.theory.Bispectrum3DBase:
+    stop_at_error: True
+
+    nk: 11 # number of k points 
+    nmu: -1 # number of mu bins
+
+    kmin: 0.0007 # equivalent to 0.001 h/Mpc
+    kmax: 0.14 # equivalent to 0.2 h/Mpc
 
 params:
   fnl:
@@ -128,14 +140,7 @@ params:
     derived: "lambda omegam, H0: omegam*(H0/100)**2"
     latex: \Omega_\mathrm{m} h^2
   mnu: 
-    prior:
-      min: 0.0
-      max: 0.5
-    ref:
-      dist: norm
-      loc: 0.06
-      scale: 0.01
-    proposal: 0.001
+    value: 0.06
     latex: \sum m_{\nu}
   omeganu:
     latex: \Omega_{\nu}
@@ -155,23 +160,10 @@ params:
   omega_de:
     latex: \Omega_\Lambda
   w:
-    prior:
-      min: -3
-      max: 1
-    ref:
-      min: -1
-      max: -0.9
-    proposal: 0.01
+    value: -1
     latex: w_0
   wa: 
-    prior:
-      min: -5
-      max: 5
-    ref:
-      dist: norm
-      loc: 0.0
-      scale: 0.01
-    proposal: 0.01
+    value: 0.0
     latex: w_a
   YHe:
     latex: Y_\mathrm{P}

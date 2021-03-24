@@ -28,6 +28,7 @@ job/
 out/
 inputs/cobaya_pars/chen
 *draft*
+*chen/
 
 # Distribution / packaging
 .Python

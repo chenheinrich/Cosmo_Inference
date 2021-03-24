@@ -1,9 +1,8 @@
 invcov_path: "./data/covariance/invcov.npy"
 sim_data_path: "./data/sim_data/sim_data.pickle"
-cov_type: "full"
 is_reference_likelihood: True
 # Aliases for automatic covariance matrix
-aliases: [like_bis_rsd]
+aliases: [like_bis_base]
 # Speed in evaluations/second (after theory inputs calculated).
 speed: 500
 params:

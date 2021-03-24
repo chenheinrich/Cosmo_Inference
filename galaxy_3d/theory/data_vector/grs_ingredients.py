@@ -91,6 +91,7 @@ class GRSIngredients(object):
             'fog_using_ref_cosmology',\
             'sigp', \
             'fnl', \
+            'growth_rate_f', \
         ]
         self._ingredients = {'fnl': params_values_dict['fnl'] }
 
@@ -182,7 +183,8 @@ class GRSIngredients(object):
     def _calc_AP(self):
         """Returns 1d numpy array of size nz for the volume factor 
         in the power spectrum due to AP effects."""
-        assert 'AP' not in self._ingredients.keys()
+        assert 'AP' not in self._ingredients.keys(), \
+            ('AP is not in keys of grs_ingredients')
         AP_perp, AP_para = self._get_AP_perp_and_para()
         AP = (AP_perp)**2 * (AP_para)
         self._ingredients['AP'] = AP
@@ -190,7 +192,8 @@ class GRSIngredients(object):
     def _calc_alpha(self):
         """Returns alpha as 3-d numpy array with shape (nz, nk, nmu) """
 
-        assert 'alpha' not in self._ingredients.keys()
+        assert 'alpha' not in self._ingredients.keys(), \
+            ('alpha is not in keys of grs_ingredients')
         
         initial_power = self._get_initial_power(self._k_actual)
         matter_power = self.get('matter_power_with_AP')
@@ -213,7 +216,8 @@ class GRSIngredients(object):
     def _calc_alpha_without_AP(self):
         """Returns alpha without AP effect as 2d numpy array with shape (nz, nk) """
 
-        assert 'alpha' not in self._ingredients.keys()
+        assert 'alpha_without_AP' not in self._ingredients.keys(), \
+            ('alpha_without_AP is not in keys of grs_ingredients')
         
         initial_power = self._get_initial_power(self._d.k)
         matter_power = self.get('matter_power_without_AP')
@@ -236,7 +240,8 @@ class GRSIngredients(object):
     def _calc_galaxy_bias(self):
         """Returns galaxy bias in a 4-d numpy array of shape (nsample, nz, nk, nmu)."""
 
-        assert 'galaxy_bias' not in self._ingredients.keys()
+        assert 'galaxy_bias' not in self._ingredients.keys(), \
+            ('galaxy_bias is not in keys of grs_ingredients')
 
         delta_c = 1.686
 
@@ -256,7 +261,8 @@ class GRSIngredients(object):
     def _calc_galaxy_bias_without_AP(self):
         """Returns galaxy bias in a 3d numpy array of shape (nsample, nz, nk)."""
 
-        assert 'galaxy_bias_without_AP' not in self._ingredients.keys()
+        assert 'galaxy_bias_without_AP' not in self._ingredients.keys(), \
+            ('galaxy_bias_without_AP is not in keys of grs_ingredients')
 
         expected_shape = (self._d.nsample, self._d.nz, self._d.nk)
 
@@ -297,7 +303,8 @@ class GRSIngredients(object):
         """"Returns a 2-d numpy array of shape (nsample, nz) for gaussian galaxy bias,
         a number for each galaxy sample and redshift.
         """
-        assert 'gaussian_bias' not in self._ingredients.keys()
+        assert 'gaussian_bias' not in self._ingredients.keys(), \
+            ('gaussian_bias is not in keys of grs_ingredients')
 
         gaussian_bias = np.zeros((self._d.nsample, self._d.nz))
         gaussian_bias_default = self._survey_par.get_galaxy_bias_array()
@@ -333,7 +340,8 @@ class GRSIngredients(object):
         at z, but the k also has a dependence on z and mu due to the AP factor varying 
         with z and mu."""
 
-        assert 'matter_power_with_AP' not in self._ingredients.keys()
+        assert 'matter_power_with_AP' not in self._ingredients.keys(), \
+            ('matter_power_with_AP is not in keys of grs_ingredients')
 
         ks = self._k_actual
         zs = self._d.z
@@ -348,7 +356,8 @@ class GRSIngredients(object):
         """ Returns 3-d numpy array of shape (nz, nk) for the matter power spectrum.
         Default is linear matter power."""
 
-        assert 'matter_power_without_AP' not in self._ingredients.keys()
+        assert 'matter_power_without_AP' not in self._ingredients.keys(), \
+            ('matter_power_without_AP is not in keys of grs_ingredients')
 
         ks = self._d.k
         zs = self._d.z
@@ -365,7 +374,7 @@ class GRSIngredients(object):
             kaiser = (1 + f(z)/b_j(k,z) * mu^2)
         for the galaxy density, not power spectrum.
         """
-        f = self._get_f()
+        f = self.get('growth_rate_f')
         bias = self.get('galaxy_bias')
         
         kaiser = 1.0 + f[np.newaxis, :, np.newaxis, np.newaxis] / bias \
@@ -384,7 +393,7 @@ class GRSIngredients(object):
             kaiser = (1 + f(z)/b_j(k,z) * mu^2)
         for the galaxy density, not power spectrum.
         """
-        f = self._get_f() # (nz, )
+        f = self.get('growth_rate_f') # (nz, )
         bias_without_AP = self.get('galaxy_bias_without_AP') #(nsample, nz, nk)
         
         # (nsample, nz, nk, nmu)
@@ -394,7 +403,7 @@ class GRSIngredients(object):
         expected_shape = self._d.transfer_shape
         assert kaiser.shape == expected_shape, (kaiser.shape, expected_shape)
         
-        self._ingredients['kaiser_without_AP'] = kaiser_without_AP
+        self._ingredients['kaiser_without_AP'] = kaiser
 
     def _calc_fog(self):  
         """Returns 4-d numpy array of shape (nsample, nz, nk, nmu) for the blurring
@@ -438,9 +447,12 @@ class GRSIngredients(object):
 
         #TODO could make this a unit test instead:
         fog = self.get('fog')
-        assert np.allclose(fog_ref, fog)
+        assert np.allclose(fog_ref, fog), (fog_ref, fog)
 
         self._ingredients['fog_using_reference_cosmology'] = fog_ref
+
+    def _calc_growth_rate_f(self):
+        self._ingredients['growth_rate_f'] = self._get_f()
 
     def _get_AP_perp_and_para(self):
         """Returns tuple of two elements for the AP factor in the 

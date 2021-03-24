@@ -124,6 +124,77 @@ class ParGenerator(TheoryParGenerator):
 
 class PowerSpectrum3D(Theory):
 
+    nk = 2  # 21  # 211  # number of k points (to be changed into bins)
+    nmu = 2  # 5  # number of mu bins
+
+    h = 0.68
+    kmin = 1e-3 * h # in 1/Mpc
+    kmax = 0.2 * h # in 1/Mpc
+
+    def initialize(self):
+        """called from __init__ to initialize"""
+        self.logger = class_logger(self)
+        print('Done setting up PowerSpectrum3D')
+
+    def initialize_with_provider(self, provider):
+        """
+        Initialization after other components initialized, using Provider class
+        instance which is used to return any dependencies (see calculate below).
+        """
+        self.provider = provider
+
+    def get_requirements(self):
+        """
+        Return dictionary of derived parameters or other quantities that are needed
+        by this component and should be calculated by another theory class.
+        """
+        return {}
+
+    def must_provide(self, **requirements):
+        if 'galaxy_ps' in requirements:
+            return {
+                'grs_ingredients': None 
+            }
+
+    def calculate(self, state, want_derived=True, **params_values_dict):
+
+        nonlinear = False # TODO to hook later
+
+        self.logger.debug('Calculating k and mu actual using AP factors.')
+
+        self.data_spec_dict = {
+            'nk': self.nk, # number of k points (to be changed into bins)
+            'nmu': self.nmu, # number of mu bins
+            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
+            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
+        }
+        self.logger.debug('self.data_spec_dict: {}'.format(self.data_spec_dict))
+
+        self.logger.debug('About to get grs_ingredients')
+        
+        grs_ingredients = self.provider.get_grs_ingredients()
+        print('grs_ingredients = {}'.format(grs_ingredients))
+        self.survey_par = grs_ingredients._survey_par #TODO decide if this is ok
+
+        self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
+        #TODO this is not cosmology dependent
+
+        self.logger.debug('About to get PowerSpectrum3D_standalone')
+        data_vec = PowerSpectrum3D_standalone(grs_ingredients, self.survey_par, self.data_spec)
+
+        galaxy_ps = data_vec.get('galaxy_ps')
+
+        self.logger.debug('About to galaxy_ps')
+        state['galaxy_ps'] = galaxy_ps
+
+        # TODO placeholder for any derived paramter from this module
+        state['derived'] = {'derived_param_p3d': 1.0}
+
+    def get_galaxy_ps(self):
+        return self._current_state['galaxy_ps']
+
+class PowerSpectrum3D_2(Theory):
+
     #TODO hook this up using camb provider etc
     cosmo_par_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
@@ -201,7 +272,7 @@ class PowerSpectrum3D(Theory):
             }
 
     def get_can_provide_params(self):
-        return ['derived_param']
+        return ['derived_param_p3d']
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
@@ -237,7 +308,7 @@ class PowerSpectrum3D(Theory):
         state['galaxy_ps'] = galaxy_ps
 
         # TODO placeholder for any derived paramter from this module
-        state['derived'] = {'derived_param': 1.0}
+        state['derived'] = {'derived_param_p3d': 1.0}
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']

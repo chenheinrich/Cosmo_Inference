@@ -127,7 +127,8 @@ class BisPlotter(TrianglePlotter):
         yname = 'galaxy_bis_ABC_%i_%i_%i'%(isample1, isample2, isample3)
         ylatex = r'$B_{g_{%s}g_{%s}g_{%s}}$'%(isample1, isample2, isample3)
 
-        fnl = self._data_vec._cosmo_par.fnl
+        fnl = self._data_vec._grs_ingredients.get('fnl')
+        
         title = r'$B_{g_{%s}g_{%s}g_{%s}}$, $f_{\rm NL} = %s$'%(isample1, isample2, isample3, fnl)
 
         legend = [r'$b_{10}$ terms', r'$b_{20}$ terms', 'total',\
