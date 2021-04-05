@@ -1,6 +1,7 @@
 import numpy as np
 
 from cobaya.yaml import yaml_load_file
+from spherelikes.utils.log import class_logger
 
 class SurveyParFileError(Exception):
     pass
@@ -11,6 +12,8 @@ class CobayaPar():
     ...."""
     
     def __init__(self, cobaya_par_file):
+
+        self._logger = class_logger(self)
         self._cobaya_par_file = cobaya_par_file
         self._info = yaml_load_file(self._cobaya_par_file)
         self._run_checks()
@@ -30,21 +33,33 @@ class CobayaPar():
         print('spherex_theories', spherex_theories)
         return spherex_theories
 
-    def get_spherex_theory(self):
-        return 'spherelikes.theory.GRSIngredients'
+    def get_spherex_theory(self, use_grs_ingredients=True):
+        if use_grs_ingredients is True:
+            return 'spherelikes.theory.GRSIngredients'
+        else:
+            first_theory_name = list(self._info['theory'].keys())[1]
+            return first_theory_name
 
     def get_survey_par(self):
-        theory_name = self.get_spherex_theory()
-        survey_par_file = self._info['theory'][theory_name]['survey_par_file']
+        try:
+            theory_name = self.get_spherex_theory(use_grs_ingredients=True)
+            survey_par_file = self._info['theory'][theory_name]['survey_par_file']
+        except KeyError as e:
+            theory_name = self.get_spherex_theory(use_grs_ingredients=False)
+            self._logger.debug('theory_name = {}'.format(theory_name))
+            survey_par_file = self._info['theory'][theory_name]['survey_par_file']
+        
         survey_par = SurveyPar(survey_par_file)
         return survey_par
 
-    def get_filename(self):
+    @property
+    def filename(self):
         return self._cobaya_par_file
 
     def get_params(self):
         return self._info['params']
 
+#TODO need to refactor with galaxy_3d/theory/params.py:SurveyPar
 class SurveyPar():
 
     """Interface for the survey parameter file, delivering quantities such as
@@ -58,7 +73,9 @@ class SurveyPar():
         self._nsample = self.get_nsample()
         self._run_checks()
 
-    def get_par_file(self):
+
+    @property
+    def filename(self):
         return self._survey_par_file
 
     def get_nz(self):

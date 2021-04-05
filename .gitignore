@@ -27,6 +27,7 @@ data/
 job/
 out/
 inputs/cobaya_pars/chen
+tests/outputs/
 *draft*
 *chen/
 

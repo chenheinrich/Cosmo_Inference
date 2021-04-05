@@ -12,4 +12,4 @@ PowerSpectrum3D:
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
 
-plot_dir: './plots/theory/PowerSpectrum3D/fnl_1/'
+plot_dir: './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_1/'

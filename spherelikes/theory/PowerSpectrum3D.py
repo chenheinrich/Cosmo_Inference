@@ -32,7 +32,7 @@ def make_dictionary_for_base_params():
                 'propose': 0.001,
                 'latex': 'f_{\rm{NL}}',
                 },
-        'derived_param_p3d': {'derived': True},
+        #'derived_param_p3d': {'derived': True},
     }
     return base_params
 
@@ -158,9 +158,7 @@ class PowerSpectrum3D(Theory):
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False # TODO to hook later
-
-        self.logger.debug('Calculating k and mu actual using AP factors.')
+        nonlinear = False # TODO to make an input later
 
         self.data_spec_dict = {
             'nk': self.nk, # number of k points (to be changed into bins)
@@ -173,7 +171,6 @@ class PowerSpectrum3D(Theory):
         self.logger.debug('About to get grs_ingredients')
         
         grs_ingredients = self.provider.get_grs_ingredients()
-        print('grs_ingredients = {}'.format(grs_ingredients))
         self.survey_par = grs_ingredients._survey_par #TODO decide if this is ok
 
         self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
@@ -187,8 +184,12 @@ class PowerSpectrum3D(Theory):
         self.logger.debug('About to galaxy_ps')
         state['galaxy_ps'] = galaxy_ps
 
+        #HACK
+        np.save('./tmp/galaxy_ps_1.npy', state['galaxy_ps'])
+
+
         # TODO placeholder for any derived paramter from this module
-        state['derived'] = {'derived_param_p3d': 1.0}
+        #state['derived'] = {'derived_param_p3d': 1.0}
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']
@@ -207,7 +208,9 @@ class PowerSpectrum3D_2(Theory):
 
     nz = survey_par.get_nz()
     nsample = survey_par.get_nsample()
-    params = get_params_for_survey_par(survey_par, fix_to_default=False)
+    #HACK
+    #params = get_params_for_survey_par(survey_par, fix_to_default=False)
+    params = get_params_for_survey_par(survey_par, fix_to_default=True)
 
     nk = 2  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 2  # 5  # number of mu bins
@@ -271,14 +274,18 @@ class PowerSpectrum3D_2(Theory):
                 'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
             }
 
-    def get_can_provide_params(self):
-        return ['derived_param_p3d']
+    #def get_can_provide_params(self):
+    #    return ['derived_param_p3d']
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False # TODO to hook later
+        nonlinear = False 
+        # TODO to hook to input later;
+        # now hooked to GRSIngredeintsCreator and all the way down to cosmo interface
 
-        self.logger.debug('Calculating k and mu actual using AP factors.')
+        self.logger.debug('Getting survey parameters from file: {}'\
+            .format(self.survey_par_file))
+        self.survey_par = SurveyPar(self.survey_par_file)
 
         self.data_spec_dict = {
             'nk': self.nk, # number of k points (to be changed into bins)
@@ -292,10 +299,10 @@ class PowerSpectrum3D_2(Theory):
         cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
 
         self.logger.debug('About to get grs_ingredients')
-        
+
         creator = GRSIngredientsCreator()
         grs_ingredients = creator.create('Cobaya',\
-            self.survey_par, self.data_spec, \
+            self.survey_par, self.data_spec, nonlinear,\
             cosmo_par_fid=cosmo_par_fid, \
             provider=self.provider, **params_values_dict)
 
@@ -308,7 +315,7 @@ class PowerSpectrum3D_2(Theory):
         state['galaxy_ps'] = galaxy_ps
 
         # TODO placeholder for any derived paramter from this module
-        state['derived'] = {'derived_param_p3d': 1.0}
+        #state['derived'] = {'derived_param_p3d': 1.0}
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']

@@ -18,7 +18,8 @@ class SurveyPar():
         self._nsample = self.get_nsample()
         self._run_checks()
 
-    def get_par_file(self):
+    @property 
+    def filename(self):
         return self._survey_par_file
 
     def get_nz(self):

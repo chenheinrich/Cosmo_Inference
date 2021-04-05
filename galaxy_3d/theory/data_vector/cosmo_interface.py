@@ -41,12 +41,12 @@ class CosmoInterfaceCreator():
     def __init__(self):
         self.logger = class_logger(self)
 
-    def create(self, option, zs, cosmo_par=None, provider=None, nonlinear=False):
+    def create(self, option, zs, nonlinear, cosmo_par=None, provider=None):
         if option == 'Cobaya':
             try:
                 self.logger.debug('About to create the CosmoInterfaceWithCobayaProvider subclass')
                 return CosmoInterfaceWithCobayaProvider(zs, \
-                    provider, nonlinear=nonlinear)
+                    provider, nonlinear)
             except Exception as e:
                 self.logger.error('Error creating CosmoInterfaceWithCobayaProvider: {}'.format(e))
                 sys.exit() #TODO
@@ -56,7 +56,7 @@ class CosmoInterfaceCreator():
                 self.logger.debug('About to create the CosmoInterfaceWithCambResults subclass')
                 assert (cosmo_par is not None), ("cosmo_par cannot be None \
                     when choosing 'Camb' option for CosmoInterface")
-                return CosmoInterfaceWithCambResults(zs, cosmo_par) #TODO needs nonlinear?
+                return CosmoInterfaceWithCambResults(zs, cosmo_par, nonlinear) 
             except Exception as e:
                 self.logger.error('Error creating the CosmoInterfaceWithCambResults: {}'.format(e))
                 sys.exit() #TODO
@@ -108,6 +108,11 @@ class CosmoInterface(object):
         
         fsigma8 = self._get_fsigma8_array()
         sigma8 = self._get_sigma8_array()
+
+        #HACK
+        print('sigma8 = {}'.format(sigma8))
+        print('fsigma8 = {}'.format(fsigma8))
+
         f = fsigma8/sigma8 
         
         if self._want_redshift_zero is False:
@@ -146,12 +151,17 @@ class CosmoInterface(object):
 
 class CosmoInterfaceWithCobayaProvider(CosmoInterface):
 
-    def __init__(self, zs, provider, nonlinear=False):
+    def __init__(self, zs, provider, nonlinear):
         super().__init__(zs)
 
         self._provider = provider
-        self._Pk_interpolator = self._provider.get_Pk_interpolator(
+        #HACK
+        print('CosmoInterfaceWithCobayaProvider: nonlinear = {}'.format(nonlinear))
+        self._log_Pk_interpolator = self._provider.get_Pk_interpolator(
             nonlinear=nonlinear)
+
+    def _Pk_interpolator(self, zs, ks):
+        return np.exp(self._log_Pk_interpolator(zs, np.log(ks)))
 
     def get_Hubble_at_z(self, zs):
         return self._provider.get_Hubble(zs)
@@ -188,7 +198,7 @@ class CosmoInterfaceWithCambResults(CosmoInterface):
     cosmo = CosmoInterfaceWithCambResults(zs, cosmo_par)
     if you need to update redsfhit 
     """
-    def __init__(self, zs, cosmo_par):
+    def __init__(self, zs, cosmo_par, nonlinear):
 
         super().__init__(zs)
 
@@ -196,7 +206,7 @@ class CosmoInterfaceWithCambResults(CosmoInterface):
 
         self._zmax = np.max(self._z_with_zero)
         self._kmax = 1.2
-        self._nonlinear = False
+        self._nonlinear = nonlinear
         self._camb_pars = self._get_camb_pars()
         
         self._results = self._get_camb_results()

@@ -124,7 +124,9 @@ class PowerSpectrum3D_old(Theory):
     survey_par = SurveyPar(survey_par_file)
     nz = survey_par.get_nz()
     nsample = survey_par.get_nsample()
-    params = get_params_for_survey_par(survey_par, fix_to_default=False)
+    #HACK
+    #params = get_params_for_survey_par(survey_par, fix_to_default=False)
+    params = get_params_for_survey_par(survey_par, fix_to_default=True)
 
     nk = 2  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 2  # 5  # number of mu bins
@@ -174,6 +176,11 @@ class PowerSpectrum3D_old(Theory):
 
     def _setup_survey_pars(self):
         """kmin and kmax preserved, dk calcula"""
+        
+        self.logger.debug('Getting survey parameters from file: {}'\
+            .format(self.survey_par_file))
+        self.survey_par = SurveyPar(self.survey_par_file)
+
         self.z = self.survey_par.get_zmid_array()
         self.z_list = list(self.z)
         self.sigz = self.survey_par.get_sigz_array()
@@ -271,6 +278,11 @@ class PowerSpectrum3D_old(Theory):
 
         print('Calculating galaxy_ps')
         state['galaxy_ps'] = self._calc_galaxy_ps(state)
+        
+        #HACK
+        np.save('./tmp/galaxy_transfer_3.npy', state['galaxy_transfer'])
+        np.save('./tmp/ap_3.npy', state['AP_factor'])
+        np.save('./tmp/galaxy_ps_3.npy', state['galaxy_ps'])
 
         # TODO placeholder for any derived paramter from this module
         state['derived'] = {'derived_param': 1.0}
@@ -393,6 +405,19 @@ class PowerSpectrum3D_old(Theory):
                     * state['galaxy_transfer'][j2, :, :, :]
                 jj = jj + 1
         assert jj == self.nps
+
+                #HACK
+        np.save('./tmp/ap_3.npy', state['AP_factor'])
+
+        #HACK
+        np.save('./tmp/galaxy_transfer_3.npy', state['galaxy_transfer'])
+
+        #HACK
+        np.save('./tmp/matter_power_3.npy', state['matter_power'])
+
+        #HACK
+        np.save('./tmp/galaxy_ps_3.npy', galaxy_ps)
+
         return galaxy_ps
 
     def _calc_matter_power(self, nonlinear=False):
@@ -430,12 +455,19 @@ class PowerSpectrum3D_old(Theory):
         # TODO need to apply nl damping to wiggles and not to broadband
 
         bias = self._calc_galaxy_bias(**params_values_dict)
+
         print('bias.shape', bias.shape)
         print('Calculating kaiser')
         kaiser = self._calc_rsd_kaiser(bias)
 
         print('Calculating fog')
         fog = self._calc_fog()
+
+
+        #HACK
+        np.save('./tmp/bias_3.npy', bias)
+        np.save('./tmp/kaiser_3.npy', kaiser)
+        np.save('./tmp/fog_3.npy', fog)
 
         galaxy_transfer = bias * kaiser * fog
         return galaxy_transfer
@@ -446,6 +478,7 @@ class PowerSpectrum3D_old(Theory):
         if self.is_reference_model is True:
             ap_perp = np.ones(self.nz)
             ap_para = np.ones(self.nz)
+            print('calc_AP_factors_perp_and_para: is_reference_model=True')
         else:
             DA = self.provider.get_angular_diameter_distance(self.z_list)
             Hubble = self.provider.get_Hubble(self.z_list)
@@ -453,6 +486,14 @@ class PowerSpectrum3D_old(Theory):
             DA_fid = self._get_var_fid('angular_diameter_distance')
             ap_perp = DA_fid / DA
             ap_para = Hubble / Hubble_fid
+            print('calc_AP_factors_perp_and_para: ')
+            print('DA = {}, DA_fid = {}'.format(DA, DA_fid))
+            print('Hubble = {}, Hubble_fid = {}'.format(Hubble, Hubble_fid))
+            print('k = {}'.format(self.k))
+            print('dk = {}'.format(self.dk))
+            print('z = {}'.format(self.z))
+            print('mu = {}'.format(self.mu))
+            print('dmu = {}'.format(self.dmu))
         return (ap_perp, ap_para)
 
     def _calc_AP_factor(self):
@@ -469,6 +510,7 @@ class PowerSpectrum3D_old(Theory):
         for the galaxy density, not power spectrum.
         """
         f = self._calc_growth_rate()
+        
         kaiser = 1.0 + f[np.newaxis, :, np.newaxis, np.newaxis] / bias \
             * (self.mu_actual ** 2)[np.newaxis, :, :, :]
         assert kaiser.shape == (self.nsample, self.nz, self.nk, self.nmu)
@@ -625,7 +667,7 @@ class PowerSpectrum3D_old(Theory):
 
     def _calc_growth_rate(self):
         """Returns f(z) from camb"""
-        sigma8 = self._calc_sigma8()
+        sigma8 = self._calc_sigma8()[1:] # take away z = 0 entry
         fsigma8 = self.provider.get_fsigma8(self.z_list)
         f = fsigma8 / sigma8
         return f

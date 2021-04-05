@@ -22,10 +22,9 @@ class LikePowerSpectrum3D(Likelihood):
         """
         Returns dictionary specifying quantities calculated by a theory code are needed
         """
-        return {'galaxy_ps': None,
-                'derived_param': None}
+        return {'galaxy_ps': None}
 
-    @profiler
+    #@profiler
     def logp(self, **params_values):
         """
         Taking a dictionary of (sampled) nuisance parameter values params_values
@@ -75,6 +74,8 @@ class LikePowerSpectrum3D(Likelihood):
         expected_shape = (n, n)
 
         try:
+            self.logger.debug('self.invcov_path = {}'.format(self.invcov_path))
+            
             invcov = np.load((self.invcov_path), allow_pickle=True)
             print('Done loading invcov.')
             if invcov.shape != expected_shape:
@@ -91,6 +92,7 @@ class LikePowerSpectrum3D(Likelihood):
     def load_simulated_data(self):
         try:
             #HACK needs proper transition
+            self.logger.debug('self.sim_data_path = {}'.format(self.sim_data_path))
             results = pickle.load(open(self.sim_data_path, 'rb'))
             return results['galaxy_ps']
         except FileNotFoundError as e:

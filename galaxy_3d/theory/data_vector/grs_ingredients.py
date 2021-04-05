@@ -13,8 +13,8 @@ class GRSIngredientsCreator():
         self.logger = class_logger(self)
 
     def create(self, option, survey_par, data_spec, \
-            cosmo_par=None, cosmo_par_fid=None, \
-            provider=None, z=None, nonlinear=None, \
+            nonlinear, cosmo_par=None, cosmo_par_fid=None, \
+            provider=None, z=None, \
             **params_values_dict):
 
         """Returns an instance of the GRSIngredients class given different input options"""
@@ -23,11 +23,12 @@ class GRSIngredientsCreator():
         z = survey_par.get_zmid_array()
 
         option_fid = 'Camb'
-        cosmo_fid = cosmo_creator.create(option_fid, z, cosmo_par=cosmo_par_fid)
+        cosmo_fid = cosmo_creator.create(option_fid, z, nonlinear, \
+            cosmo_par=cosmo_par_fid)
 
-        cosmo = cosmo_creator.create(option, z, \
+        cosmo = cosmo_creator.create(option, z, nonlinear,
             cosmo_par=cosmo_par, \
-            provider=provider, nonlinear=nonlinear)
+            provider=provider)
 
         params_values_dict = self._get_params_values_dict(option, params_values_dict, cosmo_par)
 
@@ -35,9 +36,12 @@ class GRSIngredientsCreator():
 
     def _get_params_values_dict(self, option, params_values_dict, cosmo_par):
         if option == 'Cobaya':
+            print('params_values_dict = {}'.format(params_values_dict))
             return params_values_dict
         elif option == 'Camb':
-            return self._get_params_values_dict_from_cosmo_par(cosmo_par)
+            params_values_dict = self._get_params_values_dict_from_cosmo_par(cosmo_par)
+            print('params_values_dict = {}'.format(params_values_dict))
+            return params_values_dict
         else:
             raise ValueError("GRSIngredientsCreator: \
                 option can only be 'Cobaya' or 'Camb'.")
@@ -418,7 +422,6 @@ class GRSIngredients(object):
 
         # TODO check: expect suppression at k ~ 0.076 1/Mpc 
         # for H = 75km/s/Mpc at z = 0.25 w/ sigma_z = 0.003
-
         fog = np.exp(- arg ** 2 / 2.0)
 
         expected_shape = self._d.transfer_shape

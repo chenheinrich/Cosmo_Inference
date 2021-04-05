@@ -15,6 +15,9 @@ from theory.utils import file_tools
 from theory.utils.profiler import profiler
 
 def get_data_vec_p3d(info):
+
+    nonlinear = False # TODO hook to input file?
+
     cosmo_par_file = info['cosmo_par_file']
     cosmo_par_fid_file = info['cosmo_par_fid_file']
     survey_par_file = info['survey_par_file']
@@ -29,8 +32,10 @@ def get_data_vec_p3d(info):
 
     creator = GRSIngredientsCreator()
     option = 'Camb'
-    grs_ingredients = creator.create(option, survey_par, data_spec,
+    grs_ingredients = creator.create(option, survey_par, data_spec, nonlinear,\
         cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
+
+    print('gaussian_bias = {}'.format(grs_ingredients.get('gaussian_bias')))
 
     data_vec = PowerSpectrum3D(grs_ingredients, survey_par, data_spec)
     
@@ -40,7 +45,7 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
-@profiler
+#@profiler
 def get_galaxy_ps(info):
     data_vec = get_data_vec_p3d(info)
     return data_vec.get('galaxy_ps')

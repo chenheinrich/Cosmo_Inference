@@ -35,7 +35,7 @@ def make_dictionary_for_base_params():
                 'propose': 0.001,
                 'latex': 'f_{\rm{NL}}',
                 },
-        'derived_param': {'derived': True},
+        #'derived_param': {'derived': True},
     }
     return base_params
 
@@ -135,7 +135,8 @@ class GRSIngredients(Theory):
 
     nz = survey_par.get_nz()
     nsample = survey_par.get_nsample()
-    params = get_params_for_survey_par(survey_par, fix_to_default=False)
+    #HACK is this ok?
+    params = get_params_for_survey_par(survey_par, fix_to_default=True)
 
     nk = 2  # 21  # 211  # number of k points (to be changed into bins)
     nmu = 2  # 5  # number of mu bins
@@ -200,9 +201,11 @@ class GRSIngredients(Theory):
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False # TODO to hook later
+        nonlinear = False # TODO to make an input later
 
-        self.logger.debug('Calculating k and mu actual using AP factors.')
+        self.logger.debug('Getting survey parameters from file: {}'\
+            .format(self.survey_par_file))
+        self.survey_par = SurveyPar(self.survey_par_file)
 
         self.data_spec_dict = {
             'nk': self.nk, # number of k points (to be changed into bins)
@@ -219,7 +222,7 @@ class GRSIngredients(Theory):
         
         creator = GRSIngredientsCreator()
         grs_ingredients = creator.create('Cobaya',\
-            self.survey_par, self.data_spec, \
+            self.survey_par, self.data_spec, nonlinear,\
             cosmo_par_fid=cosmo_par_fid, \
             provider=self.provider, **params_values_dict)
 

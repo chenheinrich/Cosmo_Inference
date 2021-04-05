@@ -1,7 +1,7 @@
-import pytest
 import os
-import copy
 import numpy as np
+import copy 
+import pickle 
 
 from cobaya.model import get_model
 from cobaya.yaml import yaml_load_file
@@ -9,19 +9,8 @@ from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
 from spherelikes.params import CobayaPar, SurveyPar
 #TODO need importing from the right place if SurveyPar is refactored
 
-cobaya_par_file = './tests/inputs/cobaya_pars/ps_base.yaml'
-cosmo_par_file_sim = './tests/inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
-cosmo_par_file_ref = './tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
+def test_cobaya(cobaya_par_file, cosmo_par_file, expected):
 
-@pytest.mark.debug
-@pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, fn_expected", \
-    [
-    (cobaya_par_file, cosmo_par_file_sim, './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_1/ps.npy'),\
-    (cobaya_par_file, cosmo_par_file_ref, './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_0/ps.npy')\
-    ]
-)
-def test_cobaya_tmp(cobaya_par_file, cosmo_par_file, fn_expected):
-    
     cobaya_par = CobayaPar(cobaya_par_file)
     survey_par = cobaya_par.get_survey_par()
     bias_params = make_dictionary_for_bias_params(survey_par, \
@@ -44,8 +33,15 @@ def test_cobaya_tmp(cobaya_par_file, cosmo_par_file, fn_expected):
     fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_1/ps.npy'
     ps_expected = np.load(fn)
 
-    print((ps-ps_expected)/ps_expected)
-    print(np.allclose(ps, ps_expected))
+    print('chi2 = {}'.format(chi2))
+    assert np.isclose(chi2[0], expected), (chi2[0], expected)
+
+    #TODO turn this into a test
+    # save new sim_data and invcov
+    # decide which format, .pickle or .npy
+    # clean up prep_chain etc
+    # fix mistakes in invcov calculations for PS
+    # set chains going for bispectrum.
 
 def convert_camb_params(camb_params):
     camb_params['As'] = 1e-10*np.exp(camb_params['logA'])
@@ -53,3 +49,12 @@ def convert_camb_params(camb_params):
     camb_params['cosmomc_theta'] = camb_params['theta_MC_100']/100
     del camb_params['theta_MC_100']
     return camb_params
+
+CWD = os.getcwd()
+cobaya_par_file = CWD + '/tests/inputs/cobaya_pars/ps_base.yaml'
+#cobaya_par_file = CWD + '/tests/inputs/cobaya_pars/ps_base_old.yaml'
+cosmo_par_file_sim = CWD + '/tests/inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
+cosmo_par_file_ref = CWD + '/tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
+
+test_cobaya(cobaya_par_file, cosmo_par_file_sim, 0.0)
+#test_cobaya(cobaya_par_file, cosmo_par_file_ref, 0.44438055)
