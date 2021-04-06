@@ -16,11 +16,41 @@ cosmo_par_file_ref = './tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
 @pytest.mark.debug
 @pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, fn_expected", \
     [
-    (cobaya_par_file, cosmo_par_file_sim, './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_1/ps.npy'),\
-    (cobaya_par_file, cosmo_par_file_ref, './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_0/ps.npy')\
+    (cobaya_par_file, cosmo_par_file_sim, './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'),\
+    (cobaya_par_file, cosmo_par_file_ref, './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy')\
     ]
 )
-def test_cobaya_tmp(cobaya_par_file, cosmo_par_file, fn_expected):
+def test_cobaya_ps_base_theory(cobaya_par_file, cosmo_par_file, fn_expected):
+    
+    cobaya_par = CobayaPar(cobaya_par_file)
+    survey_par = cobaya_par.get_survey_par()
+    bias_params = make_dictionary_for_bias_params(survey_par, \
+        fix_to_default=True, include_latex=False)
+
+    camb_params = yaml_load_file(cosmo_par_file)
+    camb_params = convert_camb_params(camb_params)
+    params = dict(camb_params, **bias_params) 
+    print('params', params)
+
+    info = yaml_load_file(cobaya_par_file)
+    info['params'] = params
+    info['debug'] = True
+
+    model = get_model(info)
+    model.add_requirements({'galaxy_ps': None})
+    ps = model.provider.get_galaxy_ps()
+    ps_expected = np.load(fn_expected)
+
+    assert(np.allclose(ps, ps_expected))
+
+@pytest.mark.debug
+@pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, chi2_expected", \
+    [
+    (cobaya_par_file, cosmo_par_file_sim, 0.0),\
+    (cobaya_par_file, cosmo_par_file_ref, 0.44438055)\
+    ]
+)
+def test_cobaya_ps_base_chi2(cobaya_par_file, cosmo_par_file, chi2_expected):
     
     cobaya_par = CobayaPar(cobaya_par_file)
     survey_par = cobaya_par.get_survey_par()
@@ -39,13 +69,7 @@ def test_cobaya_tmp(cobaya_par_file, cosmo_par_file, fn_expected):
     model = get_model(info)
     chi2 = -2.0 * model.loglikes({'my_foreground_amp': 1.0})[0]
     
-    ps = model.provider.get_galaxy_ps()
-    #fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_0/ps.npy'
-    fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_1/ps.npy'
-    ps_expected = np.load(fn)
-
-    print((ps-ps_expected)/ps_expected)
-    print(np.allclose(ps, ps_expected))
+    assert np.isclose(chi2[0], chi2_expected)
 
 def convert_camb_params(camb_params):
     camb_params['As'] = 1e-10*np.exp(camb_params['logA'])

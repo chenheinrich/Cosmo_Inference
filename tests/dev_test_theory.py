@@ -30,8 +30,12 @@ def test_cobaya(cobaya_par_file, cosmo_par_file, expected):
     
     ps = model.provider.get_galaxy_ps()
     #fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_0/ps.npy'
-    fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_1/ps.npy'
+    fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
     ps_expected = np.load(fn)
+
+    print('frac diff ps:', (ps-ps_expected)/ps_expected)
+    print('ps agrees? ', np.allclose(ps, ps_expected))
+    assert np.allclose(ps, ps_expected)
 
     print('chi2 = {}'.format(chi2))
     assert np.isclose(chi2[0], expected), (chi2[0], expected)
