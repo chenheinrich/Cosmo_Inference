@@ -75,16 +75,6 @@ class PowerSpectrum3D(DataVector):
         matter_power = self._grs_ingredients.get('matter_power_with_AP')
         galaxy_transfer = self.get('galaxy_transfer')
 
-
-        #HACK
-        np.save('./tmp/ap_1.npy', AP)
-
-        #HACK
-        np.save('./tmp/galaxy_transfer_1.npy', galaxy_transfer)
-
-        #HACK
-        np.save('./tmp/matter_power_1.npy', matter_power)
-
         jj = 0
         for j1 in range(self._data_spec.nsample):
             for j2 in range(j1, self._data_spec.nsample):
@@ -95,9 +85,6 @@ class PowerSpectrum3D(DataVector):
                 jj = jj + 1
         assert jj == self._data_spec.nps, (jj, self._data_spec.nps)
 
-        #HACK
-        np.save('./tmp/galaxy_ps_1.npy', galaxy_ps)
-
         self._state['galaxy_ps'] = galaxy_ps
     
     def _calc_galaxy_transfer(self):
@@ -107,12 +94,6 @@ class PowerSpectrum3D(DataVector):
         fog = self._grs_ingredients.get('fog')
 
         galaxy_transfer = bias * kaiser * fog
-
-        #HACK
-        np.save('./tmp/bias_1.npy', bias)
-        np.save('./tmp/kaiser_1.npy', kaiser)
-        np.save('./tmp/fog_1.npy', fog)
-
 
         self._state['galaxy_transfer'] = galaxy_transfer
 
