@@ -38,7 +38,7 @@ def get_b3d_base(info):
     creator = GRSIngredientsCreator()
     option = 'Camb'
     nonlinear = False
-    grs_ingredients = creator.create(option, survey_par, data_spec,
+    grs_ingredients = creator.create(option, survey_par, data_spec,\
         nonlinear, cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
 
     data_vec = Bispectrum3DBase(grs_ingredients, survey_par, data_spec)

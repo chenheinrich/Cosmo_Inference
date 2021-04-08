@@ -22,8 +22,8 @@ class LikeBispectrum3DBase(Likelihood):
         """
         Returns dictionary specifying quantities calculated by a theory code are needed
         """
-        return {'galaxy_bis': None,
-                'derived_param': None}
+        return {'galaxy_bis': None}
+                #'derived_param': None}
 
     #@profiler
     def logp(self, **params_values):
