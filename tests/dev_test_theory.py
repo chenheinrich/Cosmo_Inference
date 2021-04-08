@@ -33,7 +33,7 @@ def test_cobaya(cobaya_par_file, cosmo_par_file, chi2_expected, fn_expected):
 
     #print('frac diff ps:', (ps-ps_expected)/ps_expected)
     print('ps agrees? ', np.allclose(ps, ps_expected))
-    assert np.allcqlose(ps, ps_expected)
+    assert np.allclose(ps, ps_expected)
 
     print('chi2 = {}'.format(chi2))
     print('chi2 agrees?', np.isclose(chi2[0], chi2_expected))
