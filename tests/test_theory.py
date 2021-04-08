@@ -18,8 +18,8 @@ cosmo_par_file_ref = './tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
 @pytest.mark.debug
 @pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, fn_expected", \
     [
-    (cobaya_par_file, cosmo_par_file_sim, './tests/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'),\
-    (cobaya_par_file, cosmo_par_file_ref, './tests/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy')\
+    (cobaya_par_file, cosmo_par_file_sim, './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'),\
+    (cobaya_par_file, cosmo_par_file_ref, './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy')\
     ]
 )
 def test_cobaya_ps_base_theory(cobaya_par_file, cosmo_par_file, fn_expected):
