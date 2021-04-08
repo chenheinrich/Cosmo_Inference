@@ -33,7 +33,7 @@ def test_cobaya(cobaya_par_file, cosmo_par_file, chi2_expected, fn_expected):
 
     #print('frac diff ps:', (ps-ps_expected)/ps_expected)
     print('ps agrees? ', np.allclose(ps, ps_expected))
-    assert np.allclose(ps, ps_expected)
+    assert np.allcqlose(ps, ps_expected)
 
     print('chi2 = {}'.format(chi2))
     print('chi2 agrees?', np.isclose(chi2[0], chi2_expected))
@@ -59,8 +59,8 @@ cobaya_par_file = CWD + '/tests/inputs/cobaya_pars/ps_base.yaml'
 cosmo_par_file_sim = CWD + '/tests/inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
 cosmo_par_file_ref = CWD + '/tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
 
-fn_sim = './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
-fn_ref = './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy'
+fn_sim = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
+fn_ref = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy'
 
 test_cobaya(cobaya_par_file, cosmo_par_file_sim, 0.0, fn_sim)
 test_cobaya(cobaya_par_file, cosmo_par_file_ref, 0.44438055, fn_ref)
