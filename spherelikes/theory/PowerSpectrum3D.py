@@ -184,15 +184,12 @@ class PowerSpectrum3D(Theory):
         self.logger.debug('About to galaxy_ps')
         state['galaxy_ps'] = galaxy_ps
 
-        #HACK
-        np.save('./tmp/galaxy_ps_1.npy', state['galaxy_ps'])
-
-
         # TODO placeholder for any derived paramter from this module
         #state['derived'] = {'derived_param_p3d': 1.0}
 
     def get_galaxy_ps(self):
         return self._current_state['galaxy_ps']
+
 
 class PowerSpectrum3D_2(Theory):
 

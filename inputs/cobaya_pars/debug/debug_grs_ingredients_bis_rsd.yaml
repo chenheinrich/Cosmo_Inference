@@ -1,0 +1,223 @@
+debug: True
+
+sampler:
+  mcmc:
+    max_tries: 10000000
+    drag: true
+    oversample_power: 1
+    #covmat: "./data/ps_base_v27/ps_base_v27_chain.covmat"
+
+output: chains/debug/debug_grs_ingredients_bis_alone/bis_rsd
+
+likelihood:
+  spherelikes.likelihood.LikeBispectrum3DRSD:
+    is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
+    invcov_path: "./data/debug_grs_ingredients/nk_11/bis_rsd_v27/invcov_full.npy"
+    sim_data_path: "./data/debug_grs_ingredients/nk_11/bis_rsd_v27/sim_data.npy"
+    cov_type: "full"
+
+theory:
+  camb:
+    extra_args:
+      halofit_version: mead
+      bbn_predictor: PArthENoPE_880.2_standard.dat
+      lens_potential_accuracy: 1
+      num_massive_neutrinos: 1
+      nnu: 3.046
+      theta_H0_range:
+        - 20
+        - 100
+      WantTransfer: True
+
+  spherelikes.theory.GRSIngredients:
+    stop_at_error: True
+
+    is_reference_model: False # if calculating reference model for AP, set to True
+    survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
+    #model_path: "./data/ps_base_v27/ref.pickle"
+
+    nk: 11 # number of k points 
+    nmu: 5 # number of mu bins
+
+    kmin: 0.0007 # equivalent to 0.001 h/Mpc
+    kmax: 0.14 # equivalent to 0.2 h/Mpc
+
+  spherelikes.theory.Bispectrum3DRSD:
+    stop_at_error: True
+
+    nk: 11 # number of k points 
+    nmu: -1 # number of mu bins
+
+    kmin: 0.0007 # equivalent to 0.001 h/Mpc
+    kmax: 0.14 # equivalent to 0.2 h/Mpc
+
+    triangle_orientation_info: 
+      parametrization_name: 'theta1_phi12' #TODO make this a separate dictionary for triangle orientation object
+      min_cos_theta1: 0.0
+      max_cos_theta1: 1.0
+      nbin_cos_theta1: 2
+      min_phi12: 0
+      max_phi12: 'np.pi'
+      nbin_phi12: 4
+      do_folded_signal: True 
+    debug_settings:
+      set_mu_to_zero: False
+      sigp: null
+      f_of_z: null
+
+params:
+  fnl:
+    prior:
+      min: 0
+      max: 5
+    ref:
+      dist: norm
+      loc: 1.0
+      scale: 0.1
+    propose: 0.001
+    latex: f_{\rm{NL}}
+  logA:
+    prior:
+      min: 1.61
+      max: 3.91
+    ref:
+      dist: norm
+      loc: 3.0447
+      scale: 0.01
+    proposal: 0.001
+    latex: \log(10^{10} A_\mathrm{s})
+    drop: true
+  As:
+    value: "lambda logA: 1e-10*np.exp(logA)"
+    latex: A_\mathrm{s}
+  ns:
+    prior:
+      min: 0.8
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.965
+      scale: 0.005
+    proposal: 0.0001
+    latex: n_\mathrm{s}
+  nrun:
+    prior:
+      min: -0.1 
+      max: 0.1
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.001
+    proposal: 0.0001
+    latex: \rm{d}n_s/\rm{d\,ln\,} k
+  theta_MC_100:
+    prior:
+      min: 0.5
+      max: 10
+    ref:
+      dist: norm
+      loc: 1.041
+      scale: 0.0003
+    proposal: 0.00003
+    latex: 100\theta_\mathrm{MC}
+    drop: true
+    renames: theta
+  cosmomc_theta:
+    value: "lambda theta_MC_100: 1.e-2*theta_MC_100"
+    derived: false
+  H0:
+    latex: H_0
+    min: 20
+    max: 100
+  ombh2:
+    prior:
+      min: 0.005
+      max: 0.05
+    ref:
+      dist: norm
+      loc: 0.0224
+      scale: 0.0001
+    proposal: 0.0001
+    latex: \Omega_\mathrm{b} h^2
+  omch2:
+    prior:
+      min: 0.001
+      max: 0.99
+    ref:
+      dist: norm
+      loc: 0.12
+      scale: 0.001
+    proposal: 0.0005
+    latex: \Omega_\mathrm{c} h^2
+  omegam:
+    latex: \Omega_\mathrm{m}
+  omegamh2:
+    derived: "lambda omegam, H0: omegam*(H0/100)**2"
+    latex: \Omega_\mathrm{m} h^2
+  mnu: 
+    value: 0.06
+    latex: \sum m_{\nu}
+  omeganu:
+    latex: \Omega_{\nu}
+  omeganuh2:
+    derived: "lambda omeganu, H0: omeganu*(H0/100)**2"
+    latex: \Omega_{\nu} h^2
+  omegak:
+    prior:
+      min: -0.1
+      max: 0.1
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.0001
+    proposal: 0.00001
+    latex: \Omega_\mathrm{K}
+  omega_de:
+    latex: \Omega_\Lambda
+  w:
+    value: -1
+    latex: w_0
+  wa: 
+    value: 0.0
+    latex: w_a
+  YHe:
+    latex: Y_\mathrm{P}
+  Y_p:
+    latex: Y_P^\mathrm{BBN}
+  DHBBN:
+    derived: "lambda DH: 10**5*DH"
+    latex: 10^5 \mathrm{D}/\mathrm{H}
+  tau:
+    prior:
+      dist: norm
+      loc: 0.0544
+      scale: 0.008
+    ref:
+      dist: norm
+      loc: 0.0544
+      scale: 0.008
+    proposal: 0.001
+    latex: \tau_\mathrm{reio}
+  zre:
+    latex: z_\mathrm{re}
+  sigma8:
+    latex: \sigma_8
+  s8h5:
+    derived: "lambda sigma8, H0: sigma8*(H0*1e-2)**(-0.5)"
+    latex: \sigma_8/h^{0.5}
+  s8omegamp5:
+    derived: "lambda sigma8, omegam: sigma8*omegam**0.5"
+    latex: \sigma_8 \Omega_\mathrm{m}^{0.5}
+  s8omegamp25:
+    derived: "lambda sigma8, omegam: sigma8*omegam**0.25"
+    latex: \sigma_8 \Omega_\mathrm{m}^{0.25}
+  A:
+    derived: "lambda As: 1e9*As"
+    latex: 10^9 A_\mathrm{s}
+  clamp:
+    derived: "lambda As, tau: 1e9*As*np.exp(-2*tau)"
+    latex: 10^9 A_\mathrm{s} e^{-2\tau}
+  age:
+    latex: '{\rm{Age}}/\mathrm{Gyr}'
+  rdrag:
+    latex: r_\mathrm{drag}

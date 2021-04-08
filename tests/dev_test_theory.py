@@ -19,26 +19,31 @@ def test_cobaya(cobaya_par_file, cosmo_par_file, expected):
     camb_params = yaml_load_file(cosmo_par_file)
     camb_params = convert_camb_params(camb_params)
     params = dict(camb_params, **bias_params) 
-    print('params', params)
+    print('param = ', params)
 
     info = yaml_load_file(cobaya_par_file)
     info['params'] = params
     info['debug'] = True
 
-    model = get_model(info)
-    chi2 = -2.0 * model.loglikes({'my_foreground_amp': 1.0})[0]
+    print('before get_model()')
     
+    model = get_model(info)
+    
+    #print('before chi2')
+    #chi2 = -2.0 * model.loglikes({'my_foreground_amp': 1.0})[0]
+    
+    print('before get_galaxy_ps')
     ps = model.provider.get_galaxy_ps()
-    #fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5/fnl_0/ps.npy'
-    fn = './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
+    #fn = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy'
+    fn = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
     ps_expected = np.load(fn)
 
     print('frac diff ps:', (ps-ps_expected)/ps_expected)
     print('ps agrees? ', np.allclose(ps, ps_expected))
     assert np.allclose(ps, ps_expected)
 
-    print('chi2 = {}'.format(chi2))
-    assert np.isclose(chi2[0], expected), (chi2[0], expected)
+    #print('chi2 = {}'.format(chi2))
+    #assert np.isclose(chi2[0], expected), (chi2[0], expected)
 
     #TODO turn this into a test
     # save new sim_data and invcov

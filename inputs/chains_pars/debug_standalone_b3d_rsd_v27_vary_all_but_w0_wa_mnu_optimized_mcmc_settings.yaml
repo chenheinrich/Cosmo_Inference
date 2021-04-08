@@ -1,0 +1,18 @@
+output_dir: "./data/b3d_rsd_v27/" #TODO: change this to data_dir
+model_name: null
+ref_cosmo_par_file: "./inputs/cosmo_pars/planck2018_fiducial.yaml"
+data_cosmo_par_file: "./inputs/cosmo_pars/planck2018_fnl_1p0.yaml"
+cobaya_par_file: "./inputs/cobaya_pars/debug_standalone_b3d_rsd_vary_all_but_w0_wa_mnu_optimized_mcmc_settings.yaml"
+overwrite_covariance: True
+
+cobaya_par_file_gen_specs:
+  spherelikes.theory.Bispectrum3DRSD:
+    bias:
+      fix_to_default: False
+      include_latex: True
+      prior_name: 'uniform'
+      prior_fractional_delta: 0.03
+    
+
+
+    
