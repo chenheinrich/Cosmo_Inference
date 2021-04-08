@@ -1,0 +1,15 @@
+
+1. Cobaya and Camb versions 
+
+Need to make sure that Cobaya and CAMB have the right versions for tests to pass. 
+On Stampede2:
+    - Cobaya is installed in the same directory as SphereLikes 
+        using `pip install -e . --user` on Stampede2 
+        after doing e.g. `git checkout tags/v3.0.3 v3.0.3` 
+        to get the right version number
+        Note that Cobaya might be using a different version of camb 
+        internally (that installed under cosmo/, also in the same 
+        directory as SphereLikes.)
+    - CAMB (standalone) is installed in CAMB/, also same directory as SphereLikes.
+        Same thing: using `pip install -e . --user` on Stampede2 
+        after pulling the right version 
