@@ -9,7 +9,7 @@ from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
 from spherelikes.params import CobayaPar, SurveyPar
 #TODO need importing from the right place if SurveyPar is refactored
 
-def test_cobaya(cobaya_par_file, cosmo_par_file, expected):
+def test_cobaya(cobaya_par_file, cosmo_par_file, chi2_expected, fn_expected):
 
     cobaya_par = CobayaPar(cobaya_par_file)
     survey_par = cobaya_par.get_survey_par()
@@ -25,26 +25,18 @@ def test_cobaya(cobaya_par_file, cosmo_par_file, expected):
     info['params'] = params
     info['debug'] = True
 
-    print('before get_model()')
-    
     model = get_model(info)
-    
-    #print('before chi2')
-    #chi2 = -2.0 * model.loglikes({'my_foreground_amp': 1.0})[0]
-    
-    print('before get_galaxy_ps')
     ps = model.provider.get_galaxy_ps()
-    #fn = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy'
-    fn = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
-    ps_expected = np.load(fn)
-
-    print('frac diff ps:', (ps-ps_expected)/ps_expected)
+    ps_expected = np.load(fn_expected)
+    #print('frac diff ps:', (ps-ps_expected)/ps_expected)
     print('ps agrees? ', np.allclose(ps, ps_expected))
     assert np.allclose(ps, ps_expected)
 
-    #print('chi2 = {}'.format(chi2))
-    #assert np.isclose(chi2[0], expected), (chi2[0], expected)
-
+    chi2 = -2.0 * model.loglikes({'my_foreground_amp': 1.0})[0]
+    print('chi2 = {}'.format(chi2))
+    print('chi2 agrees?', np.isclose(chi2[0], chi2_expected))
+    assert np.isclose(chi2[0], chi2_expected), (chi2[0], chi2_expected)
+    
     #TODO turn this into a test
     # save new sim_data and invcov
     # decide which format, .pickle or .npy
@@ -65,5 +57,8 @@ cobaya_par_file = CWD + '/tests/inputs/cobaya_pars/ps_base.yaml'
 cosmo_par_file_sim = CWD + '/tests/inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
 cosmo_par_file_ref = CWD + '/tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
 
-test_cobaya(cobaya_par_file, cosmo_par_file_sim, 0.0)
-#test_cobaya(cobaya_par_file, cosmo_par_file_ref, 0.44438055)
+fn_sim = './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
+fn_ref = './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy'
+
+test_cobaya(cobaya_par_file, cosmo_par_file_sim, 0.0, fn_sim)
+test_cobaya(cobaya_par_file, cosmo_par_file_ref, 0.44438055, fn_ref)
