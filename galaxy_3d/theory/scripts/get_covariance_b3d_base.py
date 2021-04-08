@@ -97,8 +97,8 @@ if __name__ == '__main__':
     fn_invcov = os.path.join(info['plot_dir'], 'invcov.npy')
 
     # Calculations
-    #cov_calculator.get_and_save_cov(fn_cov, do_invcov=True)
-    #cov_calculator.save_invcov(fn_invcov)
+    cov_calculator.get_and_save_cov(fn_cov, do_invcov=True)
+    cov_calculator.save_invcov(fn_invcov)
     #cov_calculator.get_and_save_invcov(fn_invcov)
 
     # Tests:
