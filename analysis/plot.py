@@ -156,6 +156,14 @@ class ChainPlotter():
         print('Number of points in chain = {}'.format(samples.weights.size))
 
         p = samples.getParams()
+
+        #HACK did not vary gaussian_bias_sample_1_z_1 unfortunately
+    
+        print('params = {}'.format(params))
+        if 'gaussian_bias_sample_1_z_1' in params:
+            params.remove('gaussian_bias_sample_1_z_1')
+            print('params = {}'.format(params))
+        
         sample_values = [getattr(p, param) for param in params]
 
         ranges = self.get_mcsamples_ranges()

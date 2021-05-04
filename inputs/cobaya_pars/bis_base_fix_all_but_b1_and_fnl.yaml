@@ -1,10 +1,11 @@
 debug: True
 
 sampler:
+  #evaluate:
   mcmc:
     max_tries: 10000000
     drag: false #true
-    oversample_power: 1
+    oversample_power: 0
     #covmat: "./data/ps_base_v27/ps_base_v27_chain.covmat"
 
 output: chains/bis_base_fix_all_but_fnl/bis_base
@@ -61,8 +62,19 @@ params:
       scale: 0.1
     propose: 0.001
     latex: f_{\rm{NL}}
+  #logA:
+  #  value: 3.0447
+  #  latex: \log(10^{10} A_\mathrm{s})
+  #  drop: true
   logA:
-    value: 3.0447
+    prior:
+      min: 1.61
+      max: 3.91
+    ref:
+      dist: norm
+      loc: 3.0447
+      scale: 0.01
+    proposal: 0.001
     latex: \log(10^{10} A_\mathrm{s})
     drop: true
   As:
@@ -71,11 +83,46 @@ params:
   ns:
     value: 0.96589
     latex: n_\mathrm{s}
+  #ns:
+  #  prior:
+  #    min: 0.8
+  #    max: 1.2
+  #  ref:
+  #    dist: norm
+  #    loc: 0.965
+  #    scale: 0.005
+  #  proposal: 0.0001
+  #  latex: n_\mathrm{s}
   nrun:
     value: 0
     latex: \rm{d}n_s/\rm{d\,ln\,} k
+  #theta_MC_100:
+  #  value: 1.04092
+  #  latex: 100\theta_\mathrm{MC}
+  #  drop: true
+  #  renames: theta
+  #cosmomc_theta:
+  #  value: 'lambda theta_MC_100: 1.e-2*theta_MC_100'
+  #  derived: false
+  #H0:
+  #  latex: H_0
+  #  min: 20
+  #  max: 100
+  #ombh2:
+  #  value: 0.022377
+  #  latex: \Omega_\mathrm{b} h^2
+  #omch2:
+  #  value: 0.1201
+  #  latex: \Omega_\mathrm{c} h^2
   theta_MC_100:
-    value: 1.04092
+    prior:
+      min: 0.5
+      max: 10
+    ref:
+      dist: norm
+      loc: 1.041
+      scale: 0.0003
+    proposal: 3.0e-05
     latex: 100\theta_\mathrm{MC}
     drop: true
     renames: theta
@@ -87,10 +134,24 @@ params:
     min: 20
     max: 100
   ombh2:
-    value: 0.022377
+    prior:
+      min: 0.005
+      max: 0.05
+    ref:
+      dist: norm
+      loc: 0.0224
+      scale: 0.0001
+    proposal: 0.0001
     latex: \Omega_\mathrm{b} h^2
   omch2:
-    value: 0.1201
+    prior:
+      min: 0.001
+      max: 0.99
+    ref:
+      dist: norm
+      loc: 0.12
+      scale: 0.001
+    proposal: 0.0005
     latex: \Omega_\mathrm{c} h^2
   omegam:
     latex: \Omega_\mathrm{m}

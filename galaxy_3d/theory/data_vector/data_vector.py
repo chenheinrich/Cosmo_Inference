@@ -20,11 +20,23 @@ class DataVector():
 
         self._grs_ingredients = grs_ingredients
 
-    def calculate(self):
-        pass
+        self._state = {}
+        self._setup_allowed_names()
 
-    def save(self, fn):
-        pass
+    def _setup_allowed_names(self):
+        self._allowed_names = []
+    
+    def get(self, name):
+        """Call self._calc_<name> to calculate and store quantity <name>
+        in self._state[name], if it hasn't been calculated before; 
+        otherwise, return directly from what is stored in self._state.
+        """
+        if name in self._allowed_names:
+            if name not in self._state.keys():
+                getattr(self, '_calc_'+name)()
+            return self._state[name]
+        else:
+            raise NameNotAllowedError(name, self._allowed_names)
 
 class PowerSpectrum3D(DataVector):
 
@@ -38,7 +50,7 @@ class PowerSpectrum3D(DataVector):
 
         super().__init__(grs_ingredients, survey_par, p3d_spec)
 
-        self._state = {}
+    def _setup_allowed_names(self):
         self._allowed_names = [\
             'galaxy_ps', \
             'galaxy_ps_without_AP',\
@@ -47,18 +59,6 @@ class PowerSpectrum3D(DataVector):
             'galaxy_transfer_without_AP', \
             'galaxy_transfer_without_AP_no_fog_no_kaiser'\
             ]
-        
-    def get(self, name):
-        """Call self._calc_<name> to calculate and store quantity <name>
-        in self._state[name], if it hasn't been calculated before; 
-        otherwise, return directly from what is stored in self._state.
-        """
-        if name in self._allowed_names:
-            if name not in self._state.keys():
-                getattr(self, '_calc_'+name)()
-            return self._state[name]
-        else:
-            raise NameNotAllowedError(name, self._allowed_names)
 
     def get_ips(self, isample1, isample2):
         """Returns index of power spectrum given indices of 2 galaxy samples"""
