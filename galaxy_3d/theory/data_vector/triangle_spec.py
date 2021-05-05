@@ -218,6 +218,16 @@ class TriangleSpecTheta1Phi12(TriangleSpec):
     def nori(self):
         """An integer for the number of orientations per triangle shape."""
         return self._nori
+
+    @property
+    def nphi12(self):
+        """An integer for the number of phi12 bins."""
+        return self._nphi12 
+
+    @property
+    def ntheta1(self):
+        """An integer for the number of theta1 bins."""
+        return self._ntheta1 
         
     @property
     def theta1(self):

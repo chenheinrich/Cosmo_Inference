@@ -49,7 +49,7 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
-@profiler
+#@profiler
 def get_galaxy_bis_mult(info):
     data_vec = get_data_vector(info)
     return data_vec.get('galaxy_bis')

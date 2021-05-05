@@ -25,7 +25,7 @@ class DataVector():
 
     def _setup_allowed_names(self):
         self._allowed_names = []
-    
+
     def get(self, name):
         """Call self._calc_<name> to calculate and store quantity <name>
         in self._state[name], if it hasn't been calculated before; 

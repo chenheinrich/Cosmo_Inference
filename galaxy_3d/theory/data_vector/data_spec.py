@@ -24,6 +24,10 @@ class DataSpec():
         self._dict = data_spec_dict
         self._setup_specs()
 
+    @property
+    def data_spec_dict(self):
+        return self._dict
+
     def _setup_specs(self):
 
         self._setup_z()
@@ -351,12 +355,25 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
 
         self.do_folded_signal = triangle_orientation_dict['do_folded_signal']
 
-        self._setup_nori()
         self._overwrite_shape_for_b3d_rsd()
 
     @property
     def nori(self):
-        return self._nori
+        return self._triangle_spec.nori
+
+    @property
+    def ntheta1(self):
+        return self._triangle_spec._ntheta1
+    
+    @property
+    def nphi12(self):
+        return self._triangle_spec._nphi12
+    
+    @property
+    def angle_array(self):
+        """angle_array[iori, :] returns the theta1, phi12 
+        angles in radians for orientation index iori. """
+        return self._triangle_spec.angle_array
 
     @property
     def theta1(self):
@@ -370,8 +387,18 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     def cos_theta1(self):
         return self._cos_theta1
 
+    @property 
+    def Sigma_to_use(self):
+        """Returns the right Sigma to use depending on whether the input
+        triangle_orientation_info had do_folded_signal = True or False."""
+        if self.do_folded_signal is True:
+            return self.Sigma_scaled_to_4pi
+        else:
+            return self.Sigma
+
     @property
     def Sigma(self):
+        """The actual jacobian dmu1 * dphi12. Use if do_folded_signal = False."""
         dmu1 = self.triangle_spec.dmu1
         dphi12 = self.triangle_spec.dphi12
         Sigma = dmu1 * dphi12 / (4.0*np.pi) 
@@ -436,9 +463,6 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
         edges = np.linspace(min_value, max_value, nbin+1)
         center = (edges[1:] + edges[:-1])/2.0
         return center
-
-    def _setup_nori(self):
-        self._nori = self._triangle_spec.nori
 
     def _overwrite_shape_for_b3d_rsd(self):
         self._shape = (self.nb, self.nz, self.ntri, self.nori)
