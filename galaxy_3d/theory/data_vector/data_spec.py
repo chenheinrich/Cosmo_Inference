@@ -397,11 +397,20 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
             return self.Sigma
 
     @property
-    def Sigma(self):
-        """The actual jacobian dmu1 * dphi12. Use if do_folded_signal = False."""
+    def dOmega(self):
+        """The solid angle element dOmega = dmu1 * dphi12. """
         dmu1 = self.triangle_spec.dmu1
         dphi12 = self.triangle_spec.dphi12
-        Sigma = dmu1 * dphi12 / (4.0*np.pi) 
+        dOmega = dmu1 * dphi12
+        return dOmega
+
+    @property
+    def Sigma(self):
+        """The fraction of discretized solid angle element to total 4pi. 
+        Use if do_folded_signal = False."""
+        dmu1 = self.triangle_spec.dmu1
+        dphi12 = self.triangle_spec.dphi12
+        Sigma = self.dOmega / (4.0 * np.pi)
         return Sigma
 
     @property
@@ -412,7 +421,7 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
         to that allowed by the symmetry, and that the data vector is already
         averaged over these modes with the same expected signal. In this case,
         Nmodes propto Sigma is multiplied by (4pi)/total_omega, we put this 
-        facotr here in Sigma_scaled_to_4pi, dividing by total_omega_over_4pi."""
+        factor here in Sigma_scaled_to_4pi, dividing by total_omega_over_4pi."""
         total_omega_over_4pi = (self._max_cos_theta1 - self._min_cos_theta1) \
             * (self._max_phi12 - self._min_phi12)/(4.*np.pi)
         return (self.Sigma/total_omega_over_4pi)
