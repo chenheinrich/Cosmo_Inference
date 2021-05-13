@@ -77,6 +77,7 @@ class Fisher():
             for jparam in range(self._nparam):
                 fisher[iparam, jparam] = self._get_fisher_matrix_element(iparam, jparam)
 
+        print('fisher', fisher)
         return fisher
         
     def _get_fisher_matrix_element(self, iparam, jparam):

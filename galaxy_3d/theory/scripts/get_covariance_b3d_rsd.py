@@ -146,12 +146,13 @@ class LikelihoodTest():
     #    for iz in range(self.nz):
     #        for itri in range(self.ntri):
 
-
+def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
+    return np.allclose(a, a.T, rtol=rtol, atol=atol)
 
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory.scripts.get_covariance_b3d_rsd ./inputs_theory/get_covariance_b3d_rsd.yaml
+        python3 -m galaxy_3d.theory.scripts.get_covariance_b3d_rsd ./galaxy_3d/inputs_theory/get_covariance_b3d_rsd.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -167,7 +168,7 @@ if __name__ == '__main__':
 
     cov_calculator = Bispectrum3DRSDCovarianceCalculator(info)
     
-    cov_type = 'diag'
+    cov_type = 'full'
 
     fn_cov = os.path.join(info['plot_dir'], 'cov_%s.npy'%cov_type)
     fn_invcov = os.path.join(info['plot_dir'], 'invcov_%s.npy'%cov_type)
@@ -180,6 +181,17 @@ if __name__ == '__main__':
     block = cov_calculator.get_cov_nb_x_nb_block(iz, itri, iori, jori)
     #print('block[-1,:]', block[-1,:])
 
+    is_symmetric = check_matrix_symmetric(block)
+    print('is_symmetric', is_symmetric)
+    print('block = ', block)
+    print('row = ', block[0,:])
+    print('col = ', block[:,0])
+    row = block[0,:]
+    col = block[:,0]
+    frac_diff = (row - col)/row
+    print('frac_diff = ', frac_diff)
+    
+
     #cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
     #cov_calculator.save_invcov(fn_invcov)
     #fn = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/cov_full.npy'
@@ -191,23 +203,23 @@ if __name__ == '__main__':
     #cov_calculator.get_and_save_invcov(fn_invcov)
 
     # Tests:
-    fn1 = './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_1/nk_11/bis_rsd.npy'
-    fn0 = './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0/nk_11/bis_rsd.npy'
+    #fn1 = './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_1/nk_11/bis_rsd.npy'
+    #fn0 = './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_0/nk_11/bis_rsd.npy'
         
-    like_test = LikelihoodTest(cov_calculator, fn0, fn1)
+    #like_test = LikelihoodTest(cov_calculator, fn0, fn1)
     
-    fn_cov_diag = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/cov_diag.npy'
-    fn_cov_full = './data/debug_grs_ingredients/nk_11/bis_rsd_v27/cov_full.npy'
+    #fn_cov_diag = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/cov_diag.npy'
+    #fn_cov_full = './data/debug_grs_ingredients/nk_11/bis_rsd_v27/cov_full.npy'
     
     #TODO move this file invcov file to ./data once tests are done
-    fn_invcov_diag = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_diag.npy'
-    fn_invcov_full = './data/debug_grs_ingredients/nk_11/bis_rsd_v27/invcov_full.npy'
+    #fn_invcov_diag = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_diag.npy'
+    #fn_invcov_full = './data/debug_grs_ingredients/nk_11/bis_rsd_v27/invcov_full.npy'
 
-    cov_diag = np.load(fn_cov_diag)
-    invcov_diag = np.load(fn_invcov_diag)
-    print('cov_diag.shape = {}'.format(cov_diag.shape))
-    print('invcov_diag.shape = {}'.format(invcov_diag.shape))
-    like_test.test(fn_invcov_full=fn_invcov_full, fn_invcov_diag=fn_invcov_diag)
+    #cov_diag = np.load(fn_cov_diag)
+    #invcov_diag = np.load(fn_invcov_diag)
+    #print('cov_diag.shape = {}'.format(cov_diag.shape))
+    #print('invcov_diag.shape = {}'.format(invcov_diag.shape))
+    #like_test.test(fn_invcov_full=fn_invcov_full, fn_invcov_diag=fn_invcov_diag)
 
     #TODO add test to make inverse went well
     

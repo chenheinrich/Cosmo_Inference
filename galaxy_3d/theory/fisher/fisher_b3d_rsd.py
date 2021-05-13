@@ -35,7 +35,8 @@ class Bispectrum3DRSDFisher(Fisher):
     def _load_invcov(self):
         #TODO temporary, we need to change this to 
         if self._cov_type == 'full':
-            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_full.npy'
+            #invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_full.npy'
+            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/data/debug_grs_ingredients/nk_11/bis_rsd_v27/invcov_full.npy'
         elif self._cov_type == 'diagonal_in_triangle_orientation':
             invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_diag.npy'
         
@@ -63,8 +64,17 @@ class Bispectrum3DRSDFisher(Fisher):
                     der_i = (np.transpose(self._derivatives[iparam, :, iz, itri, :])).ravel()
                     der_j = (np.transpose(self._derivatives[jparam, :, iz, itri, :])).ravel()
                     invcov_tmp = self._invcov[:, :, iz, itri]
+                    is_symmetric = self._check_matrix_symmetric(invcov_tmp)
+                    if is_symmetric == False:
+                        print('invcov_tmp = ', invcov_tmp)
+                    print('is_symmetric', is_symmetric)
+                    # invcov is NOT SYMMETRIC!!! was cov symmetric?
+                    # need to regenerate??
                     tmp = np.matmul(invcov_tmp, der_j)
                     f += np.matmul(der_i, tmp)
+
+            print('iparam, jparam, f', iparam, jparam, f)
+            return f
 
         elif self._cov_type == "diagonal_in_triangle_orientation":
 
@@ -78,14 +88,19 @@ class Bispectrum3DRSDFisher(Fisher):
                         tmp = np.matmul(invcov_tmp, der_j)
                         f += np.matmul(der_i, tmp)
 
+            return f
+
         else:
             msg = "You specified cov_type = %s, but needs to be\
                 'full' or 'diagonal_in_triangle_orientation'."%(self._cov_type)
             print(msg)
             sys.exit() #TODO do proper error handling
         
+    def _check_matrix_symmetric(self, a, rtol=1e-05, atol=1e-08):
+        return np.allclose(a, a.T, rtol=rtol, atol=atol)
 
 #TODO merge fisher and derivatives so that they use the same save metadata functions etc.
+
 
 def check_for_convergence(info):
     module_name = 'theory.fisher.fisher_b3d_rsd'

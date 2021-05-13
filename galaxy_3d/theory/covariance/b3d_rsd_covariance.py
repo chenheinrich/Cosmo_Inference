@@ -306,7 +306,7 @@ class Bispectrum3DRSDCovarianceCalculator():
                 kaiser_e = self._kaiser_all[e, iz, ik2, itri, jori, 1]
                 kaiser_f = self._kaiser_all[f, iz, ik3, itri, jori, 2]
 
-                kaiser_1 = kaiser_a * kaiser_b
+                kaiser_1 = kaiser_a * kaiser_d
                 kaiser_2 = kaiser_b * kaiser_e
                 kaiser_3 = kaiser_c * kaiser_f
 
