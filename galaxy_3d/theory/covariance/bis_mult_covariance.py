@@ -5,7 +5,7 @@ from theory.data_vector.data_vector import DataVector, Bispectrum3DRSD
 from theory.data_vector.data_spec import Bispectrum3DRSDSpec
 from theory.math_utils.spherical_harmonics import SphericalHarmonicsTable
 
-class BispectrumMultipole(DataVector):
+class BispectrumMultipoleCovariance(DataVector):
     """This class takes in the 3D Fourier galaxy bispectrum results  
     and performs the integral over the spherical harmonics to
     return the bispectrum multipoles"""
@@ -23,11 +23,7 @@ class BispectrumMultipole(DataVector):
         super().__init__(grs_ingredients, survey_par, bis_mult_spec)
 
         self._b3d_rsd = self._get_b3d_rsd(grs_ingredients, survey_par, bis_mult_spec)
-        self._ylms = self._get_ylms(spherical_harmonics_table)   
-
-    @property
-    def nlm(self):
-        return self._data_spec.nlm
+        self._ylms = self._get_ylms(spherical_harmonics_table)    
 
     def _setup_allowed_names(self):
         self._allowed_names = ['galaxy_bis']
@@ -81,7 +77,7 @@ class BispectrumMultipole(DataVector):
         # for this integral (same lm gives 1, not same lm gives 0)
         one = dOmega * np.matmul(np.transpose(self._ylms), np.conj(self._ylms))
         print('expect identity matrix: ', one)
-        passed_test = np.allclose(np.diag(np.ones(self.nlm)), one)
+        passed_test = np.allclose(np.diag(np.ones(9)), one)
         print('Orthogonality of ylms for given sampling in (theta, phi): test passed?', passed_test)
         # TODO need to test for convergence of final integral for bispectrum
         # might want to just interpolate bispectrum if it varies slower than ylms
@@ -89,7 +85,7 @@ class BispectrumMultipole(DataVector):
 
         galaxy_bis_mult = dOmega * np.matmul(galaxy_bis, np.conj(self._ylms)) 
         assert galaxy_bis_mult.shape[0:3] == galaxy_bis.shape[0:3]
-        assert galaxy_bis_mult.shape[-1] == self.nlm
+        assert galaxy_bis_mult.shape[-1] == self._data_spec.nlm
 
         return galaxy_bis_mult
 

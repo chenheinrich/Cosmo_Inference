@@ -28,8 +28,9 @@ def get_b3d_rsd(info):
     cosmo_par_fid_file = info['cosmo_par_fid_file']
     survey_par_file = info['survey_par_file']
     data_spec_dict = info['Bispectrum3DRSD'] 
+    overwrite_cosmo_par_dict = info.get('overwrite_cosmo_par', None)
 
-    cosmo_par = CosmoPar(cosmo_par_file)
+    cosmo_par = CosmoPar(cosmo_par_file, overwrite_dict=overwrite_cosmo_par_dict)
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
 
     survey_par = SurveyPar(survey_par_file)
@@ -49,7 +50,7 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
-@profiler
+#@profiler
 def get_galaxy_bis(info):
     data_vec = get_b3d_rsd(info)
     return data_vec.get('galaxy_bis')

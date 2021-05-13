@@ -112,7 +112,7 @@ class Bispectrum3DBaseCovarianceCalculator():
     @profiler
     def get_cov(self, do_invcov):
         """Returns the non-diagonal blocks of the covariance for the b3d_base
-        data vector in the shape (nb, nb, nzi, ntri), where 
+        data vector in the shape (nb, nb, nz, ntri), where 
         cov[:,:, iz, itri] corresponds to the smallest non-diagonal block.
         """ 
         

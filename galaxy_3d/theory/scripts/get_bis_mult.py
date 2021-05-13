@@ -10,8 +10,7 @@ from theory.data_vector import BispectrumMultipoleSpec
 from theory.data_vector import BispectrumMultipole
 from theory.data_vector import GRSIngredientsCreator
 from theory.utils import file_tools
-from theory.plotting.bis_plotter import BisPlotter
-from theory.plotting.triangle_spec_plotter import TriangleSpecTheta1Phi12Plotter
+from theory.plotting.bis_mult_plotter import BisMultPlotter
 
 from theory.utils.profiler import profiler
 
@@ -60,6 +59,19 @@ def save_galaxy_bis_mult(info):
     file_tools.save_file_npy(fn, galaxy_bis)
     print('Saved galaxy_bis_mult to file: {}'.format(fn))
 
+def get_plot_dir(info):
+    plot_dir = info['plot_dir']
+    do_folded_signal = info['BispectrumMultipole']['triangle_orientation_info']['do_folded_signal']
+    nbin_cos_theta1 = info['BispectrumMultipole']['triangle_orientation_info']['nbin_cos_theta1']
+    nbin_phi12 = info['BispectrumMultipole']['triangle_orientation_info']['nbin_phi12']
+    nk = info['BispectrumMultipole']['nk']
+    lmax = info['BispectrumMultipole']['multipole_info']['lmax']
+    cosmo_name = os.path.splitext(os.path.basename(info['cosmo_par_file']))[0]
+    plot_dir = os.path.join(plot_dir, 'cosmo_%s/nk_%s/do_folded_signal_%s/lmax_%s/theta_phi_%s_%s/'%(
+        cosmo_name, nk, do_folded_signal, lmax, nbin_cos_theta1, nbin_phi12
+    ))
+    return plot_dir
+
 if __name__ == '__main__':
     """
     Example usage:
@@ -84,8 +96,9 @@ if __name__ == '__main__':
 
     save_galaxy_bis_mult(info)
        
-    #data_vec = get_data_vector(info)
-    #TODO update this part
-    #bis_plotter = BisPlotter(data_vec, data_spec, plot_dir=info['plot_dir'], do_run_checks=False)
-    #bis_plotter.make_plots()
+    data_vec = get_data_vector(info)
+
+    bis_plotter = BisMultPlotter(data_vec, data_spec, plot_dir=get_plot_dir(info), do_run_checks=False)
+    bis_plotter.make_plots()
+
 

@@ -25,6 +25,7 @@ class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
         self._do_nonzero_m = data_spec_dict['multipole_info']['do_nonzero_m']
 
         self._setup_nlm()
+        self._setup_lm_list()
 
         self._b3d_rsd_spec = self._get_b3d_rsd_spec(survey_par, data_spec_dict)
         self._overwrite_shape_for_bis_mult()
@@ -50,9 +51,16 @@ class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
     @property
     def do_nonzero_m(self):
         return self._do_nonzero_m
+    
+    @property
+    def lm_list(self):
+        return self._lm_list
 
     def _setup_nlm(self):
         self._nlm = np.sum([2*l+1 for l in range(0, self._lmax+1)])
+
+    def _setup_lm_list(self):
+        self._lm_list = [(l, m) for l in range(0, self._lmax+1) for m in range(-l, l+1)]
 
     def _overwrite_shape_for_bis_mult(self):
         self._shape = (self.nb, self.nz, self.ntri, self.nlm)
