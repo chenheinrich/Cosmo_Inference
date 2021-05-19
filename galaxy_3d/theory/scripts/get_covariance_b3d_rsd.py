@@ -4,7 +4,6 @@ import yaml
 import os
 
 from theory.covariance import Bispectrum3DRSDCovarianceCalculator
-from theory.utils import file_tools
 
 class LikelihoodTest():
 
@@ -146,9 +145,6 @@ class LikelihoodTest():
     #    for iz in range(self.nz):
     #        for itri in range(self.ntri):
 
-def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
-    return np.allclose(a, a.T, rtol=rtol, atol=atol)
-
 if __name__ == '__main__':
     """
     Example usage:
@@ -179,20 +175,8 @@ if __name__ == '__main__':
     iori = 0
     jori = 0
     block = cov_calculator.get_cov_nb_x_nb_block(iz, itri, iori, jori)
-    #print('block[-1,:]', block[-1,:])
 
-    is_symmetric = check_matrix_symmetric(block)
-    print('is_symmetric', is_symmetric)
-    print('block = ', block)
-    print('row = ', block[0,:])
-    print('col = ', block[:,0])
-    row = block[0,:]
-    col = block[:,0]
-    frac_diff = (row - col)/row
-    print('frac_diff = ', frac_diff)
-    
-
-    #cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
+    cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
     #cov_calculator.save_invcov(fn_invcov)
     #fn = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/cov_full.npy'
     #cov_calculator.load_cov_from_fn(fn)

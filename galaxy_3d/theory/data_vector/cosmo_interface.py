@@ -109,9 +109,8 @@ class CosmoInterface(object):
         fsigma8 = self._get_fsigma8_array()
         sigma8 = self._get_sigma8_array()
 
-        #HACK
-        print('sigma8 = {}'.format(sigma8))
-        print('fsigma8 = {}'.format(fsigma8))
+        self.logger.debug('sigma8 = {}'.format(sigma8))
+        self.logger.debug('fsigma8 = {}'.format(fsigma8))
 
         f = fsigma8/sigma8 
         

@@ -18,12 +18,13 @@ class BisPlotter(TrianglePlotter):
 
         self._do_run_checks = do_run_checks
 
-        self._d = data_vec.get('galaxy_bis')
-        self._d1 = data_vec.get('Bggg_b10')
-        self._d2 = data_vec.get('Bggg_b20')
+    def setup_d(self):
+        self._d = self._data_vec.get('galaxy_bis')
+        self._d1 = self._data_vec.get('Bggg_b10')
+        self._d2 = self._data_vec.get('Bggg_b20')
 
-        self._d1_primordial = data_vec.get('Bggg_b10_primordial')
-        self._d1_gravitational = data_vec.get('Bggg_b10_gravitational')
+        self._d1_primordial = self._data_vec.get('Bggg_b10_primordial')
+        self._d1_gravitational = self._data_vec.get('Bggg_b10_gravitational')
 
     def make_plots(self):
         
@@ -40,8 +41,6 @@ class BisPlotter(TrianglePlotter):
         elif isinstance(self._data_vec, Bispectrum3DBase):
             for ib in range(nb):
                 self._plot_galaxy_bis(ib)   
-
-            
 
     def _run_checks(self):
 

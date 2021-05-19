@@ -26,11 +26,11 @@ Bispectrum3DRSD:
     f_of_z: null
 
 derivatives:
-  h_frac: 0.05
+  h_frac: 0.05 
   params:
     - As
     - ns
-  #  - fnl
+    - fnl
 
 fisher:
   data_dir: './results/b3d_rsd/fisher/'

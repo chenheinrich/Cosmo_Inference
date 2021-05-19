@@ -11,6 +11,9 @@ from theory.utils import file_tools
 from theory.utils import profiler
 
 
+def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
+    return np.allclose(a, a.T, rtol=rtol, atol=atol)
+
 class Bispectrum3DRSDCovarianceCalculator():
 
     def __init__(self, info):
@@ -266,7 +269,12 @@ class Bispectrum3DRSDCovarianceCalculator():
 
                 cov[Mstart:Mend, Nstart:Nend] = self.get_cov_nb_x_nb_block(iz, itri, iori, jori)
                 
-                #TODO check if symmetric later
+        assert check_matrix_symmetric(cov)
+        #TODO clean up later
+        #is_symmetric = check_matrix_symmetric(cov)
+        #print('get_cov_smallest_nondiagonal_block: is_symmetric = {}'.format(is_symmetric))
+        #if is_symmetric is False:
+        #    print('cov = {}'.format(cov))
         return cov
 
     #@profiler

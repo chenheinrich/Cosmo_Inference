@@ -2,7 +2,6 @@ import numpy as np
 import argparse
 import yaml
 import os
-import pickle
 
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
@@ -61,21 +60,34 @@ def save_galaxy_bis_mult(info):
 
 def get_plot_dir(info):
     plot_dir = info['plot_dir']
-    do_folded_signal = info['BispectrumMultipole']['triangle_orientation_info']['do_folded_signal']
-    nbin_cos_theta1 = info['BispectrumMultipole']['triangle_orientation_info']['nbin_cos_theta1']
-    nbin_phi12 = info['BispectrumMultipole']['triangle_orientation_info']['nbin_phi12']
-    nk = info['BispectrumMultipole']['nk']
-    lmax = info['BispectrumMultipole']['multipole_info']['lmax']
-    cosmo_name = os.path.splitext(os.path.basename(info['cosmo_par_file']))[0]
-    plot_dir = os.path.join(plot_dir, 'cosmo_%s/nk_%s/do_folded_signal_%s/lmax_%s/theta_phi_%s_%s/'%(
-        cosmo_name, nk, do_folded_signal, lmax, nbin_cos_theta1, nbin_phi12
-    ))
+    subdir_name = get_subdir_name_for_bis_mult(info)
+    plot_dir = os.path.join(plot_dir, subdir_name)
     return plot_dir
+
+#TODO need to test that refactoring is successful by running this
+def get_subdir_name_for_bis_mult(info):
+
+    bis_mult_info = info['BispectrumMultipole']
+    nk = bis_mult_info['nk']
+
+    lmax = bis_mult_info['multipole_info']['lmax']
+
+    ori_info = bis_mult_info['triangle_orientation_info']
+    do_folded_signal = ori_info['do_folded_signal']
+    nbin_cos_theta1 = ori_info['nbin_cos_theta1']
+    nbin_phi12 = ori_info['nbin_phi12']
+
+    cosmo_name = os.path.splitext(os.path.basename(info['cosmo_par_file']))[0]
+    
+    subdir_name = 'cosmo_%s/nk_%s/lmax_%s/do_folded_signal_%s/theta_phi_%s_%s/'\
+        %(cosmo_name, nk, lmax, do_folded_signal, nbin_cos_theta1, nbin_phi12)
+
+    return subdir_name    
 
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory.scripts.get_bis_mult ./inputs_theory/get_bis_mult.yaml 
+        python3 -m galaxy_3d.theory.scripts.get_bis_mult ./galaxy_3d/inputs_theory/get_bis_mult.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -90,10 +102,7 @@ if __name__ == '__main__':
     print('info = {}'.format(info))
 
     data_spec = get_data_spec(info)
-    #TODO update this  part
-    #triangle_plotter = TriangleSpecTheta1Phi12Plotter(data_spec._triangle_spec, plot_dir=info['plot_dir'])
-    #triangle_plotter.make_plots()
-
+    
     save_galaxy_bis_mult(info)
        
     data_vec = get_data_vector(info)

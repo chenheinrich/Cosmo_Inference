@@ -35,8 +35,7 @@ class Bispectrum3DRSDFisher(Fisher):
     def _load_invcov(self):
         #TODO temporary, we need to change this to 
         if self._cov_type == 'full':
-            #invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_full.npy'
-            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/data/debug_grs_ingredients/nk_11/bis_rsd_v27/invcov_full.npy'
+            invcov_path = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
         elif self._cov_type == 'diagonal_in_triangle_orientation':
             invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_diag.npy'
         
@@ -64,12 +63,6 @@ class Bispectrum3DRSDFisher(Fisher):
                     der_i = (np.transpose(self._derivatives[iparam, :, iz, itri, :])).ravel()
                     der_j = (np.transpose(self._derivatives[jparam, :, iz, itri, :])).ravel()
                     invcov_tmp = self._invcov[:, :, iz, itri]
-                    is_symmetric = self._check_matrix_symmetric(invcov_tmp)
-                    if is_symmetric == False:
-                        print('invcov_tmp = ', invcov_tmp)
-                    print('is_symmetric', is_symmetric)
-                    # invcov is NOT SYMMETRIC!!! was cov symmetric?
-                    # need to regenerate??
                     tmp = np.matmul(invcov_tmp, der_j)
                     f += np.matmul(der_i, tmp)
 

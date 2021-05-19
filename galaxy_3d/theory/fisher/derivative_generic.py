@@ -148,18 +148,24 @@ class Derivatives():
 
         metadata_on_file = self._load_metadata()
         
-        if not (self._metadata == metadata_on_file):
-            from deepdiff import DeepDiff
-            diff = DeepDiff(self._metadata, metadata_on_file, \
-                ignore_string_case=True, \
-                ignore_numeric_type_changes=True, \
-                significant_digits=5)
+        from deepdiff import DeepDiff
+        diff = DeepDiff(self._metadata, metadata_on_file, \
+            ignore_string_case=True, \
+            ignore_numeric_type_changes=True, \
+            significant_digits=5,
+            exclude_paths={"root['derivatives']['is_converged']"}
+            )
+        if diff != {}:
             raise MetadataNotCompatibleError(diff)
 
     def _get_pfid_and_h(self, iparam):
         
         param = self._params_list[iparam]
         pfid = getattr(self._cosmo, param)
+
+        #HACK for fnl #TODO remove later and code this properly
+        if pfid == 0:
+            pfid = 1.0 / 0.05
 
         h_frac = self._h_frac[iparam]
         h = pfid * h_frac
@@ -309,7 +315,7 @@ class DerivativeConvergence():
     def _iterate_derivatives_until_convergence(self, iparam, max_iter=10):
 
         info_prev = copy.deepcopy(self._info)
-        der_prev = self._der_fid
+        der_prev = (self._der_fid[iparam, ...])[np.newaxis]
         is_converged = False
 
         desired_param = self._params_list[iparam]
@@ -326,34 +332,33 @@ class DerivativeConvergence():
 
             if i_iter > 0:
                 der_prev = der_new
+                info_prev = copy.deepcopy(info_new)
 
-            h_frac = info_prev['derivatives']['h_frac']
+            h_frac_value = info_prev['derivatives']['h_frac']
             h_frac_new = 0.5 * h_frac_value
 
             info_new = copy.deepcopy(info_prev)
             info_new['derivatives']['h_frac'] = h_frac_new
-            
-            print('info_new = {}'.format(info_new))
-            print('self._info params = {}'.format(self._info['derivatives']['params']))
 
-            #HACK remove comment if it works
-            #derivatives = Bispectrum3DRSDDerivatives(info_new, \
-            #    ignore_cache=self._ignore_cache, do_save=self._do_save)
+            print('Calling derivative class with h_frac = {}'.format(info_new['derivatives']['h_frac']))
+            
             derivatives = self._DerivativeClass_(info_new, \
                 ignore_cache=self._ignore_cache, do_save=self._do_save)
             der_new = derivatives.data
 
             is_converged = self._check_convergence(der_prev, der_new)
+            print('   i_iter = {}, is_converged = {}'.format(i_iter, is_converged))
 
             i_iter = i_iter + 1
         
         if is_converged == True:
-            print('Derivatives convergence reached for parameter {} (eps = {})'.format(desired_param, self._eps))
-            print('h_frac = {}'.format(h_frac))
+            print('   Derivatives convergence reached for parameter {} (eps = {})'.format(desired_param, self._eps))
+            print('   h_frac = {}'.format(h_frac_value))
+            print('\n')
         else:
-            print('Derivatives not converged for parameter {} but max_iter = {} reached (eps = {})'.format(desired_param, max_iter, self._eps))
-
-        return is_converged, h_frac, der_prev
+            print('   Derivatives not converged for parameter {} but max_iter = {} reached (eps = {})'.format(desired_param, max_iter, self._eps))
+            print('\n')
+        return is_converged, h_frac_value, der_prev
 
     def _save_converged_derivatives(self):
         np.save(self._converged_derivatives_path, self._der_prev)
@@ -361,12 +366,15 @@ class DerivativeConvergence():
     def _check_convergence(self, der1, der2):
         is_converged = False
         frac_diff = np.abs((der2-der1)/der1)
+        max_frac_diff = np.nanmax(frac_diff)
+        print('max_frac_diff = {}'.format(max_frac_diff))
         if (frac_diff >= self._eps).any():
             ind = np.where(frac_diff >= self._eps)
             print('ind = {}'.format(ind))
             print('der1[ind] = {}'.format(der1[ind]))
             if np.allclose(der1[ind], np.zeros(der1[ind].shape)):
                 is_converged = True
+            print('is_converged = {}'.format(is_converged))
         else:
             is_converged = True
         return is_converged

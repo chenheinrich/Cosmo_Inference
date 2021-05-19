@@ -1,6 +1,6 @@
-run_name: 'bis_mult'
+run_name: 'develop_covariance_bis_mult'
 
-cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml' #fiducial
+cosmo_par_file: './inputs/cosmo_pars/planck2018_fiducial.yaml' 
 
 cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
@@ -18,14 +18,18 @@ BispectrumMultipole:
     parametrization_name: 'theta1_phi12' 
     min_cos_theta1: -1.0 #0.0
     max_cos_theta1: 1.0
-    nbin_cos_theta1: 160
+    nbin_cos_theta1: 2
     min_phi12: 0
     max_phi12: '2.0*np.pi' #'np.pi'
-    nbin_phi12: 160
+    nbin_phi12: 4
     do_folded_signal: False #True
   debug_settings:
     set_mu_to_zero: False
     sigp: null
     f_of_z: null
 
-plot_dir: './plots/theory/bispectrum_multipole/'
+covariance:
+  do_cvl_noise: False
+  fsky: 0.75
+  b3d_rsd_cov_path: './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
+  data_dir: './results/bis_mult/covariance/'

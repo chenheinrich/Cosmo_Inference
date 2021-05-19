@@ -1,97 +1,156 @@
 import numpy as np
 import os
+import copy
+import scipy.linalg as linalg
 
-from theory.data_vector.data_vector import DataVector, Bispectrum3DRSD
-from theory.data_vector.data_spec import Bispectrum3DRSDSpec
+from theory.data_vector.multipole_data_spec import BispectrumMultipoleSpec
 from theory.math_utils.spherical_harmonics import SphericalHarmonicsTable
+import theory.math_utils.matrix as matrix
+from theory.scripts.get_bis_mult import get_subdir_name_for_bis_mult
+from theory.utils.file_tools import mkdir_p
+from theory.params.survey_par import SurveyPar
 
-class BispectrumMultipoleCovariance(DataVector):
-    """This class takes in the 3D Fourier galaxy bispectrum results  
-    and performs the integral over the spherical harmonics to
-    return the bispectrum multipoles"""
+class BispectrumMultipoleCovariance():
+    """This class takes in the 3D Fourier galaxy bispectrum covariance
+    and performs two integrals over the spherical harmonics to
+    return the bispectrum multipole covariance"""
 
-    def __init__(self, grs_ingredients, survey_par, bis_mult_spec, \
-            spherical_harmonics_table=None):
+    def __init__(self, info):
         """Args:
-            grs_ingredients: An instance of the GRSIngredients class.
-            survey_par: An instance of the SurveyPar class
-            bis_mult_spec: An instance of the BispectrumMultipoleSpec class.
-            spherical_harmonics_table (optional): An instance of the
-                SphericalHarmonicsTable class.
         """
+        self._info = copy.deepcopy(info)
+        self._setup_dir()
+        self._setup_paths()
+        self._load_b3d_rsd_cov()
+        
+        survey_par = SurveyPar(self._info['survey_par_file'])
+        self._bis_mult_spec = BispectrumMultipoleSpec(survey_par, self._info['BispectrumMultipole'])
+        self._setup_dims()
+        self._ylms_conj = self._get_ylms_conj()
 
-        super().__init__(grs_ingredients, survey_par, bis_mult_spec)
+        self._cov, self._invcov = self._get_cov_and_invcov()
+        self._save()
 
-        self._b3d_rsd = self._get_b3d_rsd(grs_ingredients, survey_par, bis_mult_spec)
-        self._ylms = self._get_ylms(spherical_harmonics_table)    
+    def _setup_dir(self):
+        self._dir = self._info['covariance']['data_dir']
+        subdir_name = get_subdir_name_for_bis_mult(self._info)
+        self._data_dir = os.path.join(self._dir, subdir_name)
+        mkdir_p(self._dir)
+        mkdir_p(self._data_dir)
 
-    def _setup_allowed_names(self):
-        self._allowed_names = ['galaxy_bis']
+    def _setup_paths(self):
+        self._b3d_rsd_cov_path = self._info['covariance']['b3d_rsd_cov_path']
+        self._bis_mult_cov_path = os.path.join(self._data_dir, 'cov.npy')
+        self._bis_mult_invcov_path = os.path.join(self._data_dir, 'invcov.npy')
 
-    def _get_b3d_rsd(self, grs_ingredients, survey_par, bis_mult_spec):
-        b3d_rsd_spec = self._data_spec.b3d_rsd_spec #bis_mult_spec.b3d_rsd_spec
-        b3d_rsd = Bispectrum3DRSD(self._grs_ingredients, self._survey_par, b3d_rsd_spec)
-        return b3d_rsd
+    def _load_b3d_rsd_cov(self):
+        self._b3d_rsd_cov = np.load(self._b3d_rsd_cov_path)
+        is_cov_type_full = len(self._b3d_rsd_cov.shape) == 4
+        assert is_cov_type_full == True
 
-    def _calc_galaxy_bis(self):
-        galaxy_bis = self._get_bis_multipoles()
-        self._state['galaxy_bis'] = galaxy_bis
-    
-    def _get_ylms(self, spherical_harmonics_table):
+    def _setup_dims(self):
+
+        self._nb = self._bis_mult_spec.nb
+        self._nlm = self._bis_mult_spec.nlm
+        self._ntri = self._bis_mult_spec.ntri
+        self._nz = self._bis_mult_spec.nz
+
+        assert self._ntri == self._b3d_rsd_cov.shape[-1]
+        assert self._nz == self._b3d_rsd_cov.shape[-2]
+        
+        #TODO should be checking from metadata of b3d_rsd_cov; hack for now
+        self._ntheta = self._info['BispectrumMultipole']['triangle_orientation_info']['nbin_cos_theta1']
+        self._nphi = self._info['BispectrumMultipole']['triangle_orientation_info']['nbin_phi12']
+        self._nori = self._ntheta * self._nphi
+        
+        nbxnori = self._nb * self._nori
+        assert nbxnori == self._b3d_rsd_cov.shape[0]
+
+    def _get_ylms_conj(self):
         """Returns the 2d numpy array of shape (nori, nlms) for the 
         precomputed spherical harmonics on the theta-phi grid and 
         lmax specified in data_spec.
-        Args:
-            spherical_harmonics_table: an instance of the SphericalHarmonicsTable 
-                or None to create an instance here.
         """
+        theta1 = self._bis_mult_spec.b3d_rsd_spec.theta1
+        phi12 = self._bis_mult_spec.b3d_rsd_spec.phi12
+        lmax = self._bis_mult_spec.lmax
 
-        if spherical_harmonics_table is None:
-            theta1 = self._data_spec.b3d_rsd_spec.theta1
-            phi12 = self._data_spec.b3d_rsd_spec.phi12
-            lmax = self._data_spec.lmax
-            spherical_harmonics_table = SphericalHarmonicsTable(theta1, phi12, lmax)
-        
+        spherical_harmonics_table = SphericalHarmonicsTable(theta1, phi12, lmax)
         ylms = spherical_harmonics_table.data
-        nori = self._data_spec.b3d_rsd_spec.nori
-        nlm = self._data_spec.nlm
-        assert ylms.shape == (nori, nlm)
 
-        return ylms
+        return np.conj(ylms)
 
-    def _get_bis_multipoles(self):
-        """Computes the bispectrum multipoles by integrating over dcostheta1 and dphi12.
-            Blm(k1, k2, k3) = Int_{-1}^{1} dcos(theta1) Int_{0}^{2\pi} dphi12
-                                x B(k1, k2, k3, theta1, phi12) * Ylm^*(theta1, phi12).
-        """
-        galaxy_bis = self._b3d_rsd.get('galaxy_bis')
-        dOmega = self._b3d_rsd._data_spec.dOmega
+    def _get_cov_and_invcov(self):
 
-        print('dOmega = {}'.format(dOmega))
-
-        print(galaxy_bis.shape)
-        print(self._ylms.shape)
-        print(np.transpose(self._ylms).shape)
+        nbxnlm = self._nb * self._nlm
+        shape = (nbxnlm, nbxnlm, self._nz, self._ntri)
         
-        #TEST: test orthogonality relationship of ylm for the given sampling rate
-        # for this integral (same lm gives 1, not same lm gives 0)
-        one = dOmega * np.matmul(np.transpose(self._ylms), np.conj(self._ylms))
-        print('expect identity matrix: ', one)
-        passed_test = np.allclose(np.diag(np.ones(9)), one)
-        print('Orthogonality of ylms for given sampling in (theta, phi): test passed?', passed_test)
-        # TODO need to test for convergence of final integral for bispectrum
-        # might want to just interpolate bispectrum if it varies slower than ylms
-        # and accuracy matters there.
+        cov = np.zeros(shape)
+        invcov = np.zeros(shape)
 
-        galaxy_bis_mult = dOmega * np.matmul(galaxy_bis, np.conj(self._ylms)) 
-        assert galaxy_bis_mult.shape[0:3] == galaxy_bis.shape[0:3]
-        assert galaxy_bis_mult.shape[-1] == self._data_spec.nlm
+        for iz in range(self._nz):
+            for itri in range(self._ntri):
 
-        return galaxy_bis_mult
+                print('iz = {}, itri = {}'.format(iz, itri))
+                
+                cov_nori_blocks_of_nb_x_nb = self._b3d_rsd_cov[:, :, iz, itri] 
+                cov_nb_blocks_of_nori_x_nori = self._reshape(cov_nori_blocks_of_nb_x_nb)
+                cov_nb_blocks_of_nlm_x_nlm = self._apply_ylm_integral(cov_nb_blocks_of_nori_x_nori)
+                matrix.check_matrix_symmetric(cov_nb_blocks_of_nlm_x_nlm)
+        
+                cov[:, :, iz, itri] = cov_nb_blocks_of_nlm_x_nlm
+                invcov[:, :, iz, itri] = linalg.inv(cov_nb_blocks_of_nlm_x_nlm)
 
+        return cov, invcov
 
+    def _reshape(self, cov_nori_blocks_of_nb_x_nb):
+        nblock_old = self._nori
+        block_size_old = self._nb
+        cov_nb_blocks_of_nori_x_nori = \
+            matrix.reshape_blocks_of_matrix(cov_nori_blocks_of_nb_x_nb, nblock_old, block_size_old)
+        return cov_nb_blocks_of_nori_x_nori
+        
+    def _apply_ylm_integral(self, cov_nb_blocks_of_nori_x_nori):
+        pass
+        nori = self._nori
+        nlm = self._nlm
+        nb = self._nb
+        nbxnlm = nb * nlm
+        cov_nb_blocks_of_nori_x_nori_3d = matrix.split_matrix_into_blocks(cov_nb_blocks_of_nori_x_nori, nori, nori)
+        cov_nb_blocks_of_nlm_x_nlm_3d = np.zeros((nb**2, nlm, nlm), dtype=complex)
+        
+        iblock = 0
 
+        for ib in range(self._nb):
+            for jb in range(self._nb):
 
+                one_block_nori_x_nori = cov_nb_blocks_of_nori_x_nori_3d[iblock, :, :]
+                one_block_nlm_x_nlm = self._apply_ylm_integral_on_one_block_nori_x_nori(\
+                    one_block_nori_x_nori)
+                
+                cov_nb_blocks_of_nlm_x_nlm_3d[iblock,:,:] = one_block_nlm_x_nlm
 
-   
-   
+                iblock = iblock + 1
+
+        cov_nb_blocks_of_nlm_x_nlm = matrix.assemble_matrix_from_blocks(\
+            cov_nb_blocks_of_nlm_x_nlm_3d, nb)
+
+        assert cov_nb_blocks_of_nlm_x_nlm.shape == (nbxnlm, nbxnlm)
+
+        return cov_nb_blocks_of_nlm_x_nlm
+
+    def _apply_ylm_integral_on_one_block_nori_x_nori(self, one_block_nori_x_nori):
+        cov = np.matmul(one_block_nori_x_nori, self._ylms_conj) 
+        cov = np.matmul(np.transpose(self._ylms_conj), cov)
+        return cov 
+
+    def _apply_nmodes(self):
+        pass
+
+    def _save(self):
+        np.save(self._bis_mult_cov_path, self._cov)
+        np.save(self._bis_mult_invcov_path, self._invcov)
+        print('Saved cov at {}'.format(self._bis_mult_cov_path))
+        print('Saved invcov at {}'.format(self._bis_mult_invcov_path))
+
+        
