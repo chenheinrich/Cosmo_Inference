@@ -6,8 +6,6 @@ import importlib
 
 from theory.params.cosmo_par import CosmoPar
 from theory.utils.file_tools import mkdir_p
-
-
 class MetadataNotCompatibleError(Exception):
     """Raised when metadata from .json file is not as expected.
     Attributes:
@@ -20,7 +18,21 @@ class MetadataNotCompatibleError(Exception):
         self.message = message + " (diff = {})".format(self.diff)
         super().__init__(self.message)
 
-class Derivatives():
+
+
+def get_dir(parent_dir, run_name, params_list, h_list):
+    """Used by both Derivative and DerivativeConvergence classes
+    to make the same format of directory name"""
+    
+    from theory.utils.misc import strp
+    h_string = '_'.join([strp(h, fmt='%1.4e') for h in h_list])
+    params_string = '_'.join(params_list)
+    
+    dir_name = '%s/%s/%s/h_%s/'%(parent_dir, run_name, params_string, h_string)
+    
+    return dir_name
+
+class Derivative():
     """
     Calculates derivatives of the signal (bispectrum 3D with RSD) 
     with respect to cosmological parameters.
@@ -35,18 +47,19 @@ class Derivatives():
 
     def __init__(self, info, ignore_cache, do_save, parent_dir):
         self._info = copy.deepcopy(info)
-        # change h_frac into a list if it's not
-        h_frac = self._info['derivatives']['h_frac']
-        if not isinstance(h_frac, list):
-            h_frac_list = [h_frac] * len(self._info['derivatives']['params'])
-            self._info['derivatives']['h_frac'] = h_frac_list
-
+        self._do_save = do_save
         self._parent_dir = parent_dir
 
         der_info = self._info['derivatives']
         self._params_list = der_info['params']
-        self._h_frac = der_info['h_frac']
         self._cosmo = CosmoPar(self._info['cosmo_par_file'])
+
+        self._h_frac_list = self._get_h_frac_list()
+        self._h_list = self._get_h_list()
+        self._info['derivatives']['h_frac'] = self._h_frac_list
+        self._info['derivatives']['h'] = self._h_list
+
+        print('h_list', self._h_list)
 
         self._setup_dir()
         self._setup_paths()
@@ -57,7 +70,7 @@ class Derivatives():
 
         if do_calculate:
             self._calc_all_derivatives()
-            if do_save == True:
+            if self._do_save == True:
                 self._save()
         else:
             self._load_all_derivatives()
@@ -72,6 +85,10 @@ class Derivatives():
         return self._metadata
 
     @property
+    def cosmo(self):
+        return self._cosmo
+
+    @property
     def data_path(self):
         return self._derivatives_path
 
@@ -79,16 +96,41 @@ class Derivatives():
     def metadata_path(self):
         return self._metadata_path
 
-    def _setup_dir(self):
-        run_name = self._info['run_name'] 
-        params_list = self._info['derivatives']['params']  
-        h_frac = self._info['derivatives']['h_frac']  
-        print('h_frac = {}'.format(h_frac))
+    def _get_h_frac_list(self):
+        h_frac = self._info['derivatives']['h_frac']
+        if not isinstance(h_frac, list):
+            h_frac = [h_frac] * len(self._info['derivatives']['params'])
+            self._info['derivatives']['h_frac'] = h_frac
+        return h_frac
 
-        params_string = '_'.join(params_list)
-        h_frac_string = '_'.join([str(h) for h in h_frac])
+    def _get_h_list(self):
+
+        h_list = []
+        for iparam, param in enumerate(self._params_list):
+            pfid = self._get_pfid_for_iparam(iparam)
+    
+            h_frac = self._h_frac_list[iparam]
+            h = pfid * h_frac
+
+            # if h is specified, then overwrite h obtained from h_frac information with h.
+            # this is useful for parameters with fiducial value = 0 like fnl.
+            h_overwrite = self._info['derivatives']['h'].get(param)
+            print('param = {}, h_overwrite = {}'.format(param, h_overwrite))
+            if h_overwrite is not None:
+                h = h_overwrite
+            
+            h_list.append(h)
+
+            print('param = {}, pfid = {}, h = {}, h_frac = {}'.format(param, pfid, h, h_frac))
         
-        self._dir = '%s/%s/%s/h_frac_%s/'%(self._parent_dir, run_name, params_string, h_frac_string)
+        return h_list
+
+    def _setup_dir(self):
+        parent_dir = self._parent_dir
+        run_name = self._info['run_name'] 
+
+        self._dir = get_dir(parent_dir, run_name, self._params_list, self._h_list)
+        
         print('self._dir = {}'.format(self._dir))
         mkdir_p(self._dir)
 
@@ -153,30 +195,23 @@ class Derivatives():
             ignore_string_case=True, \
             ignore_numeric_type_changes=True, \
             significant_digits=5,
-            exclude_paths={"root['derivatives']['is_converged']"}
+            exclude_paths={
+                "root['derivatives']['is_converged']",
+                "root['derivatives']['h_frac']",}
             )
         if diff != {}:
             raise MetadataNotCompatibleError(diff)
 
-    def _get_pfid_and_h(self, iparam):
-        
+    def _get_pfid_for_iparam(self, iparam):
         param = self._params_list[iparam]
         pfid = getattr(self._cosmo, param)
-
-        #HACK for fnl #TODO remove later and code this properly
-        if pfid == 0:
-            pfid = 1.0 / 0.05
-
-        h_frac = self._h_frac[iparam]
-        h = pfid * h_frac
-
-        print('param = {}, pfid = {}, h = {}, h_frac = {}'.format(param, pfid, h, h_frac))
-        
-        return pfid, h
+        return pfid
 
     def _get_derivative_for_parameter(self, iparam):
         
-        pfid, h = self._get_pfid_and_h(iparam)
+        pfid = self._get_pfid_for_iparam(iparam)
+        h = self._h_list[iparam]
+
         pvalues = pfid + np.array([-2, -1, 1, 2]) * h
         print('pvalues = {}'.format(pvalues))
         signals = np.array([self._get_signal_for_info(\
@@ -220,7 +255,8 @@ class DerivativeConvergence():
 
         self._params_list = self._info['derivatives']['params']
 
-        self._is_converged_list, self._converged_h_frac_list, self._all_derivatives = \
+        self._is_converged_list, self._converged_h_frac_list, \
+            self._converged_h_list, self._all_derivatives = \
             self._get_derivatives()
         self._metadata = self._get_metadata()
         self._print_status()
@@ -233,26 +269,25 @@ class DerivativeConvergence():
     def data(self):
         return self._all_derivatives
 
-    property
+    @property
     def metadata(self):
         return self._metadata
+
+    @property
+    def cosmo(self):
+        return self._derivative_fid.cosmo
 
     def _get_metadata(self):
         metadata = copy.deepcopy(self._info)
         metadata['derivatives']['is_converged'] = self._is_converged_list
         metadata['derivatives']['h_frac'] = self._converged_h_frac_list
+        metadata['derivatives']['h'] = self._converged_h_list
         return metadata
         
     def _setup_dir(self):
         run_name = self._info['run_name'] 
-        params_list = self._params_list
-        h_frac = self._metadata['derivatives']['h_frac']  
-        print('h_frac = {}'.format(h_frac))
-        
-        params_string = '_'.join(params_list)
-        h_frac_string = '_'.join([str(h) for h in h_frac])
-
-        self._dir = '%s/%s/%s/h_frac_%s/'%(self._parent_dir, run_name, params_string, h_frac_string)
+        self._dir = get_dir(self._parent_dir, run_name, \
+            self._params_list, self._converged_h_list)
         print('self._dir = {}'.format(self._dir))
         mkdir_p(self._dir)
 
@@ -278,9 +313,9 @@ class DerivativeConvergence():
 
     def _get_derivatives(self):
         self._setup_fiducial_derivatives()
-        is_converged_list, converged_h_frac_list, all_derivatives  = \
+        is_converged_list, converged_h_frac_list, converged_h_list, all_derivatives  = \
             self._iterate_all_derivatives_until_convergence()
-        return is_converged_list, converged_h_frac_list, all_derivatives
+        return is_converged_list, converged_h_frac_list, converged_h_list, all_derivatives
 
     def _print_status(self):
 
@@ -295,22 +330,26 @@ class DerivativeConvergence():
         info = copy.deepcopy(self._info)
         derivatives = self._DerivativeClass_(info, \
             ignore_cache=self._ignore_cache, do_save=True)
+        self._derivative_fid = derivatives
+        print(self._derivative_fid._h_list, 'self._derivative_fid._h_list')
         self._der_fid = derivatives.data
 
     def _iterate_all_derivatives_until_convergence(self):
         nparam = len(self._params_list)
         is_converged_list = []
         converged_h_frac_list = []
+        converged_h_list = []
         shape = (nparam, *self._der_fid.shape[1:])
 
         all_derivatives = np.zeros(shape)
         for iparam, param in enumerate(self._params_list):
             print('Checking convergence for parameter {}/{}: {}'.format(iparam+1, nparam, param))
-            is_converged, h_frac, derivative = self._iterate_derivatives_until_convergence(iparam)
-            is_converged_list.append(is_converged)
-            converged_h_frac_list.append(h_frac)
-            all_derivatives[iparam, ...] = derivative
-        return is_converged_list, converged_h_frac_list, all_derivatives
+            convergence_info = self._iterate_derivatives_until_convergence(iparam)
+            is_converged_list.append(convergence_info['is_converged'])
+            converged_h_frac_list.append(convergence_info['h_frac'])
+            converged_h_list.append(convergence_info['h'])
+            all_derivatives[iparam, ...] = convergence_info['derivative']
+        return is_converged_list, converged_h_frac_list, converged_h_list, all_derivatives
 
     def _iterate_derivatives_until_convergence(self, iparam, max_iter=10):
 
@@ -318,12 +357,17 @@ class DerivativeConvergence():
         der_prev = (self._der_fid[iparam, ...])[np.newaxis]
         is_converged = False
 
+        # update params to a list of one element with the desired param
         desired_param = self._params_list[iparam]
         info_prev['derivatives']['params'] = [desired_param] 
+
+        # determine whether to use h or h_frac
+        use_h = desired_param in info_prev['derivatives']['h'].keys()
         
-        h_frac_list = self._info['derivatives']['h_frac']
-        h_frac_value = h_frac_list[iparam]
-        info_prev['derivatives']['h_frac'] = h_frac_value
+        if not use_h:
+            h_frac_list = self._info['derivatives']['h_frac']
+            h_frac_value = h_frac_list[iparam]
+            info_prev['derivatives']['h_frac'] = h_frac_value
 
         i_iter = 0
         while ((not is_converged) and (i_iter < max_iter)):
@@ -334,14 +378,29 @@ class DerivativeConvergence():
                 der_prev = der_new
                 info_prev = copy.deepcopy(info_new)
 
-            h_frac_value = info_prev['derivatives']['h_frac']
-            h_frac_new = 0.5 * h_frac_value
-
             info_new = copy.deepcopy(info_prev)
-            info_new['derivatives']['h_frac'] = h_frac_new
-
-            print('Calling derivative class with h_frac = {}'.format(info_new['derivatives']['h_frac']))
             
+            if use_h:
+                h_value = info_prev['derivatives']['h'][desired_param] 
+                print('h_value = ', h_value)
+                info_new['derivatives']['h'][desired_param] = 0.5 * h_value
+
+                print('Calling derivative class with h = {}'\
+                    .format(info_new['derivatives']['h'][desired_param]))
+                    
+            else:
+                h_frac_value = info_prev['derivatives']['h_frac']
+                h_frac_new = 0.5 * h_frac_value
+                info_new['derivatives']['h_frac'] = h_frac_new
+
+                print('Calling derivative class with h_frac = {}'\
+                    .format(info_new['derivatives']['h_frac']))
+
+                if i_iter == 0:
+                    h_value = self._derivative_fid._h_list[0]
+                else:
+                    h_value = derivatives._h_list[0]
+                
             derivatives = self._DerivativeClass_(info_new, \
                 ignore_cache=self._ignore_cache, do_save=self._do_save)
             der_new = derivatives.data
@@ -351,14 +410,26 @@ class DerivativeConvergence():
 
             i_iter = i_iter + 1
         
+        print('parameter = {}'.format(desired_param))
+
         if is_converged == True:
-            print('   Derivatives convergence reached for parameter {} (eps = {})'.format(desired_param, self._eps))
-            print('   h_frac = {}'.format(h_frac_value))
-            print('\n')
+            print('   Derivatives convergence reached with eps = {}'.format(self._eps))
         else:
-            print('   Derivatives not converged for parameter {} but max_iter = {} reached (eps = {})'.format(desired_param, max_iter, self._eps))
-            print('\n')
-        return is_converged, h_frac_value, der_prev
+            print('   Derivatives not converged (eps = {}) but max_iter = {} reached'.format(max_iter, self._eps))
+        
+        if not use_h:
+            print('   h_frac = {}'.format(h_frac_value))
+        print('   h = {}'.format(h_value))
+    
+        print('\n')
+
+        convergence_info = {
+            'is_converged': is_converged,
+            'h_frac': h_frac_value if not use_h else None,
+            'h': h_value,
+            'derivative': der_prev,
+        }
+        return convergence_info
 
     def _save_converged_derivatives(self):
         np.save(self._converged_derivatives_path, self._der_prev)

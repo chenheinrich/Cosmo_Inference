@@ -10,7 +10,7 @@ from theory.data_vector import Bispectrum3DRSDSpec
 from theory.data_vector import Bispectrum3DRSD
 from theory.data_vector import GRSIngredientsCreator
 from theory.utils import file_tools
-from theory.plotting.bis_plotter import BisPlotter
+from theory.plotting.bis_plotter import Bispectrum3DRSDPlotter
 from theory.plotting.triangle_spec_plotter import TriangleSpecTheta1Phi12Plotter
 
 from theory.utils.profiler import profiler
@@ -64,7 +64,7 @@ def save_galaxy_bis_rsd(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory.scripts.get_bis_rsd ./inputs_theory/get_bis_rsd.yaml 
+        python3 -m galaxy_3d.theory.scripts.get_bis_rsd ./galaxy_3d/inputs_theory/get_bis_rsd.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -85,6 +85,6 @@ if __name__ == '__main__':
     save_galaxy_bis_rsd(info)
        
     data_vec = get_b3d_rsd(info)
-    bis_plotter = BisPlotter(data_vec, data_spec, plot_dir=info['plot_dir'], do_run_checks=False)
+    bis_plotter = Bispectrum3DRSDPlotter(data_vec, data_spec, plot_dir=info['plot_dir'], do_run_checks=False)
     bis_plotter.make_plots()
 

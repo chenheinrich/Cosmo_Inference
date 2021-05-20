@@ -4,11 +4,11 @@ import numpy as np
 import copy
 import sys
 
-from theory.fisher.derivative_generic import Derivatives
+from theory.fisher.derivative_generic import Derivative
 from theory.fisher.derivative_generic import DerivativeConvergence
 from theory.fisher.fisher_generic import Fisher
 
-class Bispectrum3DRSDDerivatives(Derivatives):
+class Bispectrum3DRSDDerivative(Derivative):
     
     def __init__(self, info, ignore_cache=False, do_save=False, \
             parent_dir="./results/b3d_rsd/derivatives"):
@@ -50,7 +50,7 @@ class Bispectrum3DRSDFisher(Fisher):
     #TODO temporary solution, could do better in DerivativeConvergence
     def _setup_module_and_class_names(self):
         self._module_name = 'theory.fisher.fisher_b3d_rsd'
-        self._class_name = 'Bispectrum3DRSDDerivatives'
+        self._class_name = 'Bispectrum3DRSDDerivative'
         self._derivative_dir = './results/b3d_rsd/derivatives/'
     
     def _get_fisher_matrix_element(self, iparam, jparam):
@@ -97,10 +97,11 @@ class Bispectrum3DRSDFisher(Fisher):
 
 def check_for_convergence(info):
     module_name = 'theory.fisher.fisher_b3d_rsd'
-    class_name = 'Bispectrum3DRSDDerivatives'
+    class_name = 'Bispectrum3DRSDDerivative'
     der_conv = DerivativeConvergence(info, module_name, class_name, \
         ignore_cache=False, do_save=True,\
         parent_dir = './results/b3d_rsd/derivatives/')
+    return der_conv
     
 if __name__ == '__main__':
     """
@@ -120,9 +121,28 @@ if __name__ == '__main__':
     print('info = {}'.format(info))
 
     info_input = copy.deepcopy(info)
-    #convergence_results = check_for_convergence(info_input)
+    
+    do_derivative_convergence = True
+    do_plot_derivative = False
+    do_fisher = False
+    
+    # Get converged derivatives
+    if do_derivative_convergence == True:
+        deriv_converged= check_for_convergence(info_input)
 
-    b3d_rsd_fisher = Bispectrum3DRSDFisher(info_input)
+    # Plot converged derivatives
+    if do_plot_derivative == True:
+        from theory.scripts.get_bis_rsd import get_data_spec
+        from theory.plotting.bis_plotter import Bispectrum3DRSDDerivativePlotter
+        
+        data_spec = get_data_spec(info)
+        deriv_plotter = Bispectrum3DRSDDerivativePlotter(deriv_converged, data_spec)
+        deriv_plotter.make_plots()
+
+    # Get Fisher
+    if do_fisher == True:
+        b3d_rsd_fisher = Bispectrum3DRSDFisher(info_input)
+
     
 
     
