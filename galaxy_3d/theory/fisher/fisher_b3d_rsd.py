@@ -35,7 +35,8 @@ class Bispectrum3DRSDFisher(Fisher):
     def _load_invcov(self):
         #TODO temporary, we need to change this to 
         if self._cov_type == 'full':
-            invcov_path = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
+            #invcov_path = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
+            invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210513/invcov_full.npy'
         elif self._cov_type == 'diagonal_in_triangle_orientation':
             invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_diag.npy'
         
@@ -122,9 +123,9 @@ if __name__ == '__main__':
 
     info_input = copy.deepcopy(info)
     
-    do_derivative_convergence = True
+    do_derivative_convergence = False
     do_plot_derivative = False
-    do_fisher = False
+    do_fisher = True
     
     # Get converged derivatives
     if do_derivative_convergence == True:

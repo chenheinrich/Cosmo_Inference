@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
 
-from theory.data_vector.triangle_spec import TriangleSpecTheta1Phi12
-from theory.data_vector.triangle_spec import TriangleSpec
+from theory.data_vector.triangle_spec import TriangleOrientationSpec
 from theory.plotting.triangle_plotter import TrianglePlotter 
 from theory.utils.logging import class_logger
 
@@ -19,9 +18,18 @@ class TriangleSpecPlotter(TrianglePlotter):
         pass
 
 class TriangleSpecTheta1Phi12Plotter(TriangleSpecPlotter):
+#TODO call TriangleOrientaitionSpectPlotter later
 
     def __init__(self, triangle_spec_theta1_phi12, plot_dir):
-        assert isinstance(triangle_spec_theta1_phi12, TriangleSpecTheta1Phi12)
+        """
+        Args:
+            triangle_spec_theta1_phi1: An instance of class 
+                TriangleOrientationSpec_Theta1Phi12
+            plot_dir: A string for the path to plot directory.
+        """
+        
+        #TODO change name here too
+        assert isinstance(triangle_spec_theta1_phi12, TriangleOrientationSpec)
         super().__init__(triangle_spec_theta1_phi12, plot_dir)
 
     def make_plots(self):

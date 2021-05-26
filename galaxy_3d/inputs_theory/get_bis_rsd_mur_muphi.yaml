@@ -1,4 +1,4 @@
-run_name: 'bis_rsd'
+run_name: 'bis_rsd_mur_muphi'
 
 cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml' #fiducial
 
@@ -12,18 +12,18 @@ Bispectrum3DRSD:
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
   triangle_orientation_info: 
-    parametrization_name: 'theta1_phi12' 
-    min_cos_theta1: 0.0
-    max_cos_theta1: 1.0
-    nbin_cos_theta1: 2
-    min_phi12: 0
-    max_phi12: 'np.pi'
-    nbin_phi12: 4
-    do_folded_signal: True 
+    parametrization_name: 'mur_muphi' 
+    min_mur: 0.0
+    max_mur: 'np.sqrt(2.0)'
+    nbin_mur: 5
+    min_muphi: 0
+    max_muphi: '2*np.pi'
+    nbin_muphi: 20
+    do_folded_signal: None
   debug_settings:
     set_mu_to_zero: False
     sigp: null
     f_of_z: null
 
 #plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/latest/' 
-plot_dir: './plots/theory/bispectrum_oriented_theta1_phi12_2_4/fnl_1/nk_11/test_code/' 
+plot_dir: './plots/theory/bispectrum_oriented_mur_muphi_5_20/fnl_1/nk_11/' 

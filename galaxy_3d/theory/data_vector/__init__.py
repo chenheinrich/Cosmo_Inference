@@ -6,10 +6,11 @@ from .multipole_data_vector import BispectrumMultipole
 from .data_spec import PowerSpectrum3DSpec
 from .data_spec import Bispectrum3DBaseSpec
 from .data_spec import Bispectrum3DRSDSpec
+from .data_spec import Bispectrum3DRSDSpec_MurMuphi
 from .multipole_data_spec import BispectrumMultipoleSpec
 
 from .triangle_spec import TriangleSpec
-from .triangle_spec import TriangleSpecTheta1Phi12
+from .triangle_spec import TriangleOrientationSpec_Theta1Phi12
 
 from .grs_ingredients import GRSIngredientsCreator
 

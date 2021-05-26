@@ -77,7 +77,7 @@ class Fisher():
             for jparam in range(self._nparam):
                 fisher[iparam, jparam] = self._get_fisher_matrix_element(iparam, jparam)
 
-        print('fisher', fisher)
+        print('fisher', fisher) #TODO NOT symmetric?!?!
         return fisher
         
     def _get_fisher_matrix_element(self, iparam, jparam):
@@ -93,7 +93,7 @@ class Fisher():
 
     def _setup_metadata(self):
         self._metadata = copy.deepcopy(self._info)
-        der_conv_metadata = self._der_conv.metadata()
+        der_conv_metadata = self._der_conv.metadata
         self._metadata['derivatives']['h_frac'] = der_conv_metadata['derivatives']['h_frac']
 
     def _save(self):

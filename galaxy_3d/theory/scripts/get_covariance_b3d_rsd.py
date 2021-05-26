@@ -1,3 +1,4 @@
+from operator import is_
 import numpy as np
 import argparse
 import yaml
@@ -139,11 +140,51 @@ class LikelihoodTest():
         delta = data1 - data0
         return delta
 
-    #def inverse_test(fn_cov, fn_invcov):
-    #    invcov = np.load(fn_invcov)
-    #    cov = np.load(fn_cov)
-    #    for iz in range(self.nz):
-    #        for itri in range(self.ntri):
+def check_identity(cov, invcov, rtol=1e-3, atol=1e-8):
+
+    (nbxnori, nbxnori, nz, ntri) = cov.shape
+    I0 = np.identity(nbxnori)
+
+    for iz in range(nz):
+        for itri in range(ntri):
+
+            print('iz = {}, itri = {}'.format(iz, itri))
+
+            cov_tmp = cov[:, :, iz, itri] 
+            invcov_tmp = invcov[:, :, iz, itri]
+
+            check1 = np.matmul(cov_tmp, invcov_tmp) - I0
+            check2 = np.matmul(invcov_tmp, cov_tmp) - I0
+            
+            print('check1 = ', check1)
+            print('check2 = ', check2)
+            #TODO why this part is so slow???
+            #is_identity_1 = np.allclose(check1, tol=rtol)
+            #is_identity_2 = np.allclose(I2, I0, rtol=rtol)
+
+            #print('is_identity = {}, {}'.format(is_identity_1, is_identity_2))
+
+
+def check_cov_symmetric(cov):
+
+    from theory.math_utils.matrix import check_matrix_symmetric
+
+    (nbxnori, nbxnori, nz, ntri) = cov.shape
+
+    is_symmetric = True
+    for iz in range(nz):
+        for itri in range(ntri):
+
+            print('iz = {}, itri = {}'.format(iz, itri))
+
+            cov_tmp = cov[:, :, iz, itri] 
+            is_symmetric = check_matrix_symmetric(cov_tmp)
+
+            print('is_symmetric = {}'.format(is_symmetric))
+            if is_symmetric == False:
+                return is_symmetric
+
+    return is_symmetric
 
 if __name__ == '__main__':
     """
@@ -176,9 +217,20 @@ if __name__ == '__main__':
     jori = 0
     block = cov_calculator.get_cov_nb_x_nb_block(iz, itri, iori, jori)
 
-    cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
+    #cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
+    cov = np.load(fn_cov)
+    #cov_calculator.cov = cov
+    #cov_calculator.invcov = cov_calculator.get_invcov()
     #cov_calculator.save_invcov(fn_invcov)
-    #fn = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/cov_full.npy'
+    
+    #is_symmetric = check_cov_symmetric(cov)
+
+    invcov = np.load(fn_invcov)
+    #is_symmetric = check_cov_symmetric(invcov)
+
+    #TODO why this part is so slow???
+    check_identity(cov, invcov)    
+    
     #cov_calculator.load_cov_from_fn(fn)
 
     #fn_invcov = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_full.npy'

@@ -1,11 +1,8 @@
 import numpy as np
 
-from theory.data_vector.grs_ingredients import GRSIngredients
-from theory.data_vector.data_spec import PowerSpectrum3DSpec
-from theory.data_vector.data_spec import Bispectrum3DBaseSpec, Bispectrum3DRSDSpec
-from theory.data_vector.triangle_spec import TriangleSpec, TriangleSpecTheta1Phi12
 from theory.utils.errors import NameNotAllowedError
 from theory.utils.logging import class_logger
+from theory.data_vector.data_spec import Bispectrum3DRSDSpec_MurMuphi
 
 from theory.utils.profiler import profiler
 
@@ -645,3 +642,15 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         self.logger.debug('f_array = {}'.format(f_array))
 
         return f_array
+
+# TODO NEXT do this next
+# write this and refactor
+class Bispectrum3DRSD_MurMuphi(Bispectrum3DRSD):
+
+    """No AP"""
+
+    def __init__(self, grs_ingredients, survey_par, b3d_rsd_spec):
+        
+        assert isinstance(b3d_rsd_spec, Bispectrum3DRSDSpec_MurMuphi)
+
+        super().__init__(grs_ingredients, survey_par, b3d_rsd_spec)

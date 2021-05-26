@@ -84,7 +84,8 @@ class Bispectrum3DRSDCovarianceCalculator():
                     #self.logger.debug('iz = {}, itri = {}'.format(iz, itri))
                     #self.logger.debug('self.cov[:, :, iz, itri] = {}'.format(self.cov[:, :, iz, itri]))
                     #self.logger.debug('invcov[:, :, iz, itri] = {}'.format(invcov[:, :, iz, itri]))
-                    print('self.cov[-1, :, iz, itri] = {}'.format(self.cov[-1, :, iz, itri]))
+                    #print('self.cov[-1, :, iz, itri] = {}'.format(self.cov[-1, :, iz, itri]))
+                    print('iz = {}, itri = {}'.format(iz, itri))
                     try:
                         invcov[:, :, iz, itri] = scipy.linalg.inv(self.cov[:, :, iz, itri])
                     except np.linalg.LinAlgError as e:

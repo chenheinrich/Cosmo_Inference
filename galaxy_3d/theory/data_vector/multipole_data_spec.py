@@ -1,10 +1,8 @@
 import numpy as np
 
-from theory.utils.misc import evaluate_string_to_float
 from theory.utils.logging import class_logger
-from theory.data_vector.triangle_spec import TriangleSpec, TriangleSpecTheta1Phi12
 
-from theory.data_vector.data_vector import Bispectrum3DBaseSpec, Bispectrum3DRSDSpec
+from theory.data_vector.data_spec import Bispectrum3DBaseSpec, Bispectrum3DRSDSpec
 
 class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
 

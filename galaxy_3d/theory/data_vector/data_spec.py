@@ -2,7 +2,9 @@ import numpy as np
 
 from theory.utils.misc import evaluate_string_to_float
 from theory.utils.logging import class_logger
-from theory.data_vector.triangle_spec import TriangleSpec, TriangleSpecTheta1Phi12
+from theory.data_vector.triangle_spec import TriangleSpec
+from theory.data_vector.triangle_spec import TriangleOrientationSpec_Theta1Phi12
+from theory.data_vector.triangle_spec import TriangleOrientationSpec_MurMuphi
 
 class DataSpec():
 
@@ -339,19 +341,13 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
 
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)
-        
-        triangle_orientation_dict = data_spec_dict['triangle_orientation_info']
 
-        (self._min_cos_theta1, self._max_cos_theta1, self._min_phi12, self._max_phi12) \
-            = self._get_min_max_angles(triangle_orientation_dict)
-        self._theta1, self._phi12, self._cos_theta1 = \
-            self._setup_angles(triangle_orientation_dict)
-        
-        self._triangle_spec = TriangleSpecTheta1Phi12(self._k, self._theta1, self._phi12, \
-            set_mu_to_zero = data_spec_dict['debug_settings']['set_mu_to_zero']) 
-    
         self._debug_sigp = data_spec_dict['debug_settings']['sigp']
         self._debug_f_of_z = data_spec_dict['debug_settings']['f_of_z']
+        self._set_mu_to_zero = data_spec_dict['debug_settings']['set_mu_to_zero']
+
+        triangle_orientation_dict = data_spec_dict['triangle_orientation_info']
+        self._triangle_spec = self._get_triangle_spec(triangle_orientation_dict)
 
         self.do_folded_signal = triangle_orientation_dict['do_folded_signal']
 
@@ -360,7 +356,40 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     @property
     def nori(self):
         return self._triangle_spec.nori
+    
+    @property
+    def angle_array(self):
+        """angle_array[iori, :] returns the two orientation parameters
+        a and b (in radians if it's an angle) given index iori. """
+        return self._triangle_spec.angle_array
 
+    @staticmethod
+    def _get_bin_centers_from_nbin(min_value, max_value, nbin):
+        edges = np.linspace(min_value, max_value, nbin+1)
+        center = (edges[1:] + edges[:-1])/2.0
+        return center
+
+    def _overwrite_shape_for_b3d_rsd(self):
+        self._shape = (self.nb, self.nz, self.ntri, self.nori)
+        self._transfer_shape = (self.nsample, self.nz, self.ntri, self.nori)
+
+    def _setup_angles(self, tri_ori_dict):
+        raise NotImplementedError
+
+    def _get_min_max_parameters(self, tri_ori_dict):
+        raise NotImplementedError
+
+    def _get_triangle_spec(self):
+        raise NotImplementedError
+
+    def _get_triangle_spec(self):
+        raise NotImplementedError
+
+class Bispectrum3DRSDSpec_Theta1Phi12(Bispectrum3DRSDSpec):
+
+    def __init__(self, survey_par, data_spec_dict):
+        super().__init__(survey_par, data_spec_dict)
+    
     @property
     def ntheta1(self):
         return self._triangle_spec._ntheta1
@@ -368,12 +397,6 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     @property
     def nphi12(self):
         return self._triangle_spec._nphi12
-    
-    @property
-    def angle_array(self):
-        """angle_array[iori, :] returns the theta1, phi12 
-        angles in radians for orientation index iori. """
-        return self._triangle_spec.angle_array
 
     @property
     def theta1(self):
@@ -385,7 +408,7 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
 
     @property
     def cos_theta1(self):
-        return self._cos_theta1
+        return np.cos(self._theta1)
 
     @property 
     def Sigma_to_use(self):
@@ -399,8 +422,8 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     @property
     def dOmega(self):
         """The solid angle element dOmega = dmu1 * dphi12. """
-        dmu1 = self.triangle_spec.dmu1
-        dphi12 = self.triangle_spec.dphi12
+        dmu1 = self.triangle_spec.da
+        dphi12 = self.triangle_spec.db
         dOmega = dmu1 * dphi12
         return dOmega
 
@@ -408,8 +431,6 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     def Sigma(self):
         """The fraction of discretized solid angle element to total 4pi. 
         Use if do_folded_signal = False."""
-        dmu1 = self.triangle_spec.dmu1
-        dphi12 = self.triangle_spec.dphi12
         Sigma = self.dOmega / (4.0 * np.pi)
         return Sigma
 
@@ -426,13 +447,13 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
             * (self._max_phi12 - self._min_phi12)/(4.*np.pi)
         return (self.Sigma/total_omega_over_4pi)
 
-    def _setup_angles(self, tri_ori_dict):
+    def _get_orientation_parameters(self, tri_ori_dict):
 
         """Returns theta1 and phi12 given min max and number of bins of cos(theta1) and phi12. """
         
         if tri_ori_dict['parametrization_name'] == 'theta1_phi12':
             
-            (min_cos_theta1, max_cos_theta1, min_phi12, max_phi12) = self._get_min_max_angles(tri_ori_dict)
+            (min_cos_theta1, max_cos_theta1, min_phi12, max_phi12) = self._get_min_max_parameters(tri_ori_dict)
             
             self._logger.info('Using cos_theta1 in [{}, {}]'.format(min_cos_theta1, max_cos_theta1))
             self._logger.info('Using phi12 in [{}, {}]'.format(min_phi12, max_phi12))
@@ -444,9 +465,9 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
             self._logger.info('theta1_in_deg = {}'.format(theta1 / np.pi * 180.0))
             self._logger.info('phi12 in deg = {}'.format(phi12 / np.pi * 180.0))
             
-            return theta1, phi12, cos_theta1
+            return theta1, phi12
     
-    def _get_min_max_angles(self, tri_ori_dict):
+    def _get_min_max_parameters(self, tri_ori_dict):
 
         if tri_ori_dict['parametrization_name'] == 'theta1_phi12':
 
@@ -466,14 +487,120 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
 
         else:
             raise NotImplementedError
-            
-    @staticmethod
-    def _get_bin_centers_from_nbin(min_value, max_value, nbin):
-        edges = np.linspace(min_value, max_value, nbin+1)
-        center = (edges[1:] + edges[:-1])/2.0
-        return center
 
-    def _overwrite_shape_for_b3d_rsd(self):
-        self._shape = (self.nb, self.nz, self.ntri, self.nori)
-        self._transfer_shape = (self.nsample, self.nz, self.ntri, self.nori)
+    def _get_triangle_spec(self, triangle_orientation_dict):
+
+        (self._min_cos_theta1, self._max_cos_theta1, self._min_phi12, self._max_phi12) \
+            = self._get_min_max_parameters(triangle_orientation_dict)
+
+        # should reflect back cos_theta1 up there
+        self._theta1, self._phi12 = \
+            self._get_orientation_parameters(triangle_orientation_dict)
+
+        return TriangleOrientationSpec_Theta1Phi12(self._k, self._theta1, self._phi12, \
+            self._set_mu_to_zero) 
+
+# Note: The advantage of making murmuphi a whole new observable class
+# is that you get to define things like Sigma and other fraction of 
+# triangles within a bin so that when we are doing integration
+# over orientation parameters we can directly access them here.
+class Bispectrum3DRSDSpec_MurMuphi(Bispectrum3DRSDSpec):
+
+    def __init__(self, survey_par, data_spec_dict):
+        super().__init__(survey_par, data_spec_dict)
+
+    @property
+    def nmur(self):
+        return self._triangle_spec._na
     
+    @property
+    def nmuphi(self):
+        return self._triangle_spec._nb
+
+    @property
+    def mu_r(self):
+        return self._triangle_spec._a
+    
+    @property
+    def mu_phi(self):
+        return self._triangle_spec._b
+
+    @property 
+    def fraction_of_triangles_per_ori_bin(self): 
+        #TODO call this from cov code
+        #TODO adjust the one in Bispectrum3DRSD_Theta1Phi12_Spec to follow same format
+        """Returns Sigma_mu1_mu2 * dOmega"""
+        return self.Sigma_mu1_mu2 * self.dOmega
+
+    @property
+    def dOmega(self):
+        """
+        Returns 2d numpy array such that dOmega[itri, iori] gives the 
+        solid angle element dOmega = mur * dmur * dmuphi = dmu1 dmu2.
+        """
+        return self.triangle_spec.dOmega
+
+    @property
+    def Sigma_mu1_mu2(self):
+        """
+        A 2d numpy array for Sigma(mu1, mu2) such that Sigma[itri, iori] returns 
+        Sigma(mu1, mu2) which is defined as:
+            Sigma(mu1, mu2) dmu1 dmu2 = Sigma(mu1, mu2) mur dmur dmuphi 
+            is the fraction of triangles with fixed shape in a dmu1-dmu2 bin, 
+        and so integrating Sigma(mu1, mu2) dmu1 dmu2 over the whole sphere = 4pi.
+        """
+        return self.triangle_spec.Sigma_mu1_mu2
+
+    def _get_orientation_parameters(self, tri_ori_dict):
+
+        """Returns theta1 and phi12 given min max and number of bins of cos(theta1) and phi12. """
+        
+        if tri_ori_dict['parametrization_name'] == 'mur_muphi':
+            
+            (min_a, max_a, min_b, max_b) = self._get_min_max_parameters(tri_ori_dict)
+            
+            self._logger.info('Using mu_r in [{}, {}]'.format(min_a, max_a))
+            self._logger.info('Using mu_phi in [{}, {}]'.format(min_b, max_b))
+            
+            mu_r = self._get_bin_centers_from_nbin(min_a, max_a, tri_ori_dict['nbin_mur'])
+            mu_phi = self._get_bin_centers_from_nbin(min_b, max_b, tri_ori_dict['nbin_muphi'])
+
+            self._logger.info('mu_r = {}'.format(mu_r))
+            self._logger.info('mu_phi in deg = {}'.format(mu_phi / np.pi * 180.0))
+            
+            return mu_r, mu_phi
+    
+    def _get_min_max_parameters(self, tri_ori_dict):
+
+        if tri_ori_dict['parametrization_name'] == 'mur_muphi':
+
+            min_mur = 0 if 'min_mur' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['min_mur'])
+
+            max_mur = np.sqrt(2) if 'max_mur' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['max_mur'])
+
+            min_muphi = 0 if 'min_muphi' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['min_muphi'])
+
+            max_muphi = 2.*np.pi if 'max_muphi' not in tri_ori_dict.keys() \
+                else evaluate_string_to_float(tri_ori_dict['max_muphi'])
+
+            return (min_mur, max_mur, min_muphi, max_muphi)
+
+        else:
+            raise NotImplementedError
+
+    def _get_triangle_spec(self, triangle_orientation_dict):
+
+        (self._min_mu_r, self._max_mu_phi, self._min_mu_r, self._max_mu_phi) \
+            = self._get_min_max_parameters(triangle_orientation_dict)
+            
+        self._mu_r, self._mu_phi = \
+            self._get_orientation_parameters(triangle_orientation_dict)
+
+        triangle_spec = TriangleOrientationSpec_MurMuphi(self._k, self._mu_r, self._mu_phi, \
+            self._set_mu_to_zero) 
+
+        return triangle_spec
+            
