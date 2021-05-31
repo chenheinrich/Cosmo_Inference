@@ -30,18 +30,27 @@ class GRSIngredientsCreator():
             cosmo_par=cosmo_par, \
             provider=provider)
 
-        params_values_dict = self._get_params_values_dict(option, params_values_dict, cosmo_par)
+        params_values_dict_new = self._get_params_values_dict(option, params_values_dict, cosmo_par)
 
-        return GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
+        return GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict_new)
 
     def _get_params_values_dict(self, option, params_values_dict, cosmo_par):
+        """
+        For Camb option: Returns a new dictionary with parameters in params_values_dict
+            with added cosmological parameters; 
+        For Cobaya option: Returns the input
+            params_values_dict which should already have everything.
+        """
         if option == 'Cobaya':
             print('params_values_dict = {}'.format(params_values_dict))
             return params_values_dict
         elif option == 'Camb':
-            params_values_dict = self._get_params_values_dict_from_cosmo_par(cosmo_par)
-            print('params_values_dict = {}'.format(params_values_dict))
-            return params_values_dict
+            params_values_dict_cosmo = self._get_params_values_dict_from_cosmo_par(
+                cosmo_par)
+            params_values_dict_new = copy.deepcopy(params_values_dict)
+            params_values_dict_new.update(params_values_dict_cosmo)
+            print('params_values_dict_new = {}'.format(params_values_dict_new))
+            return params_values_dict_new
         else:
             raise ValueError("GRSIngredientsCreator: \
                 option can only be 'Cobaya' or 'Camb'.")

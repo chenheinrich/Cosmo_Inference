@@ -29,14 +29,19 @@ derivatives:
   h_frac: 0.05
   h:
     fnl: 0.1
+    theta_MC_100: 0.01
   params:
+    - b1
     - As
     - ns
     - fnl
+    - omch2
+    - ombh2
+    - theta_MC_100
 
 fisher:
   data_dir: './results/b3d_rsd/fisher/'
   #cov_type can be full or diagonal_in_triangle_orientation which is not accurate
-  cov_type: full 
+  cov_type: diagonal_in_triangle_orientation
   
 

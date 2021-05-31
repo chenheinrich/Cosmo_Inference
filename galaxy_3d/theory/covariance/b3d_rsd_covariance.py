@@ -287,6 +287,8 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         cov = np.zeros((nb, nb))
 
+        debug_sigp = self._b3d_rsd_spec._debug_sigp
+
         for ib in range(nb):
 
             (a, b, c) = self._b3d_rsd_spec.get_isamples(ib)
@@ -299,13 +301,23 @@ class Bispectrum3DRSDCovarianceCalculator():
                 ips2 = self._p3d._data_spec.get_ips(b, e)
                 ips3 = self._p3d._data_spec.get_ips(c, f)
 
-                fog_a = self._get_fog(a, iz, ik1, itri, iori, 0)
-                fog_b = self._get_fog(b, iz, ik2, itri, iori, 1)
-                fog_c = self._get_fog(c, iz, ik3, itri, iori, 2)
 
-                fog_d = self._get_fog(d, iz, ik1, itri, jori, 0)
-                fog_e = self._get_fog(e, iz, ik2, itri, jori, 1)
-                fog_f = self._get_fog(f, iz, ik3, itri, jori, 2)
+                if (debug_sigp is None) or (debug_sigp > 0):
+                    fog_a = self._get_fog(a, iz, ik1, itri, iori, 0)
+                    fog_b = self._get_fog(b, iz, ik2, itri, iori, 1)
+                    fog_c = self._get_fog(c, iz, ik3, itri, iori, 2)
+
+                    fog_d = self._get_fog(d, iz, ik1, itri, jori, 0)
+                    fog_e = self._get_fog(e, iz, ik2, itri, jori, 1)
+                    fog_f = self._get_fog(f, iz, ik3, itri, jori, 2)
+
+                    fog1 = fog_a * fog_d
+                    fog2 = fog_b * fog_e
+                    fog3 = fog_c * fog_f
+
+                elif debug_sigp == 0:
+
+                    fog1 = fog2 = fog3 = 1.0
 
                 kaiser_a = self._kaiser_all[a, iz, ik1, itri, iori, 0]
                 kaiser_b = self._kaiser_all[b, iz, ik2, itri, iori, 1]
@@ -319,9 +331,9 @@ class Bispectrum3DRSDCovarianceCalculator():
                 kaiser_2 = kaiser_b * kaiser_e
                 kaiser_3 = kaiser_c * kaiser_f
 
-                cov[ib, jb] = self._get_observed_ps(ips1, iz, ik1, fog=fog_a*fog_d, kaiser=kaiser_1) \
-                    * self._get_observed_ps(ips2, iz, ik2, fog=fog_b*fog_e, kaiser=kaiser_2) \
-                    * self._get_observed_ps(ips3, iz, ik3, fog=fog_c*fog_f, kaiser=kaiser_3)
+                cov[ib, jb] = self._get_observed_ps(ips1, iz, ik1, fog=fog1, kaiser=kaiser_1) \
+                    * self._get_observed_ps(ips2, iz, ik2, fog=fog2, kaiser=kaiser_2) \
+                    * self._get_observed_ps(ips3, iz, ik3, fog=fog3, kaiser=kaiser_3)
 
                 # TODO not accounting for equilateral and isoceles triangles yet 
                 # TODO for these other terms in the cov, will need to change fog definition
@@ -404,8 +416,16 @@ class Bispectrum3DRSDCovarianceCalculator():
     
     def _get_observed_ps(self, ips, iz, ik, fog=1, kaiser=1):
         """Returns a float for the observed galaxy power spectrum with shot noise."""
+        #HACK
+        #print('ips = {}, iz = {}, ik = {}'.format(ips, iz, ik))
         ps = self._galaxy_ps[ips, iz, ik] * kaiser * fog 
         ps += self._ps_noise_all[ips, iz]
+
+        #HACK
+        #print('ps[ips, iz, ik] = ', self._galaxy_ps[ips, iz, ik])
+        #print('kaiser = ', kaiser)
+        #print('self._ps_noise_all[ips, iz] = ', self._ps_noise_all[ips, iz])
+
         return ps
 
     def _get_ps_noise_all(self):
@@ -432,21 +452,28 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         """Returns a 6d numpy array of shape (nsample, nz, nk, ntri, nori, ntri_side)"""
 
-        fog = np.zeros((self._b3d_rsd_spec.nsample, self._b3d_rsd_spec.nz, \
-            self._b3d_rsd_spec.nk, self._b3d_rsd_spec.ntri, self._b3d_rsd_spec.nori))
-        
-        sigp = self._b3d_rsd._grs_ingredients.get('sigp') 
+        debug_sigp = self._b3d_rsd_spec._debug_sigp
 
-        k = self._b3d_rsd_spec.k
+        if (debug_sigp is None) or (debug_sigp > 0):
 
-        #TODO Need to optimize and not compute for all k and tri.
-        #shape (nk, ntri, nori, ntri_side)
-        k1mu1 = k[:, np.newaxis, np.newaxis, np.newaxis] * self._b3d_rsd_spec.triangle_spec.mu_array[:,:,:]
-        #shape (nsample, nz, nk, ntri, nori, ntri_side)
-        sigp_kmu_squared = (k1mu1[np.newaxis, np.newaxis, :, :, :, :] \
-                * sigp[:, :, np.newaxis, np.newaxis, np.newaxis, np.newaxis])**2 
+            sigp = self._b3d_rsd._grs_ingredients.get('sigp') 
 
-        fog = np.exp( -0.5 * (sigp_kmu_squared))
+            k = self._b3d_rsd_spec.k
+
+            #TODO Need to optimize and not compute for all k and tri.
+            #shape (nk, ntri, nori, ntri_side)
+            k1mu1 = k[:, np.newaxis, np.newaxis, np.newaxis] * self._b3d_rsd_spec.triangle_spec.mu_array[:,:,:]
+            #shape (nsample, nz, nk, ntri, nori, ntri_side)
+            sigp_kmu_squared = (k1mu1[np.newaxis, np.newaxis, :, :, :, :] \
+                    * sigp[:, :, np.newaxis, np.newaxis, np.newaxis, np.newaxis])**2 
+
+            fog = np.exp( -0.5 * (sigp_kmu_squared))
+    
+        elif debug_sigp == 0:
+
+            fog = np.ones((self._b3d_rsd_spec.nsample, self._b3d_rsd_spec.nz, \
+                self._b3d_rsd_spec.nk, self._b3d_rsd_spec.ntri, \
+                self._b3d_rsd_spec.nori, 3))
 
         return fog
 
@@ -486,8 +513,13 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         K_triangle = 8.0 * (np.pi * np.pi) * (k1 * k2 * k3) * (dk1 * dk2 * dk3) * Sigma
         V = self._survey_volume_array
+        
+        #HACK
+        print('survey_volume = ', self._survey_volume_array)
 
         Nmodes = (V**2)[:, np.newaxis] / (2*np.pi)**6 * K_triangle
+
+        print('K_triangle = ', K_triangle)
 
         return Nmodes
 

@@ -6,11 +6,13 @@ import scipy.linalg as linalg
 
 from theory.fisher.derivative_generic import DerivativeConvergence
 from theory.utils.file_tools import mkdir_p
+from theory.math_utils import matrix
 
 class Fisher():
 
-    def __init__(self, info):
+    def __init__(self, info, inverse_atol=1e-6):
         self._info = copy.deepcopy(info)
+        self._inverse_atol = inverse_atol
         self._dir = self._info['fisher']['data_dir']
         mkdir_p(self._dir)
         self._setup_paths()
@@ -47,10 +49,17 @@ class Fisher():
         print('    params = {}'.format(self._params_list))
         print('    errors = {}'.format(self._errors))
 
-    def _get_errors(self):
+    def _get_errors(self): 
         print('fisher = {}'.format(self._fisher))
         inv_fisher = linalg.inv(self._fisher)
         print('inv_fisher = {}'.format(inv_fisher))
+
+        is_symmetric = matrix.check_matrix_symmetric(inv_fisher)
+        print('Passed test inverse fisher is symmetric? - {}'.format(is_symmetric))
+
+        is_inverse_passed = matrix.check_matrix_inverse(self._fisher, inv_fisher, atol=self._inverse_atol, feedback_level=0)
+        print('Passed inverse test (atol={})? - {}'.format(self._inverse_atol, is_inverse_passed))
+        
         errors = np.sqrt(np.diag(inv_fisher))
         return errors
 
@@ -77,7 +86,11 @@ class Fisher():
             for jparam in range(self._nparam):
                 fisher[iparam, jparam] = self._get_fisher_matrix_element(iparam, jparam)
 
-        print('fisher', fisher) #TODO NOT symmetric?!?!
+        print('fisher', fisher) 
+        
+        is_symmetric = matrix.check_matrix_symmetric(fisher)
+        print('Passed test fisher is symmetric? - {}'.format(is_symmetric))
+
         return fisher
         
     def _get_fisher_matrix_element(self, iparam, jparam):

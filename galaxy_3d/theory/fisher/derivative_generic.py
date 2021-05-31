@@ -45,14 +45,17 @@ class Derivative():
     not found or if overwrite = True.
     """
 
-    def __init__(self, info, ignore_cache, do_save, parent_dir):
+    def __init__(self, info, ignore_cache, do_save, parent_dir, other_par):
         self._info = copy.deepcopy(info)
         self._do_save = do_save
         self._parent_dir = parent_dir
+        self._other_par = other_par 
 
         der_info = self._info['derivatives']
         self._params_list = der_info['params']
         self._cosmo = CosmoPar(self._info['cosmo_par_file'])
+        #TODO
+        # do a check that params_list exist inside of cosmo and other_par
 
         self._h_frac_list = self._get_h_frac_list()
         self._h_list = self._get_h_list()
@@ -197,15 +200,29 @@ class Derivative():
             significant_digits=5,
             exclude_paths={
                 "root['derivatives']['is_converged']",
-                "root['derivatives']['h_frac']",}
+                "root['derivatives']['h_frac']",
+                "root['fisher']['cov_type']",
+                "root['run_name']",
+                }
             )
         if diff != {}:
             raise MetadataNotCompatibleError(diff)
 
     def _get_pfid_for_iparam(self, iparam):
         param = self._params_list[iparam]
-        pfid = getattr(self._cosmo, param)
-        return pfid
+        try:
+            pfid = getattr(self._cosmo, param)
+            return pfid
+        except AttributeError as attribute_error:
+            # if not a cosmological parameter, then search in params_dict
+            # for nuisance parameters:
+            try:
+                pfid = getattr(self._other_par, param)
+                return pfid
+            except AttributeError as attribute_error2:
+                print('Could not find parameter {}, got AttributeError: {}'\
+                    .format(param, attribute_error2))
+            
 
     def _get_derivative_for_parameter(self, iparam):
         
@@ -351,7 +368,7 @@ class DerivativeConvergence():
             all_derivatives[iparam, ...] = convergence_info['derivative']
         return is_converged_list, converged_h_frac_list, converged_h_list, all_derivatives
 
-    def _iterate_derivatives_until_convergence(self, iparam, max_iter=10):
+    def _iterate_derivatives_until_convergence(self, iparam, max_iter=6):
 
         info_prev = copy.deepcopy(self._info)
         der_prev = (self._der_fid[iparam, ...])[np.newaxis]
@@ -415,7 +432,7 @@ class DerivativeConvergence():
         if is_converged == True:
             print('   Derivatives convergence reached with eps = {}'.format(self._eps))
         else:
-            print('   Derivatives not converged (eps = {}) but max_iter = {} reached'.format(max_iter, self._eps))
+            print('   Derivatives not converged (eps = {}) but max_iter = {} reached'.format(self._eps, max_iter))
         
         if not use_h:
             print('   h_frac = {}'.format(h_frac_value))

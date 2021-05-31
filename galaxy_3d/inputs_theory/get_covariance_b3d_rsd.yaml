@@ -13,7 +13,7 @@ Bispectrum3DRSDCovariance:
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
     triangle_orientation_info: 
-      parametrization_name: 'theta1_phi12' #TODO make this a separate dictionary for triangle orientation object
+      parametrization_name: 'theta1_phi12' 
       min_cos_theta1: 0.0
       max_cos_theta1: 1.0
       nbin_cos_theta1: 2
@@ -23,7 +23,7 @@ Bispectrum3DRSDCovariance:
       do_folded_signal: True #used by bis error only
     debug_settings:
       set_mu_to_zero: False
-      sigp: null
+      sigp: 0
       f_of_z: null
   PowerSpectrum3D: 
     nk: 11 # number of k points (to be changed into bins)

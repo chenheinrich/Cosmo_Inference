@@ -217,19 +217,20 @@ if __name__ == '__main__':
     jori = 0
     block = cov_calculator.get_cov_nb_x_nb_block(iz, itri, iori, jori)
 
-    #cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
-    cov = np.load(fn_cov)
+    cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
+    #cov = np.load(fn_cov)
     #cov_calculator.cov = cov
     #cov_calculator.invcov = cov_calculator.get_invcov()
-    #cov_calculator.save_invcov(fn_invcov)
+    cov_calculator.save_invcov(fn_invcov)
     
-    #is_symmetric = check_cov_symmetric(cov)
+    cov = np.load(fn_cov)
+    is_symmetric = check_cov_symmetric(cov)
 
     invcov = np.load(fn_invcov)
-    #is_symmetric = check_cov_symmetric(invcov)
+    is_symmetric = check_cov_symmetric(invcov)
 
     #TODO why this part is so slow???
-    check_identity(cov, invcov)    
+    #check_identity(cov, invcov)    
     
     #cov_calculator.load_cov_from_fn(fn)
 

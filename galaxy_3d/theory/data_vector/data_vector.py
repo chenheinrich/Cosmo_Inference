@@ -404,6 +404,7 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
         self._f_array = self._get_f_array()
         self._fog_all = self._get_fog_all()
+
         (self._Z1_k1, self._Z1_k2, self._Z1_k3) = self._get_Z1_for_k1_k2_k3()
 
     def _get_Bggg(self, term_name='b10'):

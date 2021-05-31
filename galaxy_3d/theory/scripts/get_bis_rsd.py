@@ -6,7 +6,7 @@ import pickle
 
 from theory.params.cosmo_par import CosmoPar
 from theory.params.survey_par import SurveyPar
-from theory.data_vector import Bispectrum3DRSDSpec
+from theory.data_vector.data_spec import Bispectrum3DRSDSpec_Theta1Phi12
 from theory.data_vector import Bispectrum3DRSD
 from theory.data_vector import GRSIngredientsCreator
 from theory.utils import file_tools
@@ -19,10 +19,10 @@ def get_data_spec(info):
     survey_par_file = info['survey_par_file']
     data_spec_dict = info['Bispectrum3DRSD'] 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
+    data_spec = Bispectrum3DRSDSpec_Theta1Phi12(survey_par, data_spec_dict)
     return data_spec
 
-def get_b3d_rsd(info):
+def get_b3d_rsd(info, params_values_dict={}):
     
     cosmo_par_file = info['cosmo_par_file']
     cosmo_par_fid_file = info['cosmo_par_fid_file']
@@ -34,7 +34,7 @@ def get_b3d_rsd(info):
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
 
     survey_par = SurveyPar(survey_par_file)
-    data_spec = Bispectrum3DRSDSpec(survey_par, data_spec_dict)
+    data_spec = Bispectrum3DRSDSpec_Theta1Phi12(survey_par, data_spec_dict)
 
     creator = GRSIngredientsCreator()
     option = 'Camb'
@@ -42,7 +42,7 @@ def get_b3d_rsd(info):
     grs_ingredients = creator.create(option, survey_par, data_spec,
         nonlinear, cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
 
-    data_vec = Bispectrum3DRSD(grs_ingredients, survey_par, data_spec)
+    data_vec = Bispectrum3DRSD(grs_ingredients, survey_par, data_spec, **params_values_dict)
     
     return data_vec
 

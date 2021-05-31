@@ -1,5 +1,39 @@
 import numpy as np
 
+def check_matrix_inverse(a, inv_a, atol=1e-06, feedback_level=0):
+    """
+    Args:
+        a: A square matrix
+        inv_a: The inverse of a to be tested
+        atol: A float for the absolute tolerance of a*inv_a and 
+            inv_a*a against the identity matrix
+        feedback_level: integer 0 or 1."""
+
+    id1 = np.matmul(a, inv_a)
+    id2 = np.matmul(inv_a, a)
+    
+    if feedback_level == 1:
+        print('id1 = ', id1)
+        print('id2 = ', id2)
+
+    id0 = np.identity(a.shape[0])
+    check1 = np.allclose(id1, id0, atol=atol)
+    check2 = np.allclose(id2, id0, atol=atol)
+
+    is_inverse_test_passed = (check1 and check2)
+
+    if feedback_level == 1:
+        print('Passed inverse test? - {}'.format(is_inverse_test_passed))
+    
+    if is_inverse_test_passed == False:
+        max_diff1 = np.max(np.abs(id1 - id0))
+        max_diff2 = np.max(np.abs(id2 - id0))
+
+        if feedback_level == 0:
+            print('max diff1 = {}, max_diff2 = {}'.format(max_diff1, max_diff2))
+
+    return is_inverse_test_passed
+    
 def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
     """Check if 2d matrix is symmetric given 
     relative and absolute tolerance"""
@@ -7,7 +41,7 @@ def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
     return np.allclose(a, a.T, rtol=rtol, atol=atol)
 
 def split_matrix_into_blocks(a, nrows, ncols):
-    """Split a 2d matrix into blocks of shape (nrows, ncols), 
+    """Split a 2d matrix into nblock^2 blocks of shape (nrows, ncols), 
     and return a 3d matrix of shape (nblock*nblock, nrows, ncols)."""
 
     r, h = a.shape

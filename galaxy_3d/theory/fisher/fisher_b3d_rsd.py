@@ -7,13 +7,29 @@ import sys
 from theory.fisher.derivative_generic import Derivative
 from theory.fisher.derivative_generic import DerivativeConvergence
 from theory.fisher.fisher_generic import Fisher
+from theory.params.survey_par import SurveyPar
 
 class Bispectrum3DRSDDerivative(Derivative):
     
     def __init__(self, info, ignore_cache=False, do_save=False, \
             parent_dir="./results/b3d_rsd/derivatives"):
-        super().__init__(info, ignore_cache, do_save, parent_dir)
+        
+        other_par = self._get_other_par(info)
+        super().__init__(info, ignore_cache, do_save, parent_dir, other_par)
     
+    def _get_other_par(self, info):
+        survey_par = SurveyPar(info['survey_par_file'])
+        #TODO NEXT 
+        gaussian_bias = survey_par.get_galaxy_bias_array()
+        (nsample, nz) = gaussian_bias.shape
+        params_dict = {}
+        #for isample in range(nsample):
+        #    params_dict['gaussian_bias_%i_%i'%FINISH THIS#TODO]
+        #TODO
+        #"""Returns 2d numpy array of shape (nsample, nz) 
+        #for the Gaussian galaxy bias"""
+        # use get_galaxy_bias_array to make a new class just with gaussian bias
+
     def _setup_metadata(self):
         self._metadata = self._info
 
@@ -24,21 +40,23 @@ class Bispectrum3DRSDDerivative(Derivative):
 
 class Bispectrum3DRSDFisher(Fisher):
 
-    def __init__(self, info):
+    def __init__(self, info, inverse_atol):
         self._cov_type = info['fisher']['cov_type'] 
-        super().__init__(info)
+        super().__init__(info, inverse_atol=inverse_atol)
 
     def _setup_dims(self):
         (self._nparam, self._nb, self._nz, self._ntri, self._nori) = \
             self._derivatives.shape
 
     def _load_invcov(self):
+        
         #TODO temporary, we need to change this to 
-        if self._cov_type == 'full':
-            #invcov_path = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
+        if self._cov_type == 'full': # Inverse not stable!! #HACK
             invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210513/invcov_full.npy'
-        elif self._cov_type == 'diagonal_in_triangle_orientation':
-            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_diag.npy'
+        
+        elif self._cov_type == 'diagonal_in_triangle_orientation': # Inverse not stable!! HACK
+            #invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/invcov_diag.npy'
+            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'
         
         invcov = np.load(invcov_path)
         print('invcov.shape = {}'.format(invcov.shape))
@@ -78,15 +96,17 @@ class Bispectrum3DRSDFisher(Fisher):
                     for iori in range(self._nori):
                         der_i = self._derivatives[iparam, :, iz, itri, iori]
                         der_j = self._derivatives[jparam, :, iz, itri, iori]
-                        invcov_tmp = self._invcov[:, :, iz, itri, iori]
+                        invcov_tmp = self._invcov[:, :, iz, itri, iori] 
                         tmp = np.matmul(invcov_tmp, der_j)
                         f += np.matmul(der_i, tmp)
 
             return f
 
         else:
+            
             msg = "You specified cov_type = %s, but needs to be\
-                'full' or 'diagonal_in_triangle_orientation'."%(self._cov_type)
+                'full' or 'diagonal_in_triangle_orientation' \
+                'diagonal_in_triangle_orientation2'."%(self._cov_type)
             print(msg)
             sys.exit() #TODO do proper error handling
         
@@ -129,7 +149,7 @@ if __name__ == '__main__':
     
     # Get converged derivatives
     if do_derivative_convergence == True:
-        deriv_converged= check_for_convergence(info_input)
+        deriv_converged = check_for_convergence(info_input)
 
     # Plot converged derivatives
     if do_plot_derivative == True:
@@ -137,12 +157,13 @@ if __name__ == '__main__':
         from theory.plotting.bis_plotter import Bispectrum3DRSDDerivativePlotter
         
         data_spec = get_data_spec(info)
+        deriv_converged = check_for_convergence(info_input)
         deriv_plotter = Bispectrum3DRSDDerivativePlotter(deriv_converged, data_spec)
         deriv_plotter.make_plots()
 
     # Get Fisher
     if do_fisher == True:
-        b3d_rsd_fisher = Bispectrum3DRSDFisher(info_input)
+        b3d_rsd_fisher = Bispectrum3DRSDFisher(info_input, inverse_atol=1e-3)
 
     
 

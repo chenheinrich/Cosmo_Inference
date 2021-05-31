@@ -379,10 +379,7 @@ class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     def _get_min_max_parameters(self, tri_ori_dict):
         raise NotImplementedError
 
-    def _get_triangle_spec(self):
-        raise NotImplementedError
-
-    def _get_triangle_spec(self):
+    def _get_triangle_spec(self, triangle_orientation_dict):
         raise NotImplementedError
 
 class Bispectrum3DRSDSpec_Theta1Phi12(Bispectrum3DRSDSpec):
