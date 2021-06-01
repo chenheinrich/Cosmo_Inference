@@ -109,10 +109,6 @@ class CosmoInterface(object):
         fsigma8 = self._get_fsigma8_array()
         sigma8 = self._get_sigma8_array()
 
-        #HACK
-        print('sigma8 = {}'.format(sigma8))
-        print('fsigma8 = {}'.format(fsigma8))
-
         f = fsigma8/sigma8 
         
         if self._want_redshift_zero is False:
@@ -198,6 +194,8 @@ class CosmoInterfaceWithCambResults(CosmoInterface):
     cosmo = CosmoInterfaceWithCambResults(zs, cosmo_par)
     if you need to update redsfhit 
     """
+    #HACK
+    #def __init__(self, zs, cosmo_par, nonlinear):
     def __init__(self, zs, cosmo_par, nonlinear):
 
         super().__init__(zs)
@@ -211,6 +209,9 @@ class CosmoInterfaceWithCambResults(CosmoInterface):
         
         self._results = self._get_camb_results()
         self._matter_power_interpolator = self._get_matter_power_interpolator()
+
+    def __del__(self):
+        print("Destructor called for CosmoInterfaceWithCambResults")
 
     def _get_camb_results(self):
         results = camb.get_results(self._camb_pars)

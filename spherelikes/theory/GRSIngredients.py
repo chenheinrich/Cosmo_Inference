@@ -1,32 +1,17 @@
 from cobaya.theory import Theory
-from cobaya.yaml import yaml_load_file
 import numpy as np
-import time
-import sys
-import os
-import pickle
-import matplotlib.pyplot as plt
-import pathlib
-import logging
 
 from spherelikes.utils.log import LoggedError, class_logger
-from spherelikes.utils import constants
 #HACK
 #from spherelikes.params import SurveyPar
 from spherelikes.params_generator import TheoryParGenerator
 
-from galaxy_3d.theory.data_vector import PowerSpectrum3D as PowerSpectrum3D_standalone
-from galaxy_3d.theory.data_vector import GRSIngredientsCreator
+from galaxy_3d.theory.data_vector.data_vector import GRSIngredients
 from galaxy_3d.theory.data_vector import PowerSpectrum3DSpec
 from galaxy_3d.theory.params.cosmo_par import CosmoPar
 from galaxy_3d.theory.params.survey_par import SurveyPar
 
-from galaxy_3d.theory.data_vector import Bispectrum3DRSD as Bispectrum3DRSD_standalone
-from galaxy_3d.theory.data_vector import Bispectrum3DRSDSpec
-
-logging.getLogger('matplotlib.font_manager').disabled = True
-logging.getLogger('matplotlib.ticker').disabled = True
-
+from galaxy_3d.theory.data_vector.cosmo_interface import CosmoInterfaceCreator
 
 def make_dictionary_for_base_params():
     base_params = {
@@ -125,7 +110,7 @@ class ParGenerator(TheoryParGenerator):
         )
         return bias_params
 
-class GRSIngredients(Theory):
+class GRSIngredientsTheory(Theory):
 
     cosmo_par_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
@@ -151,6 +136,30 @@ class GRSIngredients(Theory):
     def initialize(self):
         """called from __init__ to initialize"""
         self.logger = class_logger(self)
+
+        self.nonlinear = False # TODO to make an input later
+
+        self.logger.debug('Getting survey parameters from file: {}'\
+            .format(self.survey_par_file))
+
+        self.survey_par = SurveyPar(self.survey_par_file)
+
+        data_spec_dict = {
+            'nk': self.nk, # number of k points (to be changed into bins)
+            'nmu': self.nmu, # number of mu bins
+            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
+            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
+        }
+        self.data_spec = PowerSpectrum3DSpec(self.survey_par, data_spec_dict)
+
+        cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
+        self.z = self.survey_par.get_zmid_array()
+
+        self.cosmo_creator = CosmoInterfaceCreator()
+        option_fid = 'Camb'
+        self.cosmo_fid = self.cosmo_creator.create(option_fid, self.z, self.nonlinear, \
+            cosmo_par=cosmo_par_fid)
+
         print('Done setting up PowerSpectrum3D')
 
     def initialize_with_provider(self, provider):
@@ -201,32 +210,17 @@ class GRSIngredients(Theory):
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False # TODO to make an input later
-
-        self.logger.debug('Getting survey parameters from file: {}'\
-            .format(self.survey_par_file))
-        self.survey_par = SurveyPar(self.survey_par_file)
-
-        self.data_spec_dict = {
-            'nk': self.nk, # number of k points (to be changed into bins)
-            'nmu': self.nmu, # number of mu bins
-            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
-            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
-        }
-        self.logger.debug('self.data_spec_dict: {}'.format(self.data_spec_dict))
-
-        self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
-        cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
-
         self.logger.debug('About to get grs_ingredients')
-        
-        creator = GRSIngredientsCreator()
-        grs_ingredients = creator.create('Cobaya',\
-            self.survey_par, self.data_spec, nonlinear,\
-            cosmo_par_fid=cosmo_par_fid, \
-            provider=self.provider, **params_values_dict)
 
-        state['grs_ingredients'] = grs_ingredients #TODO instance of a class (ok?)
+        option = 'Cobaya'
+        cosmo = self.cosmo_creator.create(option, self.z, self.nonlinear,
+            cosmo_par=None, \
+            provider=self.provider)
+
+        grs_ingredients = GRSIngredients(cosmo, self.cosmo_fid, self.survey_par, \
+            self.data_spec, **params_values_dict)
+
+        state['grs_ingredients'] = grs_ingredients 
 
     def get_grs_ingredients(self):
         return self._current_state['grs_ingredients']

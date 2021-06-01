@@ -3,6 +3,7 @@ import copy
 import sys
 
 from theory.data_vector.cosmo_interface import CosmoInterfaceCreator
+from theory.params.cosmo_par import CosmoPar
 from theory.utils import constants
 from theory.utils.errors import NameNotAllowedError
 from theory.utils.logging import class_logger
@@ -22,6 +23,8 @@ class GRSIngredientsCreator():
         cosmo_creator = CosmoInterfaceCreator()
         z = survey_par.get_zmid_array()
 
+        #TODO actually the camb option is a little problematic, causes malloc error
+        # to find a better option
         option_fid = 'Camb'
         cosmo_fid = cosmo_creator.create(option_fid, z, nonlinear, \
             cosmo_par=cosmo_par_fid)
@@ -29,10 +32,12 @@ class GRSIngredientsCreator():
         cosmo = cosmo_creator.create(option, z, nonlinear,
             cosmo_par=cosmo_par, \
             provider=provider)
-
+        
         params_values_dict = self._get_params_values_dict(option, params_values_dict, cosmo_par)
 
-        return GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
+        grs_ingredients = GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
+
+        return grs_ingredients
 
     def _get_params_values_dict(self, option, params_values_dict, cosmo_par):
         if option == 'Cobaya':
@@ -71,6 +76,7 @@ class GRSIngredients(object):
 
         self._cosmo = cosmo
         self._cosmo_fid = cosmo_fid
+
         self._survey_par = survey_par
         self._d = data_spec
         self._params_values_dict = params_values_dict
@@ -98,6 +104,11 @@ class GRSIngredients(object):
             'growth_rate_f', \
         ]
         self._ingredients = {'fnl': params_values_dict['fnl'] }
+
+    def __delete__(self):
+        del self._cosmo 
+        del self._cosmo_fid
+        print('deleted GRSIngredients self._cosmo and self._cosmo_fid')
 
     def _get_matter_power_at_z_and_ks(self, z, ks):
         matter_power = self._cosmo.get_matter_power_at_z_and_k(z, ks)
