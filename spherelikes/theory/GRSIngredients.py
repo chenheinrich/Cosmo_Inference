@@ -120,29 +120,22 @@ class GRSIngredients(Theory):
 
     nz = survey_par.get_nz()
     nsample = survey_par.get_nsample()
-    #HACK is this ok?
     params = get_params_for_survey_par(survey_par, fix_to_default=True)
 
-    nk = 2  # 21  # 211  # number of k points (to be changed into bins)
-    nmu = 2  # 5  # number of mu bins
+    nk = 2  # number of k points (to be changed into bins)
+    nmu = 2  # number of mu bins
 
     h = 0.68
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
 
-    #grs (might take away do_test, do_test_plot, test_plot_names stuff)
     is_reference_model = False
+
+    nonlinear = False
 
     def initialize(self):
         """called from __init__ to initialize"""
         self.logger = class_logger(self)
-
-        self.nonlinear = False # TODO to make an input later
-
-        self.logger.debug('Getting survey parameters from file: {}'\
-            .format(self.survey_par_file))
-
-        self.survey_par = SurveyPar(self.survey_par_file)
 
         data_spec_dict = {
             'nk': self.nk, # number of k points (to be changed into bins)
@@ -151,16 +144,17 @@ class GRSIngredients(Theory):
             'kmax': self.kmax, # equivalent to 0.2 h/Mpc
         }
         self.data_spec = PowerSpectrum3DSpec(self.survey_par, data_spec_dict)
+        
+        self.cosmo_creator = CosmoInterfaceCreator()
 
-        cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
+        self.survey_par = SurveyPar(self.survey_par_file)
         self.z = self.survey_par.get_zmid_array()
 
-        self.cosmo_creator = CosmoInterfaceCreator()
-        option_fid = 'Camb'
-        self.cosmo_fid = self.cosmo_creator.create(option_fid, self.z, self.nonlinear, \
+        cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
+        self.cosmo_fid = self.cosmo_creator.create('Camb', self.z, self.nonlinear, \
             cosmo_par=cosmo_par_fid)
 
-        print('Done setting up PowerSpectrum3D')
+        print('Done setting up GRSIngredients')
 
     def initialize_with_provider(self, provider):
         """
