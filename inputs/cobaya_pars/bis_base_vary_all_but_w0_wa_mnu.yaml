@@ -31,15 +31,17 @@ theory:
   spherelikes.theory.GRSIngredients:
     stop_at_error: True
 
-    is_reference_model: False # if calculating reference model for AP, set to True
-    survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
-    #model_path: "./data/ps_base_v27/ref.pickle"
-
-    nk: 11 # number of k points 
+    nk: 21 # number of k points 
     nmu: 5 # number of mu bins
 
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
+
+    nonlinear: False
+    is_reference_model: False # if calculating reference model for AP, set to True
+    
+    cosmo_fid_file: "./inputs/cosmo_pars/planck2018_fiducial.yaml"
+    survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
 
   spherelikes.theory.Bispectrum3DBase:
     stop_at_error: True

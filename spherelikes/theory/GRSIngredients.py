@@ -112,16 +112,6 @@ class ParGenerator(TheoryParGenerator):
 
 class GRSIngredients(Theory):
 
-    cosmo_par_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
-    cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
-
-    survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
-    survey_par = SurveyPar(survey_par_file)
-
-    nz = survey_par.get_nz()
-    nsample = survey_par.get_nsample()
-    params = get_params_for_survey_par(survey_par, fix_to_default=True)
-
     nk = 2  # number of k points (to be changed into bins)
     nmu = 2  # number of mu bins
 
@@ -129,32 +119,57 @@ class GRSIngredients(Theory):
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
 
+    nonlinear = False
     is_reference_model = False
 
-    nonlinear = False
+    cosmo_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
+    survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
+    
+    # Note: The following block needs to be reprocessed during initialize()
+    # since the survey_par_file specified in the yaml file could be 
+    # different than class default
+    survey_par = SurveyPar(survey_par_file)
+    nz = survey_par.get_nz()
+    nsample = survey_par.get_nsample()
+    params = get_params_for_survey_par(survey_par, fix_to_default=True)
 
     def initialize(self):
         """called from __init__ to initialize"""
         self.logger = class_logger(self)
 
+        self.survey_par = SurveyPar(self.survey_par_file)
+        self.nz = self.survey_par.get_nz()
+        self.nsample = self.survey_par.get_nsample()
+        self.z = self.survey_par.get_zmid_array()
+
+        self.cosmo_par_fid = CosmoPar(self.cosmo_fid_file) 
+
+        self.cosmo_creator = CosmoInterfaceCreator()
+
+        # Note: This currently calls camb so needs to be done in the
+        # initialize function (rather than e.g.. calculate())
+        # something about fortran references counted differently
+        # than in python and can cause malloc problems.
+        self.cosmo_fid = self._get_cosmo_fid()
+
+        self.data_spec = self._get_data_spec()
+
+        print('Done setting up GRSIngredients')
+
+    def _get_cosmo_fid(self):
+        cosmo_fid = self.cosmo_creator.create('Camb', self.z, self.nonlinear, \
+            cosmo_par=self.cosmo_par_fid)
+        return cosmo_fid
+
+    def _get_data_spec(self):
         data_spec_dict = {
             'nk': self.nk, # number of k points (to be changed into bins)
             'nmu': self.nmu, # number of mu bins
             'kmin': self.kmin, # equivalent to 0.001 h/Mpc
             'kmax': self.kmax, # equivalent to 0.2 h/Mpc
         }
-        self.data_spec = PowerSpectrum3DSpec(self.survey_par, data_spec_dict)
-        
-        self.cosmo_creator = CosmoInterfaceCreator()
-
-        self.survey_par = SurveyPar(self.survey_par_file)
-        self.z = self.survey_par.get_zmid_array()
-
-        cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
-        self.cosmo_fid = self.cosmo_creator.create('Camb', self.z, self.nonlinear, \
-            cosmo_par=cosmo_par_fid)
-
-        print('Done setting up GRSIngredients')
+        data_spec = PowerSpectrum3DSpec(self.survey_par, data_spec_dict)
+        return data_spec
 
     def initialize_with_provider(self, provider):
         """
@@ -170,21 +185,22 @@ class GRSIngredients(Theory):
         """
         return {}
 
-    #TODO NEXT: clean up this part for GRSIngredients!!
     def must_provide(self, **requirements):
+        
+        #TODO to work with model, may need (simplify this):
+        #z_list_2 = self.survey_par.get_zlo_array()
+        #z_list_3 = self.survey_par.get_zhi_array()
+
         z_list = self.survey_par.get_zmid_array()
-        #HACK (to work with model)
-        z_list_2 = self.survey_par.get_zlo_array()
-        z_list_3 = self.survey_par.get_zhi_array()
-        self.logger.debug('z_list = {}'.format(z_list))
-        #z_list = self.z_list #TODO find way to pass this properly
         k_max = 8.0
         nonlinear = (False, True)
+
         spec_Pk = {
             'z': z_list,
             'k_max': k_max,  # 1/Mpc
             'nonlinear': nonlinear,
         }
+
         if 'grs_ingredients' in requirements:
             return {
                 'Pk_interpolator': spec_Pk,
@@ -197,9 +213,10 @@ class GRSIngredients(Theory):
                 'ns': None,
                 'fsigma8': {'z': z_list},
                 'sigma8': None,
-                'CAMBdata': None,
-                #HACK (to work with model.py)
-                'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
+                # TODO to work with model.py, may need (simplify this)
+                #'CAMBdata': None,
+                #'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
+                'comoving_radial_distance': {'z': z_list}
             }
 
     def calculate(self, state, want_derived=True, **params_values_dict):

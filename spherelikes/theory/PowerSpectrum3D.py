@@ -24,6 +24,8 @@ from galaxy_3d.theory.params.survey_par import SurveyPar
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
 
+#TODO might want to delete some auxiliary functions
+# if repeated in other files
 
 def make_dictionary_for_base_params():
     base_params = {
@@ -122,10 +124,12 @@ class ParGenerator(TheoryParGenerator):
         )
         return bias_params
 
+#TODO could refactor in the future the common code
+# with Bispectrum3DBase and Bispectrum3DRSD
 class PowerSpectrum3D(Theory):
 
-    nk = 2  # 21  # 211  # number of k points (to be changed into bins)
-    nmu = 2  # 5  # number of mu bins
+    nk = 2  # number of k points (to be changed into bins)
+    nmu = 2  # number of mu bins
 
     h = 0.68
     kmin = 1e-3 * h # in 1/Mpc
@@ -133,7 +137,16 @@ class PowerSpectrum3D(Theory):
 
     def initialize(self):
         """called from __init__ to initialize"""
+        
         self.logger = class_logger(self)
+
+        self.data_spec_dict = {
+            'nk': self.nk, # number of k points (to be changed into bins)
+            'nmu': self.nmu, # number of mu bins
+            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
+            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
+        }
+
         print('Done setting up PowerSpectrum3D')
 
     def initialize_with_provider(self, provider):
@@ -158,27 +171,11 @@ class PowerSpectrum3D(Theory):
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False # TODO to make an input later
-
-        self.data_spec_dict = {
-            'nk': self.nk, # number of k points (to be changed into bins)
-            'nmu': self.nmu, # number of mu bins
-            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
-            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
-        }
-        self.logger.debug('self.data_spec_dict: {}'.format(self.data_spec_dict))
-
-        self.logger.debug('About to get grs_ingredients')
-        
         grs_ingredients = self.provider.get_grs_ingredients()
-        self.survey_par = grs_ingredients._survey_par #TODO decide if this is ok
-
+        self.survey_par = grs_ingredients._survey_par 
         self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
-        #TODO this is not cosmology dependent
 
-        self.logger.debug('About to get PowerSpectrum3D_standalone')
         data_vec = PowerSpectrum3D_standalone(grs_ingredients, self.survey_par, self.data_spec)
-
         galaxy_ps = data_vec.get('galaxy_ps')
 
         self.logger.debug('About to galaxy_ps')

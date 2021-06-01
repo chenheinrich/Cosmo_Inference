@@ -24,6 +24,8 @@ from galaxy_3d.theory.params.survey_par import SurveyPar
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
 
+#TODO might want to delete some auxiliary functions
+# if repeated in other files
 
 def make_dictionary_for_base_params():
     base_params = {
@@ -124,8 +126,8 @@ class ParGenerator(TheoryParGenerator):
 
 class Bispectrum3DBase(Theory):
 
-    nk = 2  # 21  # 211  # number of k points (to be changed into bins)
-    nmu = 2  # 5  # number of mu bins
+    nk = 2  # number of k points (to be changed into bins)
+    nmu = 2  # number of mu bins
 
     h = 0.68
     kmin = 1e-3 * h # in 1/Mpc
@@ -134,7 +136,15 @@ class Bispectrum3DBase(Theory):
     def initialize(self):
         """called from __init__ to initialize"""
         self.logger = class_logger(self)
-        print('Done setting up PowerSpectrum3D')
+
+        self.data_spec_dict = {
+            'nk': self.nk, # number of k points (to be changed into bins)
+            'nmu': self.nmu, # number of mu bins
+            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
+            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
+        }
+        
+        print('Done setting up Bispectrum3DBase')
 
     def initialize_with_provider(self, provider):
         """
@@ -152,7 +162,7 @@ class Bispectrum3DBase(Theory):
 
     def must_provide(self, **requirements):
         # Note: if need to be different than power spectrum, can change 
-        # to grs_ingredients_bispectrum for example
+        # to grs_ingredients_bispectrum in the future for example
         if 'galaxy_bis' in requirements:
             return {
                 'grs_ingredients': None
@@ -160,33 +170,13 @@ class Bispectrum3DBase(Theory):
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False # TODO to hook later
-
-        self.logger.debug('Calculating k and mu actual using AP factors.')
-
-        self.data_spec_dict = {
-            'nk': self.nk, # number of k points (to be changed into bins)
-            'nmu': self.nmu, # number of mu bins
-            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
-            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
-        }
-        self.logger.debug('self.data_spec_dict: {}'.format(self.data_spec_dict))
-        # TODO: Above is not cosmology dependent
-
-        self.logger.debug('About to get grs_ingredients')
-        
         grs_ingredients = self.provider.get_grs_ingredients()
-        self.survey_par = grs_ingredients._survey_par #TODO decide if this is ok
-
+        self.survey_par = grs_ingredients._survey_par 
         self.data_spec = Bispectrum3DBaseSpec(self.survey_par, self.data_spec_dict)
-        #TODO this is not cosmology dependent
 
-        self.logger.debug('About to get Bispectrum3DBase_standalone')
         data_vec = Bispectrum3DBase_standalone(grs_ingredients, self.survey_par, self.data_spec)
-
         galaxy_bis = data_vec.get('galaxy_bis')
 
-        self.logger.debug('About to galaxy_bis')
         state['galaxy_bis'] = galaxy_bis
 
         # TODO placeholder for any derived paramter from this module
