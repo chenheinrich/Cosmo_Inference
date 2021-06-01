@@ -68,7 +68,6 @@ class TestPS(Theory):
         self.cosmo_fid = self.cosmo_creator.create(option_fid, self.z, self.nonlinear, \
             cosmo_par=self.cosmo_par_fid)
 
-        
         print('Done setting up TestPS')
 
     def initialize_with_provider(self, provider):

@@ -28,7 +28,7 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.GRSIngredients.GRSIngredientsTheory:
+  spherelikes.theory.GRSIngredients:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True

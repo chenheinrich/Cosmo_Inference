@@ -176,7 +176,6 @@ class Bispectrum3DBase(Theory):
         self.logger.debug('About to get grs_ingredients')
         
         grs_ingredients = self.provider.get_grs_ingredients()
-        print('grs_ingredients = {}'.format(grs_ingredients))
         self.survey_par = grs_ingredients._survey_par #TODO decide if this is ok
 
         self.data_spec = Bispectrum3DBaseSpec(self.survey_par, self.data_spec_dict)

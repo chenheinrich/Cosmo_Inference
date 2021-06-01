@@ -6,7 +6,7 @@ from spherelikes.utils.log import LoggedError, class_logger
 #from spherelikes.params import SurveyPar
 from spherelikes.params_generator import TheoryParGenerator
 
-from galaxy_3d.theory.data_vector.data_vector import GRSIngredients
+from galaxy_3d.theory.data_vector.data_vector import GRSIngredients as GRSIng
 from galaxy_3d.theory.data_vector import PowerSpectrum3DSpec
 from galaxy_3d.theory.params.cosmo_par import CosmoPar
 from galaxy_3d.theory.params.survey_par import SurveyPar
@@ -110,7 +110,7 @@ class ParGenerator(TheoryParGenerator):
         )
         return bias_params
 
-class GRSIngredientsTheory(Theory):
+class GRSIngredients(Theory):
 
     cosmo_par_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
@@ -217,7 +217,7 @@ class GRSIngredientsTheory(Theory):
             cosmo_par=None, \
             provider=self.provider)
 
-        grs_ingredients = GRSIngredients(cosmo, self.cosmo_fid, self.survey_par, \
+        grs_ingredients = GRSIng(cosmo, self.cosmo_fid, self.survey_par, \
             self.data_spec, **params_values_dict)
 
         state['grs_ingredients'] = grs_ingredients 

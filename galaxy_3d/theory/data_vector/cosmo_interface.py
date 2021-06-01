@@ -210,9 +210,6 @@ class CosmoInterfaceWithCambResults(CosmoInterface):
         self._results = self._get_camb_results()
         self._matter_power_interpolator = self._get_matter_power_interpolator()
 
-    def __del__(self):
-        print("Destructor called for CosmoInterfaceWithCambResults")
-
     def _get_camb_results(self):
         results = camb.get_results(self._camb_pars)
         return results
