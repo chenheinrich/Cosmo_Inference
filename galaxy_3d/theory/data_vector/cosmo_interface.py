@@ -64,6 +64,10 @@ class CosmoInterfaceCreator():
             raise ValueError("CosmoInterfaceCreator: option can only be 'Cobaya' or 'Camb'.")
 
 class CosmoInterface(object):
+    """
+    Interface class for accessing cosmology results from various sources:
+    1) Camb 2) Cobaya provider class.
+    """
 
     def __init__(self, zs):
         self.logger = class_logger(self)
@@ -109,9 +113,6 @@ class CosmoInterface(object):
         fsigma8 = self._get_fsigma8_array()
         sigma8 = self._get_sigma8_array()
 
-        self.logger.debug('sigma8 = {}'.format(sigma8))
-        self.logger.debug('fsigma8 = {}'.format(fsigma8))
-
         f = fsigma8/sigma8 
         
         if self._want_redshift_zero is False:
@@ -154,8 +155,7 @@ class CosmoInterfaceWithCobayaProvider(CosmoInterface):
         super().__init__(zs)
 
         self._provider = provider
-        #HACK
-        print('CosmoInterfaceWithCobayaProvider: nonlinear = {}'.format(nonlinear))
+        self.logger.info('CosmoInterfaceWithCobayaProvider: nonlinear = {}'.format(nonlinear))
         self._log_Pk_interpolator = self._provider.get_Pk_interpolator(
             nonlinear=nonlinear)
 
@@ -236,7 +236,7 @@ class CosmoInterfaceWithCambResults(CosmoInterface):
             ns=self._cosmo_par.ns,\
             r=0)
 
-        # what about nrun, w0, wa?
+        # TODO what about nrun, w0, wa?
         return pars
 
     def _set_matter_power_pars(self, pars):

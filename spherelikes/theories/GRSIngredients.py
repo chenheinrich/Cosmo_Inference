@@ -1,32 +1,17 @@
 from cobaya.theory import Theory
-from cobaya.yaml import yaml_load_file
 import numpy as np
-import time
-import sys
-import os
-import pickle
-import matplotlib.pyplot as plt
-import pathlib
-import logging
 
 from spherelikes.utils.log import LoggedError, class_logger
-from spherelikes.utils import constants
 #HACK
 #from spherelikes.params import SurveyPar
 from spherelikes.params_generator import TheoryParGenerator
 
-from galaxy_3d.theory.data_vector import PowerSpectrum3D as PowerSpectrum3D_standalone
-from galaxy_3d.theory.data_vector import GRSIngredientsCreator
+from galaxy_3d.theory.data_vector.data_vector import GRSIngredients as GRSIng
 from galaxy_3d.theory.data_vector import PowerSpectrum3DSpec
 from galaxy_3d.theory.params.cosmo_par import CosmoPar
 from galaxy_3d.theory.params.survey_par import SurveyPar
 
-from galaxy_3d.theory.data_vector import Bispectrum3DRSD as Bispectrum3DRSD_standalone
-from galaxy_3d.theory.data_vector import Bispectrum3DRSDSpec
-
-logging.getLogger('matplotlib.font_manager').disabled = True
-logging.getLogger('matplotlib.ticker').disabled = True
-
+from galaxy_3d.theory.data_vector.cosmo_interface import CosmoInterfaceCreator
 
 def make_dictionary_for_base_params():
     base_params = {
@@ -127,31 +112,64 @@ class ParGenerator(TheoryParGenerator):
 
 class GRSIngredients(Theory):
 
-    cosmo_par_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
-    cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
-
-    survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
-    survey_par = SurveyPar(survey_par_file)
-
-    nz = survey_par.get_nz()
-    nsample = survey_par.get_nsample()
-    #HACK is this ok?
-    params = get_params_for_survey_par(survey_par, fix_to_default=True)
-
-    nk = 2  # 21  # 211  # number of k points (to be changed into bins)
-    nmu = 2  # 5  # number of mu bins
+    nk = 2  # number of k points (to be changed into bins)
+    nmu = 2  # number of mu bins
 
     h = 0.68
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
 
-    #grs (might take away do_test, do_test_plot, test_plot_names stuff)
+    nonlinear = False
     is_reference_model = False
+
+    cosmo_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
+    survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
+    
+    # Note: The following block needs to be reprocessed during initialize()
+    # since the survey_par_file specified in the yaml file could be 
+    # different than class default
+    survey_par = SurveyPar(survey_par_file)
+    nz = survey_par.get_nz()
+    nsample = survey_par.get_nsample()
+    params = get_params_for_survey_par(survey_par, fix_to_default=True)
 
     def initialize(self):
         """called from __init__ to initialize"""
         self.logger = class_logger(self)
-        print('Done setting up PowerSpectrum3D')
+
+        self.survey_par = SurveyPar(self.survey_par_file)
+        self.nz = self.survey_par.get_nz()
+        self.nsample = self.survey_par.get_nsample()
+        self.z = self.survey_par.get_zmid_array()
+
+        self.cosmo_par_fid = CosmoPar(self.cosmo_fid_file) 
+
+        self.cosmo_creator = CosmoInterfaceCreator()
+
+        # Note: This currently calls camb so needs to be done in the
+        # initialize function (rather than e.g.. calculate())
+        # something about fortran references counted differently
+        # than in python and can cause malloc problems.
+        self.cosmo_fid = self._get_cosmo_fid()
+
+        self.data_spec = self._get_data_spec()
+
+        print('Done setting up GRSIngredients')
+
+    def _get_cosmo_fid(self):
+        cosmo_fid = self.cosmo_creator.create('Camb', self.z, self.nonlinear, \
+            cosmo_par=self.cosmo_par_fid)
+        return cosmo_fid
+
+    def _get_data_spec(self):
+        data_spec_dict = {
+            'nk': self.nk, # number of k points (to be changed into bins)
+            'nmu': self.nmu, # number of mu bins
+            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
+            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
+        }
+        data_spec = PowerSpectrum3DSpec(self.survey_par, data_spec_dict)
+        return data_spec
 
     def initialize_with_provider(self, provider):
         """
@@ -167,21 +185,22 @@ class GRSIngredients(Theory):
         """
         return {}
 
-    #TODO NEXT: clean up this part for GRSIngredients!!
     def must_provide(self, **requirements):
+        
+        #TODO to work with model, may need (simplify this):
+        #z_list_2 = self.survey_par.get_zlo_array()
+        #z_list_3 = self.survey_par.get_zhi_array()
+
         z_list = self.survey_par.get_zmid_array()
-        #HACK (to work with model)
-        z_list_2 = self.survey_par.get_zlo_array()
-        z_list_3 = self.survey_par.get_zhi_array()
-        self.logger.debug('z_list = {}'.format(z_list))
-        #z_list = self.z_list #TODO find way to pass this properly
         k_max = 8.0
         nonlinear = (False, True)
+
         spec_Pk = {
             'z': z_list,
             'k_max': k_max,  # 1/Mpc
             'nonlinear': nonlinear,
         }
+
         if 'grs_ingredients' in requirements:
             return {
                 'Pk_interpolator': spec_Pk,
@@ -194,39 +213,25 @@ class GRSIngredients(Theory):
                 'ns': None,
                 'fsigma8': {'z': z_list},
                 'sigma8': None,
-                'CAMBdata': None,
-                #HACK (to work with model.py)
-                'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
+                'CAMBdata': None, # needed for test
+                # TODO to work with model.py, may need (simplify this)
+                #'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
+                'comoving_radial_distance': {'z': z_list}
             }
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        nonlinear = False # TODO to make an input later
-
-        self.logger.debug('Getting survey parameters from file: {}'\
-            .format(self.survey_par_file))
-        self.survey_par = SurveyPar(self.survey_par_file)
-
-        self.data_spec_dict = {
-            'nk': self.nk, # number of k points (to be changed into bins)
-            'nmu': self.nmu, # number of mu bins
-            'kmin': self.kmin, # equivalent to 0.001 h/Mpc
-            'kmax': self.kmax, # equivalent to 0.2 h/Mpc
-        }
-        self.logger.debug('self.data_spec_dict: {}'.format(self.data_spec_dict))
-
-        self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
-        cosmo_par_fid = CosmoPar(self.cosmo_par_fid_file) 
-
         self.logger.debug('About to get grs_ingredients')
-        
-        creator = GRSIngredientsCreator()
-        grs_ingredients = creator.create('Cobaya',\
-            self.survey_par, self.data_spec, nonlinear,\
-            cosmo_par_fid=cosmo_par_fid, \
-            provider=self.provider, **params_values_dict)
 
-        state['grs_ingredients'] = grs_ingredients #TODO instance of a class (ok?)
+        option = 'Cobaya'
+        cosmo = self.cosmo_creator.create(option, self.z, self.nonlinear,
+            cosmo_par=None, \
+            provider=self.provider)
+
+        grs_ingredients = GRSIng(cosmo, self.cosmo_fid, self.survey_par, \
+            self.data_spec, **params_values_dict)
+
+        state['grs_ingredients'] = grs_ingredients 
 
     def get_grs_ingredients(self):
         return self._current_state['grs_ingredients']
