@@ -3,6 +3,7 @@ import copy
 import sys
 
 from theory.data_vector.cosmo_interface import CosmoInterfaceCreator
+from theory.params.cosmo_par import CosmoPar
 from theory.utils import constants
 from theory.utils.errors import NameNotAllowedError
 from theory.utils.logging import class_logger
@@ -17,7 +18,14 @@ class GRSIngredientsCreator():
             provider=None, z=None, \
             **params_values_dict):
 
-        """Returns an instance of the GRSIngredients class given different input options"""
+        """
+        Returns an instance of the GRSIngredients class given different input options.
+        
+        Warning: when using the Camb option during Cobaya MCMC runs, for example to get
+        fiducial cosmology results, one needs to instantiate all needed input class to 
+        this function in the initiate() function of the theory class so they do not go 
+        out of scope, otherwise malloc errors or seg fault may result.
+        """
         
         cosmo_creator = CosmoInterfaceCreator()
         z = survey_par.get_zmid_array()
@@ -29,10 +37,12 @@ class GRSIngredientsCreator():
         cosmo = cosmo_creator.create(option, z, nonlinear,
             cosmo_par=cosmo_par, \
             provider=provider)
-
+        
         params_values_dict = self._get_params_values_dict(option, params_values_dict, cosmo_par)
 
-        return GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
+        grs_ingredients = GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict)
+
+        return grs_ingredients
 
     def _get_params_values_dict(self, option, params_values_dict, cosmo_par):
         if option == 'Cobaya':
@@ -71,6 +81,7 @@ class GRSIngredients(object):
 
         self._cosmo = cosmo
         self._cosmo_fid = cosmo_fid
+
         self._survey_par = survey_par
         self._d = data_spec
         self._params_values_dict = params_values_dict
