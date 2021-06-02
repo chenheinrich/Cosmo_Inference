@@ -77,7 +77,7 @@ class CovTester():
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory.scripts.get_covariance_b3d_base ./inputs_theory/get_covariance_b3d_base.yaml
+        python -m galaxy_3d.theory.scripts.get_covariance_b3d_base ./galaxy_3d/inputs_theory/get_covariance_b3d_base.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -92,24 +92,28 @@ if __name__ == '__main__':
     print('info = {}'.format(info))
 
     cov_calculator = Bispectrum3DBaseCovarianceCalculator(info)
-    
-    fn_cov = os.path.join(info['plot_dir'], 'cov.npy')
-    fn_invcov = os.path.join(info['plot_dir'], 'invcov.npy')
 
     # Calculations
-    cov_calculator.get_and_save_cov(fn_cov, do_invcov=True)
-    cov_calculator.save_invcov(fn_invcov)
-    #cov_calculator.get_and_save_invcov(fn_invcov)
+    #cov_calculator.get_and_save_cov(do_invcov=True)
+    #cov_calculator.save_invcov()
 
-    # Tests:
-    fn1 = './plots/theory/bispectrum_base/fnl_1/nk_11/bis_base.npy'
-    fn0 = './plots/theory/bispectrum_base/fnl_0/nk_11/bis_base.npy'
-        
-    cov_tester = CovTester(cov_calculator, fn0, fn1)
+    from theory.covariance.covariance_checks import CovarianceChecks
+    fn_cov = cov_calculator._fn_cov
+    fn_invcov = cov_calculator._fn_invcov
+
+    cov_checks = CovarianceChecks(fn_cov, fn_invcov)
+    atol = 1e-6
+    cov_checks.check_matrix_inverse(atol)
     
-    fn_cov = './plots/theory/covariance/b3d_base/fnl_0/nk_11/cov.npy'
-    fn_invcov = './plots/theory/covariance/b3d_base/fnl_0/nk_11/invcov.npy'
-    cov_tester.chi2_test(fn_invcov=fn_invcov)
+    # Tests:
+    #fn1 = './plots/theory/bispectrum_base/fnl_1/nk_11/bis_base.npy'
+    #fn0 = './plots/theory/bispectrum_base/fnl_0/nk_11/bis_base.npy'
+        
+    #cov_tester = CovTester(cov_calculator, fn0, fn1)
+    
+    #fn_cov = './plots/theory/covariance/b3d_base/fnl_0/nk_11/cov.npy'
+    #fn_invcov = './plots/theory/covariance/b3d_base/fnl_0/nk_11/invcov.npy'
+    #cov_tester.chi2_test(fn_invcov=fn_invcov)
     #cov_tester.inverse_test(fn_cov=fn_cov, fn_invcov=fn_invcov)
 
     

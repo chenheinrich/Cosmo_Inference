@@ -46,8 +46,8 @@ def get_b3d_base(info):
     return data_vec
 
 def get_fn(info):
-    file_tools.mkdir_p(info['plot_dir'])
-    return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
+    file_tools.mkdir_p(info['result_dir'])
+    return os.path.join(info['result_dir'], info['run_name'] + '.npy')
 
 @profiler
 def save_galaxy_bis(info):

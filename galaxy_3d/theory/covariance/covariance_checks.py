@@ -1,7 +1,35 @@
-from operator import is_
 import numpy as np
 import os
 import scipy.linalg as linalg
+
+from theory.math_utils.matrix import check_matrix_inverse
+from theory.math_utils.matrix import check_matrix_symmetric
+
+class CovarianceChecks():
+
+    def __init__(self, fn_cov, fn_invcov):
+        self.fn_cov = fn_cov
+        self.cov = np.load(self.fn_cov)
+        self.fn_invcov = fn_invcov
+        self.invcov = np.load(self.fn_invcov)
+
+    def check_matrix_inverse(self, atol):
+        
+        if len(self.cov.shape) == 4:
+
+            (nb, nb, nz, ntri) = self.cov.shape
+            
+            for itri in range(ntri):
+                for iz in range(nz):
+                    print('iz = {}, itri = {}'.format(iz, itri))    
+                    cov_tmp = self.cov[:, :, iz, itri]
+                    invcov_tmp = self.invcov[:, :, iz, itri]
+                    
+                    assert check_matrix_inverse(cov_tmp, invcov_tmp, atol=atol, feedback_level=0)
+                    assert check_matrix_symmetric(cov_tmp)
+                    assert check_matrix_symmetric(invcov_tmp)
+
+        print('All tests passed (inverse test passed at atol={})!'.format(atol))
 
 class RearrangeCov():
 

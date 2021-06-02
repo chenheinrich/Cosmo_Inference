@@ -33,4 +33,5 @@ Bispectrum3DRSDCovariance:
   do_cvl_noise: False
   fsky: 0.75
 
+result_dir: './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/'
 plot_dir: './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210513/' 

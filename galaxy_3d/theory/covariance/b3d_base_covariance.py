@@ -8,6 +8,11 @@ from theory.utils.logging import class_logger
 from theory.utils import file_tools
 from theory.utils import profiler
 
+#TODO need to refactor together with b3d_rsd_covariance.py
+# many similarities
+
+def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
+    return np.allclose(a, a.T, rtol=rtol, atol=atol)
 
 class Bispectrum3DBaseCovarianceCalculator():
 
@@ -30,8 +35,12 @@ class Bispectrum3DBaseCovarianceCalculator():
         self._fsky = self._info['Bispectrum3DBaseCovariance']['fsky']
         self._do_cvl_noise = self._info['Bispectrum3DBaseCovariance']['do_cvl_noise']
         self._plot_dir = self._info['plot_dir']
+        self._result_dir = self._info['result_dir']
         
         file_tools.mkdir_p(self._plot_dir)
+        file_tools.mkdir_p(self._result_dir)
+        self._run_name = self._info['run_name']
+        
         self._fn_cov = self._get_fn_cov()
         self._fn_invcov = self._get_fn_invcov()
 
@@ -73,21 +82,24 @@ class Bispectrum3DBaseCovarianceCalculator():
 
         return invcov
 
-    def get_and_save_invcov(self, fn):
+    def get_and_save_invcov(self, fn=None):
         self.invcov = self.get_invcov()
+        fn = fn or self._fn_invcov
         self.save_invcov(fn)
         return self.invcov
 
     #changed
-    def get_and_save_cov(self, fn, do_invcov=True):
+    def get_and_save_cov(self, fn=None, do_invcov=True):
         self.cov = self.get_cov(do_invcov)
+        fn = fn or self._fn_cov
         self.save_cov(fn)
         return self.cov
 
     def save_cov(self, fn):
         self.save_file(fn, self.cov, name='covariance')
 
-    def save_invcov(self, fn):
+    def save_invcov(self, fn=None):
+        fn = fn or self._fn_invcov
         self.save_file(fn, self.invcov, name='inverse covariance')
 
     def save_file(self, fn, data, name = ''):
@@ -142,6 +154,8 @@ class Bispectrum3DBaseCovarianceCalculator():
                     except np.linalg.LinAlgError as e:
                         #self.logger.info('{}'.format(e))
                         self.logger.info('cov[:,:,iz,itri] = {}'.format(cov_tmp))
+                    
+                    assert check_matrix_symmetric(self.invcov[:, :, iz, itri])
                 #self.logger.debug('iz={}, itri={}, ib=0: {}'.format(iz, itri, cov[0, 0, iz, itri]))
                 #self.logger.debug('cov_tmp = {}'.format(cov_tmp))
                 #self.logger.debug('invcov[:, :, iz, itri] = {}'.format(invcov[:, :, iz, itri]))
@@ -178,11 +192,11 @@ class Bispectrum3DBaseCovarianceCalculator():
         return b3d
     
     def _get_fn_cov(self):
-        fn = os.path.join(self._info['plot_dir'], self._info['run_name'] + 'cov.npy')
+        fn = os.path.join(self._result_dir, 'cov.npy')
         return fn
     
     def _get_fn_invcov(self):
-        fn = os.path.join(self._info['plot_dir'], self._info['run_name'] + 'invcov.npy')
+        fn = os.path.join(self._result_dir, 'invcov.npy')
         return fn
 
     def _get_noise(self):
@@ -197,7 +211,8 @@ class Bispectrum3DBaseCovarianceCalculator():
     #changed
     #@profiler
     def get_cov_smallest_nondiagonal_block(self, iz, itri):
-        cov = self.get_cov_nb_x_nb_block(iz, itri)        
+        cov = self.get_cov_nb_x_nb_block(iz, itri)   
+        assert check_matrix_symmetric(cov)     
         return cov
 
     #changed

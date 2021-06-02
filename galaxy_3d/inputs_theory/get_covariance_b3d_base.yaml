@@ -20,4 +20,5 @@ Bispectrum3DBaseCovariance:
   do_cvl_noise: False
   fsky: 0.75
 
+result_dir: './results/b3d_base/covariance/cosmo_planck2018_fiducial/nk_11/'
 plot_dir: './plots/theory/covariance/b3d_base/fnl_0/nk_11/' 

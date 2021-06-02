@@ -1,6 +1,6 @@
 run_name: 'bis_base'
 
-cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml' #fiducial
+cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml' 
 
 cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
 
@@ -12,4 +12,5 @@ Bispectrum3DBase:
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
 
+result_dir: './results/b3d_base/cosmo_planck2018_fnl_1p0/nk_11/' 
 plot_dir: './plots/theory/Bispectrum3DBase/nk_11_v27/' 

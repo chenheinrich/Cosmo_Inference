@@ -36,8 +36,12 @@ class Bispectrum3DRSDCovarianceCalculator():
         self._do_folded_signal = self._info['Bispectrum3DRSDCovariance']\
             ['Bispectrum3DRSD']['triangle_orientation_info']['do_folded_signal']
         self._plot_dir = self._info['plot_dir']
-        
+        self._result_dir = self._info['result_dir']
+
         file_tools.mkdir_p(self._plot_dir)
+        file_tools.mkdir_p(self._result_dir)
+        self._run_name = self._info['run_name']
+
         self._fn_cov = self._get_fn_cov()
         self._fn_invcov = self._get_fn_invcov()
 
@@ -94,13 +98,16 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         return invcov
 
-    def get_and_save_invcov(self, fn):
+    def get_and_save_invcov(self, fn=None):
         self.invcov = self.get_invcov()
+        fn = fn or self._fn_invcov
         self.save_invcov(fn)
         return self.invcov
 
-    def get_and_save_cov(self, fn, cov_type='diag', do_invcov=True):
+    def get_and_save_cov(self, fn=None, cov_type='diag', do_invcov=True):
         
+        fn = fn or self._fn_invcov
+
         if cov_type == 'full':
             self.cov = self.get_cov(do_invcov)
         elif cov_type == 'diag':
@@ -112,7 +119,8 @@ class Bispectrum3DRSDCovarianceCalculator():
     def save_cov(self, fn):
         self.save_file(fn, self.cov, name='covariance')
 
-    def save_invcov(self, fn):
+    def save_invcov(self, fn=None):
+        fn = fn or self._fn_invcov
         self.save_file(fn, self.invcov, name='inverse covariance')
 
     def save_file(self, fn, data, name = ''):
@@ -235,11 +243,11 @@ class Bispectrum3DRSDCovarianceCalculator():
         return b3d
     
     def _get_fn_cov(self):
-        fn = os.path.join(self._info['plot_dir'], self._info['run_name'] + 'cov.npy')
+        fn = os.path.join(self._result_dir, self._info['run_name'] + 'cov.npy')
         return fn
     
     def _get_fn_invcov(self):
-        fn = os.path.join(self._info['plot_dir'], self._info['run_name'] + 'invcov.npy')
+        fn = os.path.join(self._result_dir, self._info['run_name'] + 'invcov.npy')
         return fn
 
     def _get_noise(self):
@@ -253,7 +261,9 @@ class Bispectrum3DRSDCovarianceCalculator():
 
     #@profiler
     def get_cov_smallest_nondiagonal_block(self, iz, itri):
-
+        """Returns (norixnb, norixnb) block; 
+        Do not use though, these matrices are ill-conditioned
+        """
         nori = self._b3d_rsd_spec.nori
         nb = self._b3d_rsd_spec.nb
 
@@ -416,16 +426,8 @@ class Bispectrum3DRSDCovarianceCalculator():
     
     def _get_observed_ps(self, ips, iz, ik, fog=1, kaiser=1):
         """Returns a float for the observed galaxy power spectrum with shot noise."""
-        #HACK
-        #print('ips = {}, iz = {}, ik = {}'.format(ips, iz, ik))
         ps = self._galaxy_ps[ips, iz, ik] * kaiser * fog 
         ps += self._ps_noise_all[ips, iz]
-
-        #HACK
-        #print('ps[ips, iz, ik] = ', self._galaxy_ps[ips, iz, ik])
-        #print('kaiser = ', kaiser)
-        #print('self._ps_noise_all[ips, iz] = ', self._ps_noise_all[ips, iz])
-
         return ps
 
     def _get_ps_noise_all(self):
