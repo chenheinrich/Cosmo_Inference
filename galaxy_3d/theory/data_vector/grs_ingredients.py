@@ -18,13 +18,18 @@ class GRSIngredientsCreator():
             provider=None, z=None, \
             **params_values_dict):
 
-        """Returns an instance of the GRSIngredients class given different input options"""
+        """
+        Returns an instance of the GRSIngredients class given different input options.
+        
+        Warning: when using the Camb option during Cobaya MCMC runs, for example to get
+        fiducial cosmology results, one needs to instantiate all needed input class to 
+        this function in the initiate() function of the theory class so they do not go 
+        out of scope, otherwise malloc errors or seg fault may result.
+        """
         
         cosmo_creator = CosmoInterfaceCreator()
         z = survey_par.get_zmid_array()
 
-        #TODO actually the camb option is a little problematic, causes malloc error
-        # to find a better option
         option_fid = 'Camb'
         cosmo_fid = cosmo_creator.create(option_fid, z, nonlinear, \
             cosmo_par=cosmo_par_fid)
@@ -104,11 +109,6 @@ class GRSIngredients(object):
             'growth_rate_f', \
         ]
         self._ingredients = {'fnl': params_values_dict['fnl'] }
-
-    def __delete__(self):
-        del self._cosmo 
-        del self._cosmo_fid
-        print('deleted GRSIngredients self._cosmo and self._cosmo_fid')
 
     def _get_matter_power_at_z_and_ks(self, z, ks):
         matter_power = self._cosmo.get_matter_power_at_z_and_k(z, ks)

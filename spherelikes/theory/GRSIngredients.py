@@ -213,8 +213,8 @@ class GRSIngredients(Theory):
                 'ns': None,
                 'fsigma8': {'z': z_list},
                 'sigma8': None,
+                'CAMBdata': None, # needed for test
                 # TODO to work with model.py, may need (simplify this)
-                #'CAMBdata': None,
                 #'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
                 'comoving_radial_distance': {'z': z_list}
             }
