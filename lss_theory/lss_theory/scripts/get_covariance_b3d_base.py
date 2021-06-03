@@ -77,7 +77,7 @@ class CovTester():
 if __name__ == '__main__':
     """
     Example usage:
-        python -m lss_theory.scripts.get_covariance_b3d_base ./galaxy_3d/inputs_theory/get_covariance_b3d_base.yaml
+        python -m lss_theory.scripts.get_covariance_b3d_base ./lss_theory/inputs/get_covariance_b3d_base.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

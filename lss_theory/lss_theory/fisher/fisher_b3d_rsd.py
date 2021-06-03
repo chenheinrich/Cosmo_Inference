@@ -127,7 +127,7 @@ def check_for_convergence(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.fisher.fisher_b3d_rsd ./galaxy_3d/inputs_theory/get_fisher_b3d_rsd.yaml 
+        python3 -m lss_theory.fisher.fisher_b3d_rsd ./lss_theory/inputs/get_fisher_b3d_rsd.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

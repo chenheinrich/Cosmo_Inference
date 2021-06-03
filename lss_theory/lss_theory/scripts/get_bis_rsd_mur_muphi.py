@@ -64,7 +64,7 @@ def save_galaxy_bis_rsd(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.scripts.get_bis_rsd_mur_muphi ./galaxy_3d/inputs_theory/get_bis_rsd_mur_muphi.yaml 
+        python3 -m lss_theory.scripts.get_bis_rsd_mur_muphi ./lss_theory/inputs/get_bis_rsd_mur_muphi.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

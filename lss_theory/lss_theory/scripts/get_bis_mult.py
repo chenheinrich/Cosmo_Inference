@@ -87,7 +87,7 @@ def get_subdir_name_for_bis_mult(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.scripts.get_bis_mult ./galaxy_3d/inputs_theory/get_bis_mult.yaml 
+        python3 -m lss_theory.scripts.get_bis_mult ./lss_theory/inputs/get_bis_mult.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

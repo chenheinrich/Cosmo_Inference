@@ -189,7 +189,7 @@ def check_cov_symmetric(cov):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.scripts.get_covariance_b3d_rsd ./galaxy_3d/inputs_theory/get_covariance_b3d_rsd.yaml
+        python3 -m lss_theory.scripts.get_covariance_b3d_rsd ./lss_theory/inputs/get_covariance_b3d_rsd.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

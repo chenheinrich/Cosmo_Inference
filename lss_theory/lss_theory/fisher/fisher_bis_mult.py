@@ -96,7 +96,7 @@ def check_for_convergence(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.fisher.fisher_bis_mult ./galaxy_3d/inputs_theory/get_fisher_bis_mult.yaml 
+        python3 -m lss_theory.fisher.fisher_bis_mult ./lss_theory/inputs/get_fisher_bis_mult.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
