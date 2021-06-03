@@ -12,11 +12,7 @@ from spherelikes.params import CobayaPar, SurveyPar
 cobaya_par_file = './tests/inputs/cobaya_pars/ps_base.yaml'
 cosmo_par_file_sim = './tests/inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
 cosmo_par_file_ref = './tests/inputs/cosmo_pars/planck2018_fiducial.yaml'
-<<<<<<< HEAD
 #Note: Need cobaya==v3.0.3, camb==1.3.2 for all expected values and files.
-=======
-#Note: Need cobaya==v3.0.3, camb==1.3.2 from github for all expected values and files.
->>>>>>> chen/hook_to_cobaya
 
 #This test still doesn't work
 @pytest.mark.debug
@@ -54,7 +50,7 @@ def test_cobaya_ps_base_theory(cobaya_par_file, cosmo_par_file, fn_expected):
 @pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, chi2_expected", \
     [
     (cobaya_par_file, cosmo_par_file_sim, 0.0),\
-    (cobaya_par_file, cosmo_par_file_ref, 0.44438055)\
+    (cobaya_par_file, cosmo_par_file_ref, 0.2604263328501215)\
     ]
 )
 def test_cobaya_ps_base_chi2(cobaya_par_file, cosmo_par_file, chi2_expected):

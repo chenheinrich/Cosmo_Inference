@@ -73,15 +73,13 @@ class CovCalculator():
         # TODO want to put h * number_density in the survey par maybe?
         self.survey_par = SurveyPar(self.args['survey_par_file'])
         h = self.data['H0'] / 100.0 
-        self.number_density = h * self.survey_par.get_number_density_array()
-        # TODO MISTAKE!! should be h**3 * self.survey_par.get_number_density_array()
+        self.number_density = h**3 * self.survey_par.get_number_density_array()
         # TODO test change in results with this
         # TODO any tests need to be rewritten?
 
     def get_and_save_invcov(self):
         self.get_cov()
         self.get_invcov()
-        #self.get_invcov2()
         self.do_inv_test(self.cov, self.invcov)
         self.save()
 
@@ -128,6 +126,7 @@ class CovCalculator():
 
     @profiler
     def get_invcov2(self):
+        """Not faster actually"""
         try:
             self.invcov = invert_block_matrix(self.cov, self.nps)
             self.logger.debug(
@@ -244,29 +243,10 @@ class CovCalculator():
         self.nmodes_z_k_mu = volume_array[:, np.newaxis, np.newaxis]\
             * nmodes_k_mu[np.newaxis, :, :]
 
-    def get_survey_volume_array(self):
-        """Returns 1d numpy array of shape (nz, ) for the volume of the 
-        redshift bins.
-        Note: The calculation is approximate: We do not integrate dV over
-        dz, but instead integrate dchi and use the bin center for the area.
-        """
-        # TODO might want to have more finely integrated volume
-        # this would require getting comoving_radial_distance from camb
-        # at more redshift values.
-        # Might want to decouple this from requirements in theory module
-        # where this is requested for now.
-        d_lo = self.data['comoving_radial_distance_lo']
-        d_hi = self.data['comoving_radial_distance_hi']
-        d_mid = self.data['comoving_radial_distance']
-        dist = d_mid
-        V = (4.0 * np.pi) * dist**2 * (d_hi - d_lo)
-        return V
-
-    #TODO change this and test change
     #TODO Might want to decouple this from requirements in theory module
         # where this is requested for now.
     #TODO delete zmid calculations?
-    def get_survey_volume_array_correct(self):
+    def get_survey_volume_array(self):
         """Returns 1d numpy array of shape (nz, ) for the volume of the 
         redshift bins in Mpc^3 (no h^{-3})."""
         d_lo = self.data['comoving_radial_distance_lo']

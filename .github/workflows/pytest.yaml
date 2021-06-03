@@ -32,5 +32,5 @@ jobs:
           pip install pytest-cov
       #- name: Run tests
         #run: |
-        #  pytest ./tests/ -v -m short
-        #  pytest ./theory/tests/ -v
+        #  python -m pytest ./tests/ -v -m short
+        #  python -m pytest ./theory/tests/ -v
