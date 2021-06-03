@@ -35,7 +35,7 @@ class CobayaPar():
 
     def get_spherex_theory(self, use_grs_ingredients=True):
         if use_grs_ingredients is True:
-            return 'spherelikes.theories.GRSIngredients'
+            return 'spherelikes.theory.GRSIngredients'
         else:
             first_theory_name = list(self._info['theory'].keys())[1]
             return first_theory_name
