@@ -25,7 +25,7 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.PowerSpectrum3D:
+  spherelikes.theories.PowerSpectrum3D:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True

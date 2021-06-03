@@ -28,7 +28,7 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.GRSIngredients:
+  spherelikes.theories.GRSIngredients:
     stop_at_error: True
 
     nk: 21 # number of k points 
@@ -43,7 +43,7 @@ theory:
     cosmo_fid_file: "./inputs/cosmo_pars/planck2018_fiducial.yaml"
     survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
 
-  spherelikes.theory.PowerSpectrum3D:
+  spherelikes.theories.PowerSpectrum3D:
     stop_at_error: True
 
     nk: 21 # number of k points 

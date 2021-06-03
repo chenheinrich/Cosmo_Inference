@@ -27,6 +27,7 @@ jobs:
           cobaya-install camb -p ./cosmo 
           pip install -r requirements.txt
           pip install -e .
+          pip install -e ./lss_theory/
           pip install pytest
           pip install pytest-cov
       #- name: Run tests

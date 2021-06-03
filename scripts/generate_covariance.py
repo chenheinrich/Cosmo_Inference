@@ -13,18 +13,18 @@ from spherelikes.model import ModelCalculator
 from spherelikes.utils.log import class_logger
 from spherelikes.params import SurveyPar
 
-from theory.utils.profiler import profiler
+from lss_theory.utils.profiler import profiler
 from scripts.invert_matrix import invert_block_matrix
-
+from copy import deepcopy
 
 class CovCalculator():
 
     def __init__(self, data, args):
         self.logger = class_logger(self)
-        self.data = data
+        self.data = deepcopy(data)
         self.args = args
 
-        self.galaxy_ps = self.data['galaxy_ps']
+        self.galaxy_ps = np.copy(self.data['galaxy_ps'])
         self.nsample = self.data['aux']['nsample']
         self.dk = self.data['aux']['dk']
         self.dmu = self.data['aux']['dmu']
@@ -80,9 +80,8 @@ class CovCalculator():
 
     def get_and_save_invcov(self):
         self.get_cov()
-        #HACK
-        #self.get_invcov()
-        self.get_invcov2()
+        self.get_invcov()
+        #self.get_invcov2()
         self.do_inv_test(self.cov, self.invcov)
         self.save()
 
@@ -95,9 +94,6 @@ class CovCalculator():
         power spectra, and the z, k, mu dependence in P_{j1, j2}(z, k, mu) have been
         suppressed here for reasons mentioned above.
         """
-        # Careful: Do not change elements in self.data_1d, it would modify self.data
-        # from outside of this class since it is created w/ np.ravel().
-        #TODO make a copy of self.data_1d to solve this problem??
 
         self.get_data_1d()
         self.shape = self.galaxy_ps.shape
@@ -175,7 +171,6 @@ class CovCalculator():
         """Flatten the 4d numpy array self.galaxy_ps into 1d data vector,
         to facilitate the computation of the covariance matrix."""
 
-        #TODO make a copy of self.galaxy_ps first, and then ravel to solve this problem??
         self.data_1d = self.galaxy_ps.ravel()
 
         msg = 'self.data_1d.size = {}, expect {}'\

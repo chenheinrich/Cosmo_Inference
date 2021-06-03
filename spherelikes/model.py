@@ -13,7 +13,7 @@ from cobaya.model import get_model
 from cobaya.tools import sort_cosmetic
 
 from spherelikes.params import CobayaPar, SurveyPar
-from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
+from spherelikes.theories.PowerSpectrum3D import make_dictionary_for_bias_params
 
 class ModelCalculator():
 
@@ -87,7 +87,6 @@ class ModelCalculator():
         z_hi = np.array(self.survey_pars['zbin_hi'])
         z_mid = 0.5 * (z_lo + z_hi)
 
-        #HACK
         d_lo = theory1.get_comoving_radial_distance(z_lo)
         d_hi = theory1.get_comoving_radial_distance(z_hi)
         d_mid = theory1.get_comoving_radial_distance(z_mid)

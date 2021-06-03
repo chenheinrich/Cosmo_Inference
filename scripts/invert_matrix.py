@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from theory.utils.profiler import profiler
+from lss_theory.utils.profiler import profiler
 
 def isdiag(M):
     """Returns a boolean for whether M is a diagonal matrix.
