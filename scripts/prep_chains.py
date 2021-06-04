@@ -32,9 +32,9 @@ class ChainPreparation():
         return common_args
 
     def prepare_chains(self):
-        self._get_reference_model()
+        #self._get_reference_model()
         self._get_covariance()
-        self._get_simulated_data()
+        #self._get_simulated_data()
 
     def _get_reference_model(self):
         """Generate reference cosmology results for AP"""

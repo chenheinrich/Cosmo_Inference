@@ -247,7 +247,7 @@ class Bispectrum3DBaseCovarianceCalculator():
         return cov
 
     #leave for now (not used)
-    #@profiler #too slow,not sure why
+    #@profiler too slow, not sure why
     def get_cov_nb_x_nb_block2(self, iz, itri, iori, jori):
 
         (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec

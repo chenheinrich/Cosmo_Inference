@@ -40,6 +40,35 @@ class LikePowerSpectrum3D(Likelihood):
             chi2 = 0.0
         else:
             delta = self.simulated_data - self.get_sampled_data()
+            
+            chi2 = 0.0
+            for iz in range(self.nz):
+                for ik in range(self.nk):
+                    for imu in range(self.nmu):
+
+                        tmp = np.matmul(self.invcov[:,:,iz,ik,imu], delta[:,iz,ik,imu])
+                        chi2 = chi2 + np.matmul(delta[:,iz,ik,imu], tmp)
+
+            self.logger.debug('chi2 = {}'.format(chi2))
+
+        return -0.5 * chi2
+
+    #@profiler
+    def logp_old_format(self, **params_values):
+        """
+        Taking a dictionary of (sampled) nuisance parameter values params_values
+        and return a log-likelihood.
+        """
+
+        # TODO Placeholder for future derived parameter and foreground calculations.
+        #derived_param = self.provider.get_param('derived_param')
+        my_foreground_amp = params_values['my_foreground_amp']
+
+        if self.is_reference_likelihood is True:
+            print('is_reference_likelihood = True == > return chi2=0.')
+            chi2 = 0.0
+        else:
+            delta = self.simulated_data - self.get_sampled_data()
 
             # TODO turn into official error handling
             print('delta.shape = {}'.format(delta.shape))
@@ -70,8 +99,8 @@ class LikePowerSpectrum3D(Likelihood):
 
         self.logger.info('Loading invcov ...')
 
-        n = np.prod(self.simulated_data.shape)
-        expected_shape = (n, n)
+        (self.nps, self.nz, self.nk, self.nmu) = self.simulated_data.shape
+        expected_shape = (self.nps, self.nps, self.nz, self.nk, self.nmu)
 
         try:
             self.logger.debug('self.invcov_path = {}'.format(self.invcov_path))

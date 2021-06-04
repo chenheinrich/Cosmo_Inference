@@ -50,7 +50,7 @@ def test_cobaya_ps_base_theory(cobaya_par_file, cosmo_par_file, fn_expected):
 @pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, chi2_expected", \
     [
     (cobaya_par_file, cosmo_par_file_sim, 0.0),\
-    (cobaya_par_file, cosmo_par_file_ref, 0.2604263328501215)\
+    (cobaya_par_file, cosmo_par_file_ref, 0.5208526657002422)\
     ]
 )
 def test_cobaya_ps_base_chi2(cobaya_par_file, cosmo_par_file, chi2_expected):

@@ -63,4 +63,4 @@ fn_sim = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/ps.npy'
 fn_ref = './tests/data/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_0/ps.npy'
 
 test_cobaya(cobaya_par_file, cosmo_par_file_sim, 0.0, fn_sim)
-test_cobaya(cobaya_par_file, cosmo_par_file_ref, 0.2604263328501215, fn_ref)
+test_cobaya(cobaya_par_file, cosmo_par_file_ref, 0.5208526657002422, fn_ref)

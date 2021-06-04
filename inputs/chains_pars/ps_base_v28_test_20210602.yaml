@@ -1,4 +1,4 @@
-output_dir: "./data/ps_base_v28_test_20210602_fix_mistake_volume_in_cov/"
+output_dir: "./data/ps_base_v28_test_20210602_new_format/"
 model_name: null
 ref_cosmo_par_file: "./inputs/cosmo_pars/planck2018_fiducial.yaml"
 data_cosmo_par_file: "./inputs/cosmo_pars/planck2018_fnl_1p0.yaml"
