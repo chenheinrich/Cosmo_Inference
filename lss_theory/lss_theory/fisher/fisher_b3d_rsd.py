@@ -4,57 +4,45 @@ import numpy as np
 import copy
 import sys
 
-from lss_theory.fisher.derivative_generic import Derivative
+from lss_theory.fisher.derivative_generic import AllDerivatives
 from lss_theory.fisher.derivative_generic import DerivativeConvergence
 from lss_theory.fisher.fisher_generic import Fisher
 from lss_theory.params.survey_par import SurveyPar
 from lss_theory.params.other_par import OtherPar
 
-
-def get_param_set_definition(info):
-    #HACK
-    other_par = get_other_par(info)
-    param_set_def = {"*gaussian_biases": other_par.params_list}
-    #param_set_def = {"*gaussian_biases": other_par.params_list[0:2]}
-    return param_set_def
-
-def get_other_par(info):
-
-    survey_par = SurveyPar(info['survey_par_file'])
-
-    gaussian_bias = survey_par.get_galaxy_bias_array()
-    (nsample, nz) = gaussian_bias.shape
-
-    params_dict = {}
-    for isample in range(nsample):
-        for iz in range(nz):
-            params_dict['gaussian_bias_s%i_z%i'%(isample+1, iz+1)] = gaussian_bias[isample, iz]
-    
-    other_par = OtherPar(params_dict)
-
-    return other_par
-class Bispectrum3DRSDDerivative(Derivative):
+class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
 
     def __init__(self, info, ignore_cache=False, do_save=False, \
             parent_dir="./results/b3d_rsd/derivatives"):
         
-        other_par = self._get_other_par(info)
-
-        super().__init__(info, ignore_cache, do_save, parent_dir, other_par)
+        super().__init__(info, ignore_cache, do_save, parent_dir)
     
-    def _get_param_set_definition(self, info):
-        return get_param_set_definition(info)
+    def get_other_par(self, info):
 
-    def _get_other_par(self, info):
-        return get_other_par(info)
+        survey_par = SurveyPar(info['survey_par_file'])
 
-    def _setup_metadata(self):
-        self._metadata = self._info
+        gaussian_bias = survey_par.get_galaxy_bias_array()
+        (nsample, nz) = gaussian_bias.shape
+
+        params_dict = {}
+        for isample in range(nsample):
+            for iz in range(nz):
+                params_dict['gaussian_bias_s%i_z%i'%(isample+1, iz+1)] = gaussian_bias[isample, iz]
+        
+        other_par = OtherPar(params_dict)
+
+        return other_par
+    
+    def get_param_set_definition(self, info):
+        other_par = self.get_other_par(info)
+        #HACK
+        #param_set_def = {"*gaussian_biases": other_par.params_list}
+        param_set_def = {"*gaussian_biases": other_par.params_list[0:2]}
+        return param_set_def
 
     def _get_signal_for_info(self, info): 
         from lss_theory.scripts.get_bis_rsd import get_galaxy_bis
         return get_galaxy_bis(info)
-
 
 class Bispectrum3DRSDFisher(Fisher):
 
@@ -160,10 +148,21 @@ if __name__ == '__main__':
 
     info_input = copy.deepcopy(info)
     
-    do_derivative_convergence = True
+    do_all_derivatives = True
+    do_derivative_convergence = False
     do_plot_derivative = False
     do_fisher = False
     
+    if do_all_derivatives == True:
+        all_derivatives = Bispectrum3DRSD_AllDerivatives(
+            info_input,\
+            ignore_cache=False, \
+            do_save=True,\
+            parent_dir = './results/b3d_rsd/derivatives/'\
+        )
+        print('all_derivatives.data.shape', all_derivatives.data.shape)
+        print(all_derivatives.metadata)
+
     # Get converged derivatives
     if do_derivative_convergence == True:
         deriv_converged = check_for_convergence(info_input)

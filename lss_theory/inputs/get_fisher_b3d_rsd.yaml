@@ -25,18 +25,18 @@ Bispectrum3DRSD:
     sigp: null
     f_of_z: null
 
-derivatives:
+AllDerivatives:
   h_frac: 0.05
   h:
     fnl: 0.1
     theta_MC_100: 0.01
   params:
     - As
-    - ns
-    - fnl
-    - omch2
-    - ombh2
-    - theta_MC_100
+    #- ns
+    #- fnl
+    #- omch2
+    #- ombh2
+    #- theta_MC_100
     - "*gaussian_biases"
 
 fisher:
