@@ -12,7 +12,7 @@ def check_matrix_inverse(a, inv_a, atol=1e-06, feedback_level=0):
     id1 = np.matmul(a, inv_a)
     id2 = np.matmul(inv_a, a)
     
-    if feedback_level == 1:
+    if feedback_level >= 1:
         print('id1 = ', id1)
         print('id2 = ', id2)
 
@@ -22,14 +22,14 @@ def check_matrix_inverse(a, inv_a, atol=1e-06, feedback_level=0):
 
     is_inverse_test_passed = (check1 and check2)
 
-    if feedback_level == 1:
+    if feedback_level >= 1:
         print('Passed inverse test? - {}'.format(is_inverse_test_passed))
     
     if is_inverse_test_passed == False:
         max_diff1 = np.max(np.abs(id1 - id0))
         max_diff2 = np.max(np.abs(id2 - id0))
 
-        if feedback_level == 0:
+        if feedback_level >= 0:
             print('max diff1 = {}, max_diff2 = {}'.format(max_diff1, max_diff2))
 
     return is_inverse_test_passed

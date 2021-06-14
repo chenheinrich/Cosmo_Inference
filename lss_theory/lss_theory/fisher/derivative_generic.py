@@ -32,6 +32,19 @@ def get_dir(parent_dir, run_name, params_list, h_list):
     
     return dir_name
 
+
+def unpack_param_list_from_def(params_list_in, param_set_def):
+    """Returns parameter list with parameter sets unpacked"""
+
+    params_list = copy.deepcopy(params_list_in)
+
+    for param in params_list_in:
+        print('param = {}'.format(param))
+        if param[0] == "*":
+            params_list.extend(param_set_def[param])
+            params_list.remove(param)
+    
+    return params_list
 class Derivative():
     """
     Calculates derivatives of the signal (bispectrum 3D with RSD) 
@@ -52,11 +65,15 @@ class Derivative():
         self._other_par = other_par 
 
         der_info = self._info['derivatives']
-        self._params_list = der_info['params']
         self._cosmo = CosmoPar(self._info['cosmo_par_file'])
-        #TODO
-        # do a check that params_list exist inside of cosmo and other_par
 
+        self._params_list_in = copy.deepcopy(der_info['params'])
+        
+        self._param_set_def = self._get_param_set_definition(self._info)
+        self._params_list = unpack_param_list_from_def(self._params_list_in, self._param_set_def)
+
+        self._check_params_list_is_supported()
+        
         self._h_frac_list = self._get_h_frac_list()
         self._h_list = self._get_h_list()
         self._info['derivatives']['h_frac'] = self._h_frac_list
@@ -77,7 +94,6 @@ class Derivative():
                 self._save()
         else:
             self._load_all_derivatives()
- 
 
     @property
     def data(self):
@@ -99,10 +115,23 @@ class Derivative():
     def metadata_path(self):
         return self._metadata_path
 
+    @property
+    def params_list(self):
+        return self._params_list
+
+    def _get_param_set_definition(self):
+        return {}
+
+    def _check_params_list_is_supported(self):
+        supported_params_list = self._other_par.params_list + self._cosmo.params_list
+        for param in self._params_list:
+            assert param in supported_params_list
+        #TODO raise exception properly
+
     def _get_h_frac_list(self):
         h_frac = self._info['derivatives']['h_frac']
         if not isinstance(h_frac, list):
-            h_frac = [h_frac] * len(self._info['derivatives']['params'])
+            h_frac = [h_frac] * len(self._params_list)
             self._info['derivatives']['h_frac'] = h_frac
         return h_frac
 
@@ -111,7 +140,6 @@ class Derivative():
         h_list = []
         for iparam, param in enumerate(self._params_list):
             pfid = self._get_pfid_for_iparam(iparam)
-    
             h_frac = self._h_frac_list[iparam]
             h = pfid * h_frac
 
@@ -132,7 +160,9 @@ class Derivative():
         parent_dir = self._parent_dir
         run_name = self._info['run_name'] 
 
-        self._dir = get_dir(parent_dir, run_name, self._params_list, self._h_list)
+        #HACK 
+        h_frac = self._info['derivatives']['h_frac'][0]
+        self._dir = get_dir(parent_dir, run_name, self._params_list_in, [h_frac])
         
         print('self._dir = {}'.format(self._dir))
         mkdir_p(self._dir)
@@ -256,11 +286,6 @@ class DerivativeConvergence():
             ignore_cache=False, do_save=True, eps = 1e-3, parent_dir=None):
 
         self._info = copy.deepcopy(info)
-        #change h_frac to list
-        h_frac = self._info['derivatives']['h_frac']
-        if not isinstance(h_frac, list):
-            h_frac_list = [h_frac] * len(self._info['derivatives']['params'])
-            self._info['derivatives']['h_frac'] = h_frac_list
 
         module = importlib.import_module(module_name)
         self._DerivativeClass_ = getattr(module, class_name)
@@ -270,7 +295,17 @@ class DerivativeConvergence():
         self._eps = eps
         self._parent_dir = parent_dir
 
-        self._params_list = self._info['derivatives']['params']
+        self._params_list_in = copy.deepcopy(self._info['derivatives']['params'])
+
+        derivatives = self._DerivativeClass_(copy.deepcopy(info), \
+                ignore_cache=False, do_save=False)
+        print('derivatives.params_list = {}'.format(derivatives.params_list))
+        self._params_list = derivatives.params_list
+
+        self._param_set_def = getattr(module, 'get_param_set_definition')(info)
+        self._params_list = unpack_param_list_from_def(self._params_list_in, self._param_set_def)
+
+        self._h_frac_list = self._get_h_frac_list()
 
         self._is_converged_list, self._converged_h_frac_list, \
             self._converged_h_list, self._all_derivatives = \
@@ -293,6 +328,13 @@ class DerivativeConvergence():
     @property
     def cosmo(self):
         return self._derivative_fid.cosmo
+
+    def _get_h_frac_list(self):
+        h_frac = self._info['derivatives']['h_frac']
+        if not isinstance(h_frac, list):
+            h_frac = [h_frac] * len(self._params_list)
+            self._info['derivatives']['h_frac'] = h_frac
+        return h_frac
 
     def _get_metadata(self):
         metadata = copy.deepcopy(self._info)
@@ -454,7 +496,7 @@ class DerivativeConvergence():
     def _check_convergence(self, der1, der2):
         is_converged = False
         frac_diff = np.abs((der2-der1)/der1)
-        max_frac_diff = np.nanmax(frac_diff)
+        max_frac_diff = np.nanmax(frac_diff[frac_diff != np.inf])
         print('max_frac_diff = {}'.format(max_frac_diff))
         if (frac_diff >= self._eps).any():
             ind = np.where(frac_diff >= self._eps)

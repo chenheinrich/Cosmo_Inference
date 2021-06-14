@@ -169,22 +169,47 @@ def check_cov_symmetric(cov):
 
     from lss_theory.math_utils.matrix import check_matrix_symmetric
 
-    (nbxnori, nbxnori, nz, ntri) = cov.shape
+    if cov_type == 'full':
+        (nbxnori, nbxnori, nz, ntri) = cov.shape
 
-    is_symmetric = True
-    for iz in range(nz):
-        for itri in range(ntri):
+        is_symmetric = True
+        for iz in range(nz):
+            for itri in range(ntri):
 
-            print('iz = {}, itri = {}'.format(iz, itri))
+                print('iz = {}, itri = {}'.format(iz, itri))
 
-            cov_tmp = cov[:, :, iz, itri] 
-            is_symmetric = check_matrix_symmetric(cov_tmp)
+                cov_tmp = cov[:, :, iz, itri] 
+                is_symmetric = check_matrix_symmetric(cov_tmp)
 
-            print('is_symmetric = {}'.format(is_symmetric))
-            if is_symmetric == False:
-                return is_symmetric
+                print('is_symmetric = {}'.format(is_symmetric))
+                if is_symmetric == False:
+                    return is_symmetric
 
-    return is_symmetric
+        return is_symmetric
+
+    elif cov_type == 'diag_in_orientation':
+
+        (nb, nb, nz, ntri, nori) = cov.shape
+
+        is_symmetric = True
+        for iz in range(nz):
+            for itri in range(ntri):
+                for iori in range(nori):
+
+                    print('iz = {}, itri = {}, iori = {}'.format(iz, itri, iori))
+
+                    cov_tmp = cov[:, :, iz, itri, iori] 
+                    is_symmetric = check_matrix_symmetric(cov_tmp)
+
+                    print('is_symmetric = {}'.format(is_symmetric))
+                    if is_symmetric == False:
+                        return is_symmetric
+
+        return is_symmetric
+
+    else:
+        raise NotImplementedError
+        
 
 if __name__ == '__main__':
     """
@@ -205,10 +230,10 @@ if __name__ == '__main__':
 
     cov_calculator = Bispectrum3DRSDCovarianceCalculator(info)
     
-    cov_type = 'full'
+    cov_type = info['Bispectrum3DRSDCovariance']['cov_type'] 
 
-    fn_cov = os.path.join(info['plot_dir'], 'cov_%s.npy'%cov_type)
-    fn_invcov = os.path.join(info['plot_dir'], 'invcov_%s.npy'%cov_type)
+    fn_cov = os.path.join(info['result_dir'], 'cov_%s.npy'%cov_type)
+    fn_invcov = os.path.join(info['result_dir'], 'invcov_%s.npy'%cov_type)
 
     #HACK
     iz = 0
@@ -224,10 +249,10 @@ if __name__ == '__main__':
     cov_calculator.save_invcov(fn_invcov)
     
     cov = np.load(fn_cov)
-    is_symmetric = check_cov_symmetric(cov)
+    is_symmetric = check_cov_symmetric(cov, cov_type=cov_type)
 
     invcov = np.load(fn_invcov)
-    is_symmetric = check_cov_symmetric(invcov)
+    is_symmetric = check_cov_symmetric(invcov, cov_type=cov_type)
 
     #TODO why this part is so slow???
     #check_identity(cov, invcov)    

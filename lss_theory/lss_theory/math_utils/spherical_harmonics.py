@@ -11,6 +11,19 @@ from lss_theory.utils.file_tools import mkdir_p
 # So want a class that holds the table and also able to load
 # And a second class that just computes it.
 
+
+def get_nlm(lmax, do_negative_m):
+    if do_negative_m == True:
+        return np.sum([2*l+1 for l in range(0, lmax+1)])
+    else:
+        return np.sum([l+1 for l in range(0, lmax+1)])
+
+def get_lm_list(lmax, do_negative_m):
+    if do_negative_m == True:
+        return [(l, m) for l in range(0, lmax+1) for m in range(-l, l+1)]
+    else:
+        return [(l, m) for l in range(0, lmax+1) for m in range(0, l+1)]
+
 class CacheNotFoundError(Exception):
     """Raised when spherical harmonics cache not found.
     Attributes:
@@ -24,7 +37,7 @@ class CacheNotFoundError(Exception):
         super().__init__(self.message)
 
 
-def test_ylms(theta, phi):  
+def test_ylms(theta, phi, do_negative_m):  
     """Returns 1d numpy array of 4 elements for Ylm values with
     (l, m) = [(0,0), (1,-1), (1,0), (1,1)] given polar angle theta 
     and azimuthal angle phi. Used for testing.
@@ -33,8 +46,10 @@ def test_ylms(theta, phi):
     y1m1 = 0.5*np.sqrt(1.5/np.pi) * np.sin(theta) * np.exp(-phi * 1j)
     y1m0 = 0.5*np.sqrt(3.0/np.pi) * np.cos(theta)
     y11 = -0.5*np.sqrt(1.5/np.pi) * np.sin(theta) * np.exp(phi * 1j)
-    return np.array([y00, y1m1, y1m0, y11])
-
+    if do_negative_m is True:
+        return np.array([y00, y1m1, y1m0, y11])
+    else:
+        return np.array([y00, y1m0, y11])
 class SphericalHarmonicsTable():
     """This class gets the saved spherical harmonics table
     from disk or computes from scratch and saves them.
@@ -44,7 +59,7 @@ class SphericalHarmonicsTable():
             spherical harmonics table where nori = ntheta * nphi, 
             and nlms = sum of (2l+1) for l = 0 to lmax included.
     """
-    def __init__(self, thetas, phis, lmax):
+    def __init__(self, thetas, phis, lmax, do_negative_m):
         """
         Args:
             thetas: 1d numpy array for polar angle values.
@@ -54,8 +69,9 @@ class SphericalHarmonicsTable():
         self._thetas = thetas
         self._phis = phis
         self._lmax = lmax
+        self._do_negative_m = do_negative_m
 
-        self._cache_dir = './tmp/galaxy_3d/sh_table/'
+        self._cache_dir = './tmp/lss_theory/sh_table/'
         mkdir_p(self._cache_dir)
 
         try:
@@ -104,6 +120,7 @@ class SphericalHarmonicsTable():
             'lmax': self._lmax, 
             'thetas': list(self._thetas), 
             'phis': list(self._phis), 
+            'do_negative_m': self._do_negative_m,
             }
         with open(self._cache_metadata_path, 'w') as outfile:
             json.dump(cache_metadata, outfile, sort_keys=True, indent=4)
@@ -143,6 +160,7 @@ class SphericalHarmonicsTable():
             passed.append(metadata['thetas'] == list(self._thetas))
             passed.append(metadata['phis'] == list(self._phis))
             passed.append(metadata['lmax'] == self._lmax)
+            passed.append(metadata['do_negative_m'] == self._do_negative_m)
 
             if all(passed):
                 return cache_path, cache_metadata_path
@@ -159,14 +177,21 @@ class SphericalHarmonicsTable():
         iori = 0
         theta = self._thetas[itheta] 
         phi = self._phis[iphi]
-        check_passed = np.allclose(test_ylms(theta, phi), sh_table[iori, :4])
+
+        expected = test_ylms(theta, phi, self._do_negative_m)
+        length = expected.size
+        check_passed = np.allclose(\
+            expected, \
+            sh_table[iori, :length]\
+        )
         assert check_passed
         print('Loading ylms: Check passed? %s'%check_passed)
 
         return sh_table
 
     def _get_sh(self):
-        calc = SphericalHarmonicsCalculator(self._thetas, self._phis, self._lmax)
+        calc = SphericalHarmonicsCalculator(self._thetas, \
+            self._phis, self._lmax, self._do_negative_m)
         return calc.get_ylms()
 
 class SphericalHarmonicsCalculator():
@@ -177,7 +202,7 @@ class SphericalHarmonicsCalculator():
         data: returns 3d numpy array of shape (ntheta, nphi, nlms), where
             nlms is sum (2l+1) from l = 0 to l = lmax."""
 
-    def __init__(self, thetas, phis, lmax):
+    def __init__(self, thetas, phis, lmax, do_negative_m):
         """
         Args:
             thetas: 1d numpy array for polar angle theta values.
@@ -190,7 +215,15 @@ class SphericalHarmonicsCalculator():
         self._lmax = lmax
         self._ntheta = self._thetas.size
         self._nphi = self._phis.size
-        self._nlm = np.sum([2*l+1 for l in range(0, lmax+1)])
+        self._do_negative_m = do_negative_m
+        self._nlm = self._get_nlm()
+        self._lm_list = self._get_lm_list()
+
+    def _get_nlm(self):
+        return get_nlm(self._lmax, self._do_negative_m)
+
+    def _get_lm_list(self):
+        return get_lm_list(self._lmax, self._do_negative_m)
 
     def get_ylms(self):
         from scipy.special import sph_harm 
@@ -202,20 +235,21 @@ class SphericalHarmonicsCalculator():
         lmax = self._lmax
 
         ilm = 0
-        for l in range(0, lmax+1):
-            for m in range(-l, l+1):
+        for (l, m) in self._lm_list:
 
-                iori = 0
-                for itheta, theta in enumerate(self._thetas):
-                    for iphi, phi in enumerate(self._phis):
-                        
-                        ylms_tmp = sph_harm(m, l, phi, theta)
-                        ylms[iori, ilm] = ylms_tmp
-                        iori = iori + 1
+            print('(l,m) = {}, {}'.format(l,m))
 
-                ilm = ilm + 1
+            iori = 0
+            for itheta, theta in enumerate(self._thetas):
+                for iphi, phi in enumerate(self._phis):
+                    
+                    ylms_tmp = sph_harm(m, l, phi, theta)
+                    ylms[iori, ilm] = ylms_tmp
+                    iori = iori + 1
+
+            ilm = ilm + 1
 
         print('ylms.shape = ', ylms.shape)
         print('expected shape = ', (nori, self._nlm))
-
+        
         return ylms

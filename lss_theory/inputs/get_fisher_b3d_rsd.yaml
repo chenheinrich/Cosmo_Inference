@@ -31,13 +31,13 @@ derivatives:
     fnl: 0.1
     theta_MC_100: 0.01
   params:
-    - b1
     - As
     - ns
     - fnl
     - omch2
     - ombh2
     - theta_MC_100
+    - "*gaussian_biases"
 
 fisher:
   data_dir: './results/b3d_rsd/fisher/'

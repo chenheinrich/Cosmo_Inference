@@ -12,8 +12,9 @@ BispectrumMultipole:
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc''
   multipole_info:
-    lmax: 4
+    lmax: 2
     do_nonzero_m: True
+    do_negative_m: False
   triangle_orientation_info:  #used for getting the right BispectrumRSD3D
     parametrization_name: 'theta1_phi12' 
     min_cos_theta1: -1.0 #0.0
@@ -31,5 +32,6 @@ BispectrumMultipole:
 covariance:
   do_cvl_noise: False
   fsky: 0.75
-  b3d_rsd_cov_path: './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
+  #b3d_rsd_cov_path: './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
+  b3d_rsd_cov_path: './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/test20210607/invcov_diag_in_orientation.npy'
   data_dir: './results/bis_mult/covariance/'

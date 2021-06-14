@@ -6,6 +6,12 @@ class CosmoPar(object):
         self.cosmo_par_file = cosmo_par_file
         self._set_par(overwrite_dict)
 
+        self._params_list = list(self.__dict__.keys()) # HACK Test if this works!
+
+    @property
+    def params_list(self):
+        return self._params_list
+
     def _set_par(self, overwrite_dict):
 
         #TODO add error handling

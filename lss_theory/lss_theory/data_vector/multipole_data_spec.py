@@ -2,7 +2,7 @@ import numpy as np
 
 from lss_theory.utils.logging import class_logger
 
-from lss_theory.data_vector.data_spec import Bispectrum3DBaseSpec, Bispectrum3DRSDSpec
+from lss_theory.data_vector.data_spec import Bispectrum3DBaseSpec, Bispectrum3DRSDSpec, Bispectrum3DRSDSpec_Theta1Phi12
 
 class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
 
@@ -22,8 +22,11 @@ class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
         self._lmax = data_spec_dict['multipole_info']['lmax']
         self._do_nonzero_m = data_spec_dict['multipole_info']['do_nonzero_m']
 
-        self._setup_nlm()
-        self._setup_lm_list()
+        self._do_negative_m = data_spec_dict['multipole_info']['do_negative_m']
+        # TODO add support for do_nonzero_m 
+        # TODO check combinations of those two flags
+        self._nlm = self._get_nlm()
+        self._lm_list = self._get_lm_list()
 
         self._b3d_rsd_spec = self._get_b3d_rsd_spec(survey_par, data_spec_dict)
         self._overwrite_shape_for_bis_mult()
@@ -31,7 +34,7 @@ class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
     def _get_b3d_rsd_spec(self, survey_par, data_spec_dict):
         b3d_rsd_spec_dict = data_spec_dict.copy()
         b3d_rsd_spec_dict.pop('multipole_info', None)
-        b3d_rsd_spec = Bispectrum3DRSDSpec(survey_par, b3d_rsd_spec_dict)
+        b3d_rsd_spec = Bispectrum3DRSDSpec_Theta1Phi12(survey_par, b3d_rsd_spec_dict)
         return b3d_rsd_spec
 
     @property
@@ -54,11 +57,13 @@ class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
     def lm_list(self):
         return self._lm_list
 
-    def _setup_nlm(self):
-        self._nlm = np.sum([2*l+1 for l in range(0, self._lmax+1)])
+    def _get_nlm(self):
+        from lss_theory.math_utils.spherical_harmonics import get_nlm
+        return get_nlm(self._lmax, self._do_negative_m)
 
-    def _setup_lm_list(self):
-        self._lm_list = [(l, m) for l in range(0, self._lmax+1) for m in range(-l, l+1)]
+    def _get_lm_list(self):
+        from lss_theory.math_utils.spherical_harmonics import get_lm_list
+        return get_lm_list(self._lmax, self._do_negative_m)
 
     def _overwrite_shape_for_bis_mult(self):
         self._shape = (self.nb, self.nz, self.ntri, self.nlm)

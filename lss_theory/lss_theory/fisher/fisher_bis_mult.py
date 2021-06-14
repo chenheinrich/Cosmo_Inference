@@ -50,7 +50,7 @@ class BispectrumMultipoleFisher(Fisher):
 
     #TODO temporary solution, could do better in DerivativeConvergence
     def _setup_module_and_class_names(self):
-        self._module_name = 'theory.fisher.fisher_bis_mult'
+        self._module_name = 'lss_theory.fisher.fisher_bis_mult'
         self._class_name = 'BispectrumMultipoleDerivatives'
         self._derivative_dir = './results/bis_mult/derivatives/'
     
@@ -87,7 +87,7 @@ class BispectrumMultipoleFisher(Fisher):
         
 
 def check_for_convergence(info):
-    module_name = 'theory.fisher.fisher_bis_mult'
+    module_name = 'lss_theory.fisher.fisher_bis_mult'
     class_name = 'BispectrumMultipoleDerivatives'
     der_conv = DerivativeConvergence(info, module_name, class_name, \
         ignore_cache=False, do_save=True,\

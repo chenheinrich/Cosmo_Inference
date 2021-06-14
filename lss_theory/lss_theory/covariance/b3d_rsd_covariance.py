@@ -110,8 +110,10 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         if cov_type == 'full':
             self.cov = self.get_cov(do_invcov)
-        elif cov_type == 'diag':
+        elif cov_type == 'diag_in_orientation':
             self.cov = self.get_cov_diagonal_in_triangle_orientation(do_invcov)
+        else:
+            raise NotImplementedError
         
         self.save_cov(fn)
         return self.cov
