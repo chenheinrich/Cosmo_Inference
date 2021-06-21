@@ -32,12 +32,13 @@ AllDerivatives:
     theta_MC_100: 0.01
   params:
     - As
-    #- ns
-    #- fnl
+    - ns
+    - fnl
     #- omch2
     #- ombh2
     #- theta_MC_100
     - "*gaussian_biases"
+  method: 'finite_diff' #finite_diff or five_point
 
 fisher:
   data_dir: './results/b3d_rsd/fisher/'

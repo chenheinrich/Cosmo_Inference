@@ -5,7 +5,7 @@ import copy
 import sys
 
 from lss_theory.fisher.derivative_generic import AllDerivatives
-from lss_theory.fisher.derivative_generic import DerivativeConvergence
+from lss_theory.fisher.derivative_generic import AllDerivativesConvergence
 from lss_theory.fisher.fisher_generic import Fisher
 from lss_theory.params.survey_par import SurveyPar
 from lss_theory.params.other_par import OtherPar
@@ -35,9 +35,7 @@ class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
     
     def get_param_set_definition(self, info):
         other_par = self.get_other_par(info)
-        #HACK
-        #param_set_def = {"*gaussian_biases": other_par.params_list}
-        param_set_def = {"*gaussian_biases": other_par.params_list[0:2]}
+        param_set_def = {"*gaussian_biases": other_par.params_list}
         return param_set_def
 
     def _get_signal_for_info(self, info): 
@@ -74,7 +72,7 @@ class Bispectrum3DRSDFisher(Fisher):
     #TODO temporary solution, could do better in DerivativeConvergence
     def _setup_module_and_class_names(self):
         self._module_name = 'lss_theory.fisher.fisher_b3d_rsd'
-        self._class_name = 'Bispectrum3DRSDDerivative'
+        self._class_name = 'Bispectrum3DRSD_AllDerivatives'
         self._derivative_dir = './results/b3d_rsd/derivatives/'
     
     def _get_fisher_matrix_element(self, iparam, jparam):
@@ -123,8 +121,8 @@ class Bispectrum3DRSDFisher(Fisher):
 
 def check_for_convergence(info):
     module_name = 'lss_theory.fisher.fisher_b3d_rsd'
-    class_name = 'Bispectrum3DRSDDerivative'
-    der_conv = DerivativeConvergence(info, module_name, class_name, \
+    class_name = 'Bispectrum3DRSD_AllDerivatives'
+    der_conv = AllDerivativesConvergence(info, module_name, class_name, \
         ignore_cache=False, do_save=True,\
         parent_dir = './results/b3d_rsd/derivatives/')
     return der_conv
@@ -148,10 +146,10 @@ if __name__ == '__main__':
 
     info_input = copy.deepcopy(info)
     
-    do_all_derivatives = True
+    do_all_derivatives = False
     do_derivative_convergence = False
     do_plot_derivative = False
-    do_fisher = False
+    do_fisher = True
     
     if do_all_derivatives == True:
         all_derivatives = Bispectrum3DRSD_AllDerivatives(

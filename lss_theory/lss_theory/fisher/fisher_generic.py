@@ -4,7 +4,7 @@ import json
 import copy
 import scipy.linalg as linalg
 
-from lss_theory.fisher.derivative_generic import DerivativeConvergence
+from lss_theory.fisher.derivative_generic import AllDerivativesConvergence
 from lss_theory.utils.file_tools import mkdir_p
 from lss_theory.math_utils import matrix
 
@@ -17,7 +17,7 @@ class Fisher():
         mkdir_p(self._dir)
         self._setup_paths()
 
-        self._params_list = self._info['derivatives']['params']
+        self._params_list = self._info['AllDerivatives']['params']
         self._setup_module_and_class_names()
 
         self._invcov = self._load_invcov()
@@ -74,7 +74,7 @@ class Fisher():
         class_name = self._class_name
         parent_dir = self._derivative_dir #TODO can put in info as well in derivative class
         info = copy.deepcopy(self._info)
-        self._der_conv = DerivativeConvergence(info, module_name, class_name, \
+        self._der_conv = AllDerivativesConvergence(info, module_name, class_name, \
             ignore_cache=False, do_save=True,\
             parent_dir = parent_dir)
         return self._der_conv.data 
@@ -107,7 +107,7 @@ class Fisher():
     def _setup_metadata(self):
         self._metadata = copy.deepcopy(self._info)
         der_conv_metadata = self._der_conv.metadata
-        self._metadata['derivatives']['h_frac'] = der_conv_metadata['derivatives']['h_frac']
+        self._metadata['AllDerivatives']['h_frac'] = der_conv_metadata['AllDerivatives']['h_frac']
 
     def _save(self):
         self._save_data()
