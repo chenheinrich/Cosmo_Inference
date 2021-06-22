@@ -9,7 +9,7 @@ cobaya_par_file: "./inputs/cobaya_pars/debug_grs_ingredients_bis_base.yaml"
 overwrite_covariance: False
 
 cobaya_par_file_gen_specs:
-  spherelikes.theory.Bispectrum3DRSD:
+  spherelikes.theory.Bispectrum3DBase:
     bias:
       fix_to_default: True
       include_latex: True
