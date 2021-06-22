@@ -13,7 +13,7 @@ output: chains/b3d_rsd_vary_all_but_w0_wa_mnu/b3d_rsd
 likelihood:
   spherex_cobaya.likelihood.LikeBispectrum3DRSD:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
-    invcov_path: "./data/b3d_rsd_v27/nk_11/invcov_diag_in_orientation.npy"
+    invcov_path: "./data/b3d_rsd_v27/nk_11/invcov_diag.npy"
     sim_data_path: "./data/b3d_rsd_v27/nk_11/sim_data.npy"
     cov_type: "diagonal_in_orientation"
 
