@@ -12,7 +12,7 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
     
 2. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/) before installing the dependencies:
 
-    `conda create -n sphere python=3.7`
+    `conda create -n <yourenvname> python=3.7`
 
     `conda activate <yourenvname>`
 
@@ -30,7 +30,7 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
     `python3 -m pip install -r requirements.txt [--user]`
 
-2. Install packages (spherex_cobaya and lss_theory) in this repository (add `--user` if you're on a cluster; and `-e` for editable mode if you are actively developing these packages):
+2. Install packages (`spherex_cobaya` and `lss_theory`) in this repository (add `--user` if you're on a cluster; and `-e` for editable mode if you are actively developing these packages):
 
     `python3 -m pip install [-e] . [--user] `
     `python3 -m pip install [-e] ./lss_theory [--user]`
@@ -42,7 +42,6 @@ If you have `venv` activated and do not have administrative permission, give exp
 3. Test that the packages are properly installed:
 
 `python3 -c "import spherex_cobaya; import lss_theory"`
-`python3 -c "import lss_theory"`
 
 ## Run tests
 
@@ -55,6 +54,8 @@ Use `python3 -m pytest` instead of `pytest` to ensure that you are using the
 same `pytest` you installed earlier with `requirements.txt`.
 
 ## Run a sample cobaya run (must be from the root of this directory):
+
+[EVERYTHING BELOW NEEDS TO BE UPDATED]
 
 You should be able to run:
 

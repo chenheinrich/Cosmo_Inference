@@ -6,6 +6,8 @@ sampler:
     oversample_power: 0.4
     proposal_scale: 1.9
 
+output: chains/test_camb/
+
 theory:
   camb:
     extra_args:
