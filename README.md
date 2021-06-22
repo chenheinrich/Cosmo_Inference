@@ -7,13 +7,14 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
 1. Clone the repository:
 
-    `git clone https://github.com/chenheinrich/spherex_cobaya.git`
+    `git clone https://github.com/chenheinrich/SphereLikes.git`
+    `cd SphereLikes`
     
 2. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/) before installing the dependencies:
 
-    `conda create -n <yourenvname> python=3.7`
+    `conda create -n sphere python=3.7`
 
-    `source activate <yourenvname>`
+    `conda activate <yourenvname>`
 
    or
 
@@ -25,51 +26,33 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
 ## Install Requirements
 
-You may skip to step 3 if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
-
-1. Install Cobaya.
-
-    `git clone https://github.com/CobayaSampler/cobaya.git`
-
-    `pip3 install -e cobaya --upgrade`
-
-   To test the installation: `python3 -c "import cobaya"`. If you have trouble, follow instructions here to install cobaya manually: https://cobaya.readthedocs.io/en/latest/installation.html#making-sure-that-cobaya-is-installed
-
-2. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`). Also, MPI installation is optional but highly recommended (follow instructions [here](https://cobaya.readthedocs.io/en/latest/installation.html)).
-
-   Install cosmological packages in Cobaya, replacing `<path_to_packages>` with the path of your choice, e.g. `./cosmo`. This means you will have `cobaya`, `cosmo` and `spherex_cobaya` on the same level. 
-
-    `cobaya-install cosmo -p <path_to_packages>`
-    
-    You may also decide to only install camb (the only one needed for now) and skip the rest:
-    
-    `cobaya-install camb -p <path_to_packages>`
-
-   If Planck likelihood installation fails, follow instructions [here](cosmo/code/planck/code).
-
-3. Install other requirements (add `--user` if you're on a cluster):
-
-    `cd spherex_cobaya`
+1. Install requirements (add `--user` if you're on a cluster):
 
     `python3 -m pip install -r requirements.txt [--user]`
 
-## Pip install `spherex_cobaya` package 
+2. Install packages (spherex_cobaya and lss_theory) in this repository (add `--user` if you're on a cluster; and `-e` for editable mode if you are actively developing these packages):
 
-Install in editable mode for now:
+    `python3 -m pip install [-e] . [--user] `
+    `python3 -m pip install [-e] ./lss_theory [--user]`
 
-`python3 -m pip install -e . [--user]`
-
-if you have venv activated and do not have administrative permission, give explicit path for pip in your environment, e.g.:
+If you have `venv` activated and do not have administrative permission, give explicit path for pip in your environment, e.g.:
 
 `venv/bin/pip3.7 install -e .`
 
-Test with `python3 -c "import spherex_cobaya"`
+3. Test that the packages are properly installed:
 
-`python3 -m pip install -e ./lss_theory [--user]`
+`python3 -c "import spherex_cobaya; import lss_theory"`
+`python3 -c "import lss_theory"`
 
-Test with `python3 -c "import lss_theory"`
+## Run tests
 
-python3 tests/dev_test_theory.py
+Current working tests are (we are still under construction):
+
+1. `python3 tests/dev_test_theory.py`
+2. `python3 -m pytest tests/test_theory.py -m short`
+
+Use `python3 -m pytest` instead of `pytest` to ensure that you are using the 
+same `pytest` you installed earlier with `requirements.txt`.
 
 ## Run a sample cobaya run (must be from the root of this directory):
 

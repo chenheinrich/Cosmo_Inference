@@ -47,6 +47,7 @@ def test_cobaya_ps_base_theory(cobaya_par_file, cosmo_par_file, fn_expected):
 
     assert(np.allclose(ps, ps_expected))
 
+@pytest.mark.short
 @pytest.mark.parametrize("cobaya_par_file, cosmo_par_file, chi2_expected", \
     [
     (cobaya_par_file, cosmo_par_file_sim, 0.0),\
