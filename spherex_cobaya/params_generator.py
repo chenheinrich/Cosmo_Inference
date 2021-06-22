@@ -3,7 +3,7 @@ import copy
 import importlib
 from cobaya.yaml import yaml_load_file
 
-from spherelikes.params import CobayaPar
+from spherex_cobaya.params import CobayaPar
 
 class CobayaParGenerator():
 

@@ -7,11 +7,11 @@ It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/in
 
 1. Clone the repository:
 
-    `git clone https://github.com/chenheinrich/SphereLikes.git`
+    `git clone https://github.com/chenheinrich/spherex_cobaya.git`
     
 2. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/) before installing the dependencies:
 
-    `conda create -n <yourenvname> python=3.7 anaconda`
+    `conda create -n <yourenvname> python=3.7`
 
     `source activate <yourenvname>`
 
@@ -37,7 +37,7 @@ You may skip to step 3 if you already have Cobaya and its cosmological packages 
 
 2. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`). Also, MPI installation is optional but highly recommended (follow instructions [here](https://cobaya.readthedocs.io/en/latest/installation.html)).
 
-   Install cosmological packages in Cobaya, replacing `<path_to_packages>` with the path of your choice, e.g. `./cosmo`. This means you will have `cobaya`, `cosmo` and `SphereLikes` on the same level. 
+   Install cosmological packages in Cobaya, replacing `<path_to_packages>` with the path of your choice, e.g. `./cosmo`. This means you will have `cobaya`, `cosmo` and `spherex_cobaya` on the same level. 
 
     `cobaya-install cosmo -p <path_to_packages>`
     
@@ -49,21 +49,27 @@ You may skip to step 3 if you already have Cobaya and its cosmological packages 
 
 3. Install other requirements (add `--user` if you're on a cluster):
 
-    `cd SphereLikes`
+    `cd spherex_cobaya`
 
-    `pip3 install -r requirements.txt [--user]`
+    `python3 -m pip install -r requirements.txt [--user]`
 
-## Pip install `spherelikes` package 
+## Pip install `spherex_cobaya` package 
 
 Install in editable mode for now:
 
-`pip3 install -e . [--user]`
+`python3 -m pip install -e . [--user]`
 
 if you have venv activated and do not have administrative permission, give explicit path for pip in your environment, e.g.:
 
 `venv/bin/pip3.7 install -e .`
 
-Test with `python3 -c "import spherelikes"`
+Test with `python3 -c "import spherex_cobaya"`
+
+`python3 -m pip install -e ./lss_theory [--user]`
+
+Test with `python3 -c "import lss_theory"`
+
+python3 tests/dev_test_theory.py
 
 ## Run a sample cobaya run (must be from the root of this directory):
 

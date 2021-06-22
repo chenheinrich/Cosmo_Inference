@@ -17,8 +17,8 @@ def test_cobaya(input_args):
 
     from cobaya.model import get_model
     from cobaya.yaml import yaml_load_file
-    from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
-    from spherelikes.params import CobayaPar, SurveyPar
+    from spherex_cobaya.theory.PowerSpectrum3D import make_dictionary_for_bias_params
+    from spherex_cobaya.params import CobayaPar, SurveyPar
 
     cobaya_par = CobayaPar(input_args['cobaya_par_file'])
     survey_par = cobaya_par.get_survey_par()

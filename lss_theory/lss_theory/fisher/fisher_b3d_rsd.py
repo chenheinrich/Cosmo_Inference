@@ -59,7 +59,7 @@ class Bispectrum3DRSDFisher(Fisher):
             invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210513/invcov_full.npy'
         
         elif self._cov_type == 'diagonal_in_triangle_orientation': 
-            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'
+            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/spherex_cobaya/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'
         
         invcov = np.load(invcov_path)
         print('invcov.shape = {}'.format(invcov.shape))

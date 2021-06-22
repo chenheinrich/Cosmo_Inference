@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from spherelikes.params import SurveyPar
+from spherex_cobaya.params import SurveyPar
 
 @pytest.fixture
 def survey_par():

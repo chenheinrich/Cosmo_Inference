@@ -22,7 +22,7 @@ RUN git clone https://github.com/CobayaSampler/cobaya.git \
 
 RUN pip3 install -r code/requirements.txt \
 &&  pip3 install -e code \
-&&  python3 -c "import spherelikes" 
+&&  python3 -c "import spherex_cobaya" 
 
 WORKDIR '/code'
 #RUN pytest ./tests/ -v -m short 

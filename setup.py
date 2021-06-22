@@ -1,14 +1,14 @@
 from setuptools import setup
 
 setup(
-    name='spherelikes',
+    name='spherex_cobaya',
     version='0.1.0',
     description='SPHEREx simulated likelihoods',
-    url='https://github.com/chenheinrich/SphereLikes',
+    url='https://github.com/chenheinrich/spherex_cobaya',
     author='Chen Heinrich',
     author_email='chenhe@caltech.edu',
     license='BSD 2-clause',
-    packages=['spherelikes'],
+    packages=['spherex_cobaya'],
     install_requires=['numpy',
                       ],
 

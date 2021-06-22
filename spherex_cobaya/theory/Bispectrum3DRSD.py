@@ -9,15 +9,15 @@ import matplotlib.pyplot as plt
 import pathlib
 import logging
 
-from spherelikes.utils.log import LoggedError, class_logger
-from spherelikes.utils import constants
+from spherex_cobaya.utils.log import LoggedError, class_logger
+from spherex_cobaya.utils import constants
 #HACK
-#from spherelikes.params import SurveyPar
-from spherelikes.params_generator import TheoryParGenerator
+#from spherex_cobaya.params import SurveyPar
+from spherex_cobaya.params_generator import TheoryParGenerator
 
-from lss_theory.data_vector import PowerSpectrum3D as PowerSpectrum3D_standalone
+from lss_theory.data_vector import Bispectrum3DRSD as Bispectrum3DRSD_standalone
+from lss_theory.data_vector import Bispectrum3DRSDSpec
 from lss_theory.data_vector import GRSIngredientsCreator
-from lss_theory.data_vector import PowerSpectrum3DSpec
 from lss_theory.params.cosmo_par import CosmoPar
 from lss_theory.params.survey_par import SurveyPar
 
@@ -33,8 +33,7 @@ def make_dictionary_for_base_params():
                 'ref': {'dist': 'norm', 'loc': 1.0, 'scale': 0.5},
                 'propose': 0.001,
                 'latex': 'f_{\rm{NL}}',
-                },
-        #'derived_param_p3d': {'derived': True},
+                }
     }
     return base_params
 
@@ -124,9 +123,8 @@ class ParGenerator(TheoryParGenerator):
         )
         return bias_params
 
-#TODO could refactor in the future the common code
-# with Bispectrum3DBase and Bispectrum3DRSD
-class PowerSpectrum3D(Theory):
+
+class Bispectrum3DRSD(Theory):
 
     nk = 2  # number of k points (to be changed into bins)
     nmu = 2  # number of mu bins
@@ -135,9 +133,12 @@ class PowerSpectrum3D(Theory):
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
 
+    triangle_orientation_info = {}
+    debug_settings = {}
+    
     def initialize(self):
         """called from __init__ to initialize"""
-        
+
         self.logger = class_logger(self)
 
         self.data_spec_dict = {
@@ -145,9 +146,11 @@ class PowerSpectrum3D(Theory):
             'nmu': self.nmu, # number of mu bins
             'kmin': self.kmin, # equivalent to 0.001 h/Mpc
             'kmax': self.kmax, # equivalent to 0.2 h/Mpc
+            'triangle_orientation_info': self.triangle_orientation_info,
+            'debug_settings': self.debug_settings
         }
 
-        print('Done setting up PowerSpectrum3D')
+        print('Done setting up Bispectrum3DRSD')
 
     def initialize_with_provider(self, provider):
         """
@@ -155,7 +158,7 @@ class PowerSpectrum3D(Theory):
         instance which is used to return any dependencies (see calculate below).
         """
         self.provider = provider
-
+        
     def get_requirements(self):
         """
         Return dictionary of derived parameters or other quantities that are needed
@@ -164,25 +167,26 @@ class PowerSpectrum3D(Theory):
         return {}
 
     def must_provide(self, **requirements):
-        if 'galaxy_ps' in requirements:
+        # Note: if need to be different than power spectrum, can change 
+        # to grs_ingredients_bispectrum for example
+        if 'galaxy_bis' in requirements:
             return {
-                'grs_ingredients': None 
+                'grs_ingredients': None
             }
 
     def calculate(self, state, want_derived=True, **params_values_dict):
-
+ 
         grs_ingredients = self.provider.get_grs_ingredients()
         self.survey_par = grs_ingredients._survey_par 
-        self.data_spec = PowerSpectrum3DSpec(self.survey_par, self.data_spec_dict)
+        self.data_spec = Bispectrum3DRSDSpec(self.survey_par, self.data_spec_dict)
+        
+        data_vec = Bispectrum3DRSD_standalone(grs_ingredients, self.survey_par, self.data_spec)
+        galaxy_bis = data_vec.get('galaxy_bis')
 
-        data_vec = PowerSpectrum3D_standalone(grs_ingredients, self.survey_par, self.data_spec)
-        galaxy_ps = data_vec.get('galaxy_ps')
+        state['galaxy_bis'] = galaxy_bis
 
-        self.logger.debug('About to galaxy_ps')
-        state['galaxy_ps'] = galaxy_ps
+        # TODO placeholder for any derived parameter from this module
+        state['derived'] = {'derived_param': 1.0}
 
-        # TODO placeholder for any derived paramter from this module
-        #state['derived'] = {'derived_param_p3d': 1.0}
-
-    def get_galaxy_ps(self):
-        return self._current_state['galaxy_ps']
+    def get_galaxy_bis(self):
+        return self._current_state['galaxy_bis']

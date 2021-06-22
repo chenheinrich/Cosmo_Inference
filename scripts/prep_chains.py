@@ -10,7 +10,7 @@ from scripts.generate_ref import generate_ref
 from scripts.generate_covariance import generate_covariance
 from scripts.generate_data import generate_data
 
-from spherelikes.params import CobayaPar
+from spherex_cobaya.params import CobayaPar
 
 class ChainPreparation():
 

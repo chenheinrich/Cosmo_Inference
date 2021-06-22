@@ -11,12 +11,12 @@ output: chains/debug/debug_grs_ingredients_ps_and_bis_rsd/ps_and_bis_rsd
 
 likelihood:
 
-  spherelikes.likelihood.LikePowerSpectrum3D:
+  spherex_cobaya.likelihood.LikePowerSpectrum3D:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
     invcov_path: "./data/debug_grs_ingredients/nk_11/ps_base_v27/invcov.npy"
     sim_data_path: "./data/debug_grs_ingredients/nk_11/ps_base_v27/sim_data.pickle"
 
-  spherelikes.likelihood.LikeBispectrum3DRSD:
+  spherex_cobaya.likelihood.LikeBispectrum3DRSD:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
     invcov_path: "./data/debug_grs_ingredients/nk_11/bis_rsd_v27/invcov_full.npy"
     sim_data_path: "./data/debug_grs_ingredients/nk_11/bis_rsd_v27/sim_data.npy"
@@ -35,7 +35,7 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.GRSIngredients:
+  spherex_cobaya.theory.GRSIngredients:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True
@@ -47,7 +47,7 @@ theory:
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
 
-  spherelikes.theory.PowerSpectrum3D:
+  spherex_cobaya.theory.PowerSpectrum3D:
     stop_at_error: True
 
     nk: 11 # number of k points 
@@ -56,7 +56,7 @@ theory:
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
     
-  spherelikes.theory.Bispectrum3DRSD:
+  spherex_cobaya.theory.Bispectrum3DRSD:
     stop_at_error: True
 
     nk: 11 # number of k points 

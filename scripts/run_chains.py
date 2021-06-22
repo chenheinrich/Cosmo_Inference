@@ -4,8 +4,8 @@ import subprocess
 
 from cobaya.run import run
 from cobaya.yaml import yaml_load_file, yaml_dump_file
-from spherelikes.params import CobayaPar
-from spherelikes.params_generator import CobayaParGenerator
+from spherex_cobaya.params import CobayaPar
+from spherex_cobaya.params_generator import CobayaParGenerator
 
 if __name__ == '__main__':
 

@@ -10,7 +10,7 @@ sampler:
 output: chains/debug/debug_standalone_ps_base_vary_all_but_w0_wa_mnu_optimized_mcmc_settings/ps_base
 
 likelihood:
-  spherelikes.likelihood.LikePowerSpectrum3D:
+  spherex_cobaya.likelihood.LikePowerSpectrum3D:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
     invcov_path: "./data/ps_base_v27/invcov.npy"
     sim_data_path: "./data/ps_base_v27/sim_data_nk_11.pickle"
@@ -28,7 +28,7 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.PowerSpectrum3D:
+  spherex_cobaya.theory.PowerSpectrum3D:
     stop_at_error: True
 
     is_reference_model: False # if calculating reference model for AP, set to True

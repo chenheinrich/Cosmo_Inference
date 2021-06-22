@@ -1,4 +1,4 @@
-from spherelikes.model import ModelCalculator
+from spherex_cobaya.model import ModelCalculator
 import os
 import copy
 

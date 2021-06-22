@@ -1,7 +1,7 @@
 import numpy as np
 
 from cobaya.yaml import yaml_load_file
-from spherelikes.utils.log import class_logger
+from spherex_cobaya.utils.log import class_logger
 
 class SurveyParFileError(Exception):
     pass
@@ -35,7 +35,7 @@ class CobayaPar():
 
     def get_spherex_theory(self, use_grs_ingredients=True):
         if use_grs_ingredients is True:
-            return 'spherelikes.theory.GRSIngredients'
+            return 'spherex_cobaya.theory.GRSIngredients'
         else:
             first_theory_name = list(self._info['theory'].keys())[1]
             return first_theory_name

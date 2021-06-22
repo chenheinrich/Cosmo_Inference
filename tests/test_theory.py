@@ -5,8 +5,8 @@ import numpy as np
 
 from cobaya.model import get_model
 from cobaya.yaml import yaml_load_file
-from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
-from spherelikes.params import CobayaPar, SurveyPar
+from spherex_cobaya.theory.PowerSpectrum3D import make_dictionary_for_bias_params
+from spherex_cobaya.params import CobayaPar, SurveyPar
 #TODO need importing from the right place if SurveyPar is refactored
 
 cobaya_par_file = './tests/inputs/cobaya_pars/ps_base.yaml'

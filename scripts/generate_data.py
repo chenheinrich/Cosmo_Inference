@@ -1,7 +1,7 @@
 import os
 import copy
 
-from spherelikes.model import ModelCalculator
+from spherex_cobaya.model import ModelCalculator
 
 
 def generate_data(args_in):

@@ -5,7 +5,7 @@ import sys
 
 from cobaya.likelihood import Likelihood
 
-from spherelikes.utils.log import LoggedError, class_logger
+from spherex_cobaya.utils.log import LoggedError, class_logger
 from lss_theory.utils.profiler import profiler
 
 class LikeBispectrum3DRSD(Likelihood): 

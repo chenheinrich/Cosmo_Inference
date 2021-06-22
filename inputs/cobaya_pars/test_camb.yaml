@@ -19,7 +19,7 @@ theory:
       - 100
 
 likelihood:
-  spherelikes.likelihood.TestLikelihood:
+  spherex_cobaya.likelihood.TestLikelihood:
 
 params:
   my_foreground_amp:

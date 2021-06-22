@@ -16,7 +16,7 @@ def setup_logger(name):
     return logger
 
 
-logger = setup_logger('spherelikes-analysis')
+logger = setup_logger('spherex_cobaya-analysis')
 
 
 def class_logger(obj):

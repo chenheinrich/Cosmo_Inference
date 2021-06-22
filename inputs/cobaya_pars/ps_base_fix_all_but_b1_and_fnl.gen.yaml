@@ -4,7 +4,7 @@ sampler:
     max_tries: 10000000
 output: chains/ps_base_fix_all_but_b1_and_fnl/ps_base
 likelihood:
-  spherelikes.likelihood.LikePowerSpectrum3D:
+  spherex_cobaya.likelihood.LikePowerSpectrum3D:
     is_reference_likelihood: false
     invcov_path: ./data/ps_base_v27/invcov.npy
     sim_data_path: ./data/ps_base_v27/sim_data.pickle
@@ -20,7 +20,7 @@ theory:
       - 20
       - 100
       WantTransfer: true
-  spherelikes.theory.PowerSpectrum3D:
+  spherex_cobaya.theory.PowerSpectrum3D:
     stop_at_error: true
     is_reference_model: false
     survey_par_file: ./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml

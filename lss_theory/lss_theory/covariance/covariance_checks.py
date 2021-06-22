@@ -178,7 +178,7 @@ class RearrangeCov():
 if __name__ == '__main__':
     """Sample Usage: python3 -m lss_theory.covariance.rearrange_cov"""
 
-    cov_dir = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/'
+    cov_dir = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/spherex_cobaya/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/'
     fn_cov = os.path.join(cov_dir, 'cov_full.npy')
     rearr = RearrangeCov(fn_cov)
     

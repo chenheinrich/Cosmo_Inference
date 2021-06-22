@@ -9,9 +9,9 @@ import pytest
 
 from cobaya.yaml import yaml_load_file
 
-from spherelikes.model import ModelCalculator
-from spherelikes.utils.log import class_logger
-from spherelikes.params import SurveyPar
+from spherex_cobaya.model import ModelCalculator
+from spherex_cobaya.utils.log import class_logger
+from spherex_cobaya.params import SurveyPar
 
 from lss_theory.utils.profiler import profiler
 from lss_theory.math_utils.matrix import check_matrix_symmetric

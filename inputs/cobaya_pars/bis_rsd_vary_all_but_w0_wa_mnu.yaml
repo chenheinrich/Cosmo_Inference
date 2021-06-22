@@ -11,7 +11,7 @@ sampler:
 output: chains/bis_rsd_vary_all_but_w0_wa_mnu/bis_rsd
 
 likelihood:
-  spherelikes.likelihood.LikeBispectrum3DRSD:
+  spherex_cobaya.likelihood.LikeBispectrum3DRSD:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
     invcov_path: "./data/bis_rsd_v27/nk_11/invcov_diag_in_orientation.npy"
     sim_data_path: "./data/bis_rsd_v27/nk_11/sim_data.npy"
@@ -30,7 +30,7 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.GRSIngredients:
+  spherex_cobaya.theory.GRSIngredients:
     stop_at_error: True
 
     nk: 11 # number of k points 
@@ -45,7 +45,7 @@ theory:
     cosmo_fid_file: "./inputs/cosmo_pars/planck2018_fiducial.yaml"
     survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
 
-  spherelikes.theory.Bispectrum3DRSD:
+  spherex_cobaya.theory.Bispectrum3DRSD:
     stop_at_error: True
 
     nk: 11 # number of k points 

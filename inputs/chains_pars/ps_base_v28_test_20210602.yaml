@@ -6,7 +6,7 @@ cobaya_par_file: "./inputs/cobaya_pars/ps_base_fix_all_but_fnl_and_As_new_v28.ya
 overwrite_covariance: True
 
 cobaya_par_file_gen_specs:
-  spherelikes.theory.PowerSpectrum3D:
+  spherex_cobaya.theory.PowerSpectrum3D:
     bias:
       fix_to_default: False
       include_latex: True

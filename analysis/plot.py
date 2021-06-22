@@ -8,7 +8,7 @@ from getdist import plots as gplots
 import getdist
 from cobaya.yaml import yaml_load_file
 
-from spherelikes.params import SurveyPar, CobayaPar
+from spherex_cobaya.params import SurveyPar, CobayaPar
 #TODO need to make this flexible for different classes
 from analysis import log
 
@@ -194,7 +194,7 @@ class ChainPlotter():
 
     def get_bias_default_values(self):
         """Returns a dictionary with bias name and default values"""
-        from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
+        from spherex_cobaya.theory.PowerSpectrum3D import make_dictionary_for_bias_params
         default_values = make_dictionary_for_bias_params(
             self._survey_par, fix_to_default=True, include_latex=False)
         return default_values

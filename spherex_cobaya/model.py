@@ -12,8 +12,8 @@ from cobaya.yaml import yaml_dump
 from cobaya.model import get_model
 from cobaya.tools import sort_cosmetic
 
-from spherelikes.params import CobayaPar, SurveyPar
-from spherelikes.theory.PowerSpectrum3D import make_dictionary_for_bias_params
+from spherex_cobaya.params import CobayaPar, SurveyPar
+from spherex_cobaya.theory.PowerSpectrum3D import make_dictionary_for_bias_params
 
 class ModelCalculator():
 

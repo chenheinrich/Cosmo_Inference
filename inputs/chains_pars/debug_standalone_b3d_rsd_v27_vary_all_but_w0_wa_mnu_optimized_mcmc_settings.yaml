@@ -6,7 +6,7 @@ cobaya_par_file: "./inputs/cobaya_pars/debug_standalone_b3d_rsd_vary_all_but_w0_
 overwrite_covariance: True
 
 cobaya_par_file_gen_specs:
-  spherelikes.theory.Bispectrum3DRSD:
+  spherex_cobaya.theory.Bispectrum3DRSD:
     bias:
       fix_to_default: False
       include_latex: True

@@ -4,7 +4,7 @@ import sys
 import collections
 
 import camb 
-from spherelikes.utils.log import LoggedError, class_logger
+from spherex_cobaya.utils.log import LoggedError, class_logger
 
 class RequestedRedshiftError(Exception):
 

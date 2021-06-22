@@ -1,31 +1,17 @@
 from cobaya.theory import Theory
-from cobaya.yaml import yaml_load_file
 import numpy as np
-import time
-import sys
-import os
-import pickle
-import matplotlib.pyplot as plt
-import pathlib
-import logging
 
-from spherelikes.utils.log import LoggedError, class_logger
-from spherelikes.utils import constants
+from spherex_cobaya.utils.log import LoggedError, class_logger
 #HACK
-#from spherelikes.params import SurveyPar
-from spherelikes.params_generator import TheoryParGenerator
+#from spherex_cobaya.params import SurveyPar
+from spherex_cobaya.params_generator import TheoryParGenerator
 
-from lss_theory.data_vector import Bispectrum3DBase as Bispectrum3DBase_standalone
-from lss_theory.data_vector import Bispectrum3DBaseSpec
-from lss_theory.data_vector import GRSIngredientsCreator
+from lss_theory.data_vector import GRSIngredients as GRSIng
+from lss_theory.data_vector import PowerSpectrum3DSpec
 from lss_theory.params.cosmo_par import CosmoPar
 from lss_theory.params.survey_par import SurveyPar
 
-logging.getLogger('matplotlib.font_manager').disabled = True
-logging.getLogger('matplotlib.ticker').disabled = True
-
-#TODO might want to delete some auxiliary functions
-# if repeated in other files
+from lss_theory.data_vector.cosmo_interface import CosmoInterfaceCreator
 
 def make_dictionary_for_base_params():
     base_params = {
@@ -33,7 +19,8 @@ def make_dictionary_for_base_params():
                 'ref': {'dist': 'norm', 'loc': 1.0, 'scale': 0.5},
                 'propose': 0.001,
                 'latex': 'f_{\rm{NL}}',
-                }
+                },
+        #'derived_param': {'derived': True},
     }
     return base_params
 
@@ -123,8 +110,7 @@ class ParGenerator(TheoryParGenerator):
         )
         return bias_params
 
-
-class Bispectrum3DBase(Theory):
+class GRSIngredients(Theory):
 
     nk = 2  # number of k points (to be changed into bins)
     nmu = 2  # number of mu bins
@@ -133,18 +119,57 @@ class Bispectrum3DBase(Theory):
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
 
+    nonlinear = False
+    is_reference_model = False
+
+    cosmo_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
+    survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
+    
+    # Note: The following block needs to be reprocessed during initialize()
+    # since the survey_par_file specified in the yaml file could be 
+    # different than class default
+    survey_par = SurveyPar(survey_par_file)
+    nz = survey_par.get_nz()
+    nsample = survey_par.get_nsample()
+    params = get_params_for_survey_par(survey_par, fix_to_default=True)
+
     def initialize(self):
         """called from __init__ to initialize"""
         self.logger = class_logger(self)
 
-        self.data_spec_dict = {
+        self.survey_par = SurveyPar(self.survey_par_file)
+        self.nz = self.survey_par.get_nz()
+        self.nsample = self.survey_par.get_nsample()
+        self.z = self.survey_par.get_zmid_array()
+
+        self.cosmo_par_fid = CosmoPar(self.cosmo_fid_file) 
+
+        self.cosmo_creator = CosmoInterfaceCreator()
+
+        # Note: This currently calls camb so needs to be done in the
+        # initialize function (rather than e.g.. calculate())
+        # something about fortran references counted differently
+        # than in python and can cause malloc problems.
+        self.cosmo_fid = self._get_cosmo_fid()
+
+        self.data_spec = self._get_data_spec()
+
+        print('Done setting up GRSIngredients')
+
+    def _get_cosmo_fid(self):
+        cosmo_fid = self.cosmo_creator.create('Camb', self.z, self.nonlinear, \
+            cosmo_par=self.cosmo_par_fid)
+        return cosmo_fid
+
+    def _get_data_spec(self):
+        data_spec_dict = {
             'nk': self.nk, # number of k points (to be changed into bins)
             'nmu': self.nmu, # number of mu bins
             'kmin': self.kmin, # equivalent to 0.001 h/Mpc
             'kmax': self.kmax, # equivalent to 0.2 h/Mpc
         }
-        
-        print('Done setting up Bispectrum3DBase')
+        data_spec = PowerSpectrum3DSpec(self.survey_par, data_spec_dict)
+        return data_spec
 
     def initialize_with_provider(self, provider):
         """
@@ -161,26 +186,52 @@ class Bispectrum3DBase(Theory):
         return {}
 
     def must_provide(self, **requirements):
-        # Note: if need to be different than power spectrum, can change 
-        # to grs_ingredients_bispectrum in the future for example
-        if 'galaxy_bis' in requirements:
+        
+        #TODO to work with model, may need (simplify this):
+        z_list_2 = self.survey_par.get_zlo_array()
+        z_list_3 = self.survey_par.get_zhi_array()
+
+        z_list = self.survey_par.get_zmid_array()
+        k_max = 8.0
+        nonlinear = (False, True)
+
+        spec_Pk = {
+            'z': z_list,
+            'k_max': k_max,  # 1/Mpc
+            'nonlinear': nonlinear,
+        }
+
+        if 'grs_ingredients' in requirements:
             return {
-                'grs_ingredients': None
+                'Pk_interpolator': spec_Pk,
+                'Cl': {'tt': 2500},
+                'H0': None,
+                'angular_diameter_distance': {'z': z_list},
+                'Hubble': {'z': z_list},
+                'omegam': None,
+                'As': None,
+                'ns': None,
+                'fsigma8': {'z': z_list},
+                'sigma8': None,
+                'CAMBdata': None, # needed for test
+                # TODO to work with model.py, may need (simplify this)
+                'comoving_radial_distance': {'z': np.hstack((z_list, z_list_2, z_list_3))},
+                #'comoving_radial_distance': {'z': z_list}
             }
 
     def calculate(self, state, want_derived=True, **params_values_dict):
 
-        grs_ingredients = self.provider.get_grs_ingredients()
-        self.survey_par = grs_ingredients._survey_par 
-        self.data_spec = Bispectrum3DBaseSpec(self.survey_par, self.data_spec_dict)
+        self.logger.debug('About to get grs_ingredients')
 
-        data_vec = Bispectrum3DBase_standalone(grs_ingredients, self.survey_par, self.data_spec)
-        galaxy_bis = data_vec.get('galaxy_bis')
+        option = 'Cobaya'
+        cosmo = self.cosmo_creator.create(option, self.z, self.nonlinear,
+            cosmo_par=None, \
+            provider=self.provider)
 
-        state['galaxy_bis'] = galaxy_bis
+        grs_ingredients = GRSIng(cosmo, self.cosmo_fid, self.survey_par, \
+            self.data_spec, **params_values_dict)
 
-        # TODO placeholder for any derived paramter from this module
-        state['derived'] = {'derived_param': 1.0}
+        state['grs_ingredients'] = grs_ingredients 
 
-    def get_galaxy_bis(self):
-        return self._current_state['galaxy_bis']
+    def get_grs_ingredients(self):
+        return self._current_state['grs_ingredients']
