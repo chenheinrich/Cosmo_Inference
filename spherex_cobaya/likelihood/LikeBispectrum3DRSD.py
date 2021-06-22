@@ -22,10 +22,9 @@ class LikeBispectrum3DRSD(Likelihood):
         """
         Returns dictionary specifying quantities calculated by a theory code are needed
         """
-        return {'galaxy_bis': None,
-                'derived_param': None}
+        return {'galaxy_bis': None}
 
-    @profiler
+    #@profiler
     def logp(self, **params_values):
         """
         Taking a dictionary of (sampled) nuisance parameter values params_values
@@ -54,9 +53,9 @@ class LikeBispectrum3DRSD(Likelihood):
                         tmp = np.matmul(invcov_tmp, delta_tmp)
                         chi2 += np.matmul(delta_tmp, tmp)
             
-            elif self.cov_type == "diagonal_in_triangle_shape":
+            elif self.cov_type == "diagonal_in_orientation":
 
-                msg = "You have specified cov_type = diagonal_in_triangle_shape, but \
+                msg = "You have specified cov_type = diagonal_in_orientation, but \
                     invcov loaded from file is has the wrong shape, \
                     need len(invcov.shape) == 5"
                 assert len(self.invcov.shape) == 5, (msg)
@@ -71,7 +70,7 @@ class LikeBispectrum3DRSD(Likelihood):
             
             else:
                 msg = "You specified cov_type = %s, but needs to be\
-                    'full' or 'diagonal_in_triangle_shape'."%(self.cov_type)
+                    'full' or 'diagonal_in_orientation'."%(self.cov_type)
                 raise LoggedError(self.logger, msg)
             self.logger.debug('chi2 = {}'.format(chi2))
             
@@ -96,11 +95,11 @@ class LikeBispectrum3DRSD(Likelihood):
 
         if self.cov_type == "full":
             expected_shape = (nb*nori, nb*nori, nz, ntri)
-        elif self.cov_type == "diagonal_in_triangle_shape":
+        elif self.cov_type == "diagonal_in_orientation":
             expected_shape = (nb, nb, nz, ntri, nori)
         else:
             msg = "You specified cov_type = %s, but needs to be\
-                    'full' or 'diagonal_in_triangle_shape'."%(self.cov_type)
+                    'full' or 'diagonal_in_orientation'."%(self.cov_type)
             raise LoggedError(self.logger, msg)
 
         try:
