@@ -119,7 +119,7 @@ class LikeBispectrum3DRSD(Likelihood):
 
         except FileNotFoundError as e:
             msg = '%s \n' % e \
-                + 'Inverse covariance matrix does not exist. Run python scripts/generate_covariance.py first.'
+                + 'Inverse covariance matrix does not exist.'
             raise LoggedError(self.logger, msg)
 
     def load_simulated_data(self):
