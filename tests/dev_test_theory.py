@@ -8,7 +8,9 @@ from cobaya.yaml import yaml_load_file
 from spherex_cobaya.theory.PowerSpectrum3D import make_dictionary_for_bias_params
 from spherex_cobaya.params import CobayaPar, SurveyPar
 #TODO need importing from the right place if SurveyPar is refactored
+from lss_theory.utils.profiler import profiler
 
+@profiler
 def test_cobaya(cobaya_par_file, cosmo_par_file, chi2_expected, fn_expected):
 
     cobaya_par = CobayaPar(cobaya_par_file)

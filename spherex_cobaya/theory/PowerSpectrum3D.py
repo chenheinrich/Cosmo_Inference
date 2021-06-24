@@ -20,6 +20,7 @@ from lss_theory.data_vector import GRSIngredientsCreator
 from lss_theory.data_vector import PowerSpectrum3DSpec
 from lss_theory.params.cosmo_par import CosmoPar
 from lss_theory.params.survey_par import SurveyPar
+from lss_theory.utils.profiler import profiler
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True

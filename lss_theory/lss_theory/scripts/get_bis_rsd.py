@@ -50,7 +50,7 @@ def get_fn(info):
     file_tools.mkdir_p(info['result_dir'])
     return os.path.join(info['result_dir'], info['run_name'] + '.npy')
 
-#@profiler
+@profiler
 def get_galaxy_bis(info):
     data_vec = get_b3d_rsd(info)
     return data_vec.get('galaxy_bis')

@@ -45,7 +45,7 @@ def get_fn(info):
     file_tools.mkdir_p(info['plot_dir'])
     return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
 
-#@profiler
+@profiler
 def get_galaxy_ps(info):
     data_vec = get_data_vec_p3d(info)
     return data_vec.get('galaxy_ps')
