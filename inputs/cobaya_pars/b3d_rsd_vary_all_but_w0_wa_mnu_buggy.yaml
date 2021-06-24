@@ -16,7 +16,7 @@ likelihood:
     invcov_path: "./data/b3d_rsd_v27/nk_11/invcov_diag_in_orientation.npy"
     sim_data_path: "./data/b3d_rsd_v27/nk_11/sim_data.npy"
     cov_type: "diagonal_in_orientation"
-    
+
 theory:
   camb:
     extra_args:
