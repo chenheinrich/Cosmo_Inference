@@ -16,10 +16,7 @@ from spherex_cobaya.utils import constants
 from spherex_cobaya.params_generator import TheoryParGenerator
 
 from lss_theory.data_vector import Bispectrum3DRSD as Bispectrum3DRSD_standalone
-from lss_theory.data_vector import Bispectrum3DRSDSpec
-from lss_theory.data_vector import GRSIngredientsCreator
-from lss_theory.params.cosmo_par import CosmoPar
-from lss_theory.params.survey_par import SurveyPar
+from lss_theory.data_vector.data_spec import Bispectrum3DRSDSpec_Theta1Phi12
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib.ticker').disabled = True
@@ -178,7 +175,7 @@ class Bispectrum3DRSD(Theory):
  
         grs_ingredients = self.provider.get_grs_ingredients()
         self.survey_par = grs_ingredients._survey_par 
-        self.data_spec = Bispectrum3DRSDSpec(self.survey_par, self.data_spec_dict)
+        self.data_spec = Bispectrum3DRSDSpec_Theta1Phi12(self.survey_par, self.data_spec_dict)
         
         data_vec = Bispectrum3DRSD_standalone(grs_ingredients, self.survey_par, self.data_spec)
         galaxy_bis = data_vec.get('galaxy_bis')

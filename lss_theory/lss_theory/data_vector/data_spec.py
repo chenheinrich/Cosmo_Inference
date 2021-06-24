@@ -336,8 +336,8 @@ class Bispectrum3DBaseSpec(DataSpec):
         """Returns a tuple of 3 galaxy sample indices given index of bispectrum"""
         return self._dict_ib_to_isamples['%i'%(ib)]
 
-
 class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
+    """Bispectrum3DRSDSpec should not be used directly, use its subclasses"""
 
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict)
