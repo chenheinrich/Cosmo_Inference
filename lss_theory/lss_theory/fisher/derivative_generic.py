@@ -241,8 +241,16 @@ class SingleDerivative():
         return derivative
     
     def _get_info_for_param_and_pvalue(self, param, pvalue):
+
+        # Assuming cosmo_par and other_par have distinctly named parameters
+        if param in self._cosmo_par.params_list:
+            key = 'overwrite_cosmo_par'
+        else: # SingleDerivative doesn't have other_par so not explicitly checking.
+            key = 'overwrite_other_par'
+
         info = copy.deepcopy(self._info)
-        info['overwrite_cosmo_par'] = {param: pvalue}    
+        info[key] = {param: pvalue}   
+
         return info    
 
     def _save(self):

@@ -35,7 +35,9 @@ class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
     
     def get_param_set_definition(self, info):
         other_par = self.get_other_par(info)
-        param_set_def = {"*gaussian_biases": other_par.params_list}
+        param_set_def = {\
+            "*gaussian_biases": other_par.params_list, 
+            "*gaussian_biases_first_two": [other_par.params_list[0], other_par.params_list[1]]}
         return param_set_def
 
     def _get_signal_for_info(self, info): 
@@ -59,7 +61,7 @@ class Bispectrum3DRSDFisher(Fisher):
             invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210513/invcov_full.npy'
         
         elif self._cov_type == 'diagonal_in_triangle_orientation': 
-            invcov_path = '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/spherex_cobaya/plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'
+            invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'
         
         invcov = np.load(invcov_path)
         print('invcov.shape = {}'.format(invcov.shape))
@@ -99,10 +101,17 @@ class Bispectrum3DRSDFisher(Fisher):
                     for iori in range(self._nori):
                         der_i = self._derivatives[iparam, :, iz, itri, iori]
                         der_j = self._derivatives[jparam, :, iz, itri, iori]
+
+                        #HACK
+                        #is_all_zero = np.all((der_j == 0))
+                        #print('iparam, jparam', iparam, jparam)
+                        #print('is_all_zero = {}'.format(is_all_zero))
+
                         invcov_tmp = self._invcov[:, :, iz, itri, iori] 
                         tmp = np.matmul(invcov_tmp, der_j)
                         f += np.matmul(der_i, tmp)
-
+            
+            print('iparam, jparam, f', iparam, jparam, f)
             return f
 
         else:

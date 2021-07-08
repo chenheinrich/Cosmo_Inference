@@ -84,6 +84,7 @@ class Fisher():
 
         for iparam in range(self._nparam):
             for jparam in range(self._nparam):
+                print('iparam = {}, jparam = {}'.format(iparam, jparam))
                 fisher[iparam, jparam] = self._get_fisher_matrix_element(iparam, jparam)
 
         print('fisher', fisher) 

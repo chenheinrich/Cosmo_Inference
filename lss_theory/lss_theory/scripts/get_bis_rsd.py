@@ -22,13 +22,18 @@ def get_data_spec(info):
     data_spec = Bispectrum3DRSDSpec_Theta1Phi12(survey_par, data_spec_dict)
     return data_spec
 
-def get_b3d_rsd(info, params_values_dict={}):
+def get_b3d_rsd(info):
     
     cosmo_par_file = info['cosmo_par_file']
     cosmo_par_fid_file = info['cosmo_par_fid_file']
     survey_par_file = info['survey_par_file']
     data_spec_dict = info['Bispectrum3DRSD'] 
-    overwrite_cosmo_par_dict = info.get('overwrite_cosmo_par', None)
+
+    overwrite_cosmo_par_dict = info.get('overwrite_cosmo_par', {}) 
+    overwrite_other_par_dict = info.get('overwrite_other_par', {}) 
+
+    print('overwrite_cosmo_par_dict', overwrite_cosmo_par_dict)
+    print('overwrite_other_par_dict', overwrite_other_par_dict)
 
     cosmo_par = CosmoPar(cosmo_par_file, overwrite_dict=overwrite_cosmo_par_dict)
     cosmo_par_fid = CosmoPar(cosmo_par_fid_file)
@@ -39,10 +44,11 @@ def get_b3d_rsd(info, params_values_dict={}):
     creator = GRSIngredientsCreator()
     option = 'Camb'
     nonlinear = False
-    grs_ingredients = creator.create(option, survey_par, data_spec,
-        nonlinear, cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid)
+    grs_ingredients = creator.create(option, survey_par, data_spec,\
+        nonlinear, cosmo_par=cosmo_par, cosmo_par_fid=cosmo_par_fid, \
+        **overwrite_other_par_dict) 
 
-    data_vec = Bispectrum3DRSD(grs_ingredients, survey_par, data_spec, **params_values_dict)
+    data_vec = Bispectrum3DRSD(grs_ingredients, survey_par, data_spec)
     
     return data_vec
 

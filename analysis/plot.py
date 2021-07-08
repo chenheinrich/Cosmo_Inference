@@ -79,7 +79,7 @@ class ChainPlotter():
         names = []
         for isample in isamples:
             for iz in izs:
-                name = 'gaussian_bias_sample_%s_z_%s' % (isample+1, iz+1)
+                name = 'gaussian_bias_s%s_z%s' % (isample+1, iz+1)
                 names.append(name)
         return names
 
@@ -160,8 +160,8 @@ class ChainPlotter():
         #HACK did not vary gaussian_bias_sample_1_z_1 unfortunately
     
         print('params = {}'.format(params))
-        if 'gaussian_bias_sample_1_z_1' in params:
-            params.remove('gaussian_bias_sample_1_z_1')
+        if 'gaussian_bias_s1_z1' in params:
+            params.remove('gaussian_bias_s1_z1')
             print('params = {}'.format(params))
         
         sample_values = [getattr(p, param) for param in params]

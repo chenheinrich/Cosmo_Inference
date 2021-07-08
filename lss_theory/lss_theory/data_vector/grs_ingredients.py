@@ -2,8 +2,8 @@ import numpy as np
 import copy
 import sys
 
+from lss_theory.params.other_par import OtherPar
 from lss_theory.data_vector.cosmo_interface import CosmoInterfaceCreator
-from lss_theory.params.cosmo_par import CosmoPar
 from lss_theory.utils import constants
 from lss_theory.utils.errors import NameNotAllowedError
 from lss_theory.utils.logging import class_logger
@@ -15,8 +15,7 @@ class GRSIngredientsCreator():
 
     def create(self, option, survey_par, data_spec, \
             nonlinear, cosmo_par=None, cosmo_par_fid=None, \
-            provider=None, z=None, \
-            **params_values_dict):
+            provider=None, z=None, **grs_par_dict):
 
         """
         Returns an instance of the GRSIngredients class given different input options.
@@ -37,53 +36,32 @@ class GRSIngredientsCreator():
         cosmo = cosmo_creator.create(option, z, nonlinear,
             cosmo_par=cosmo_par, \
             provider=provider)
-        
-        params_values_dict_new = self._get_params_values_dict(option, params_values_dict, cosmo_par)
 
-        grs_ingredients = GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict_new)
+        # Note: When calling lss_theory standalone (without Cobaya), we use the
+        # GRSIngredientsCreator, and transfer fnl from cosmo_par to other_par
+        grs_par_dict.update({'fnl': cosmo_par.fnl})
+        other_par = OtherPar(grs_par_dict)
+        
+        grs_ingredients = GRSIngredients(cosmo, cosmo_fid, survey_par, data_spec, other_par)
 
         return grs_ingredients
 
-    def _get_params_values_dict(self, option, params_values_dict, cosmo_par):
-        """
-        For Camb option: Returns a new dictionary with parameters in params_values_dict
-            with added cosmological parameters; 
-        For Cobaya option: Returns the input
-            params_values_dict which should already have everything.
-        """
-        if option == 'Cobaya':
-            print('params_values_dict = {}'.format(params_values_dict))
-            return params_values_dict
-        elif option == 'Camb':
-            params_values_dict_cosmo = self._get_params_values_dict_from_cosmo_par(
-                cosmo_par)
-            params_values_dict_new = copy.deepcopy(params_values_dict)
-            params_values_dict_new.update(params_values_dict_cosmo)
-            print('params_values_dict_new = {}'.format(params_values_dict_new))
-            return params_values_dict_new
-        else:
-            raise ValueError("GRSIngredientsCreator: \
-                option can only be 'Cobaya' or 'Camb'.")
-        #TODO Might be able to simplify multiple cosmo parameter passing channels
-        # cosmo_par and **params_values_dict.
-
-    @staticmethod
-    def _get_params_values_dict_from_cosmo_par(cosmo_par):
-        params_values_dict = {
-            'As': cosmo_par.As,\
-            'ns': cosmo_par.ns,\
-            'nrun': cosmo_par.nrun,\
-            'fnl': cosmo_par.fnl,\
-        }
-        return params_values_dict
-
 class GRSIngredients(object):
 
-    def __init__(self, cosmo, cosmo_fid, survey_par, data_spec, **params_values_dict):
+    def __init__(self, cosmo, cosmo_fid, survey_par, data_spec, grs_par):
        
         """
         Args:
-            params_values_dict: has gaussian_bias_sample_<i>_z_<j> where i and j start at 1.
+            cosmo:
+            cosmo_fid:
+            survey_par:
+            data_spec:
+            grs_par: An instance of OtherPar that contains at least fnl as an attribute.
+                Default gaussian bias parameters (obtained from survey_par) can also be overwritten 
+                by specifying them in grs_par (gaussian_bias_s<i>_z<j> where i, j start at 1):
+                When sampling in Cobaya, all of them are specified automatically;
+                when used within the lss_theory package, could be used to overwrite 
+                individual gaussian bias values when getting derivatives for a Fisher matrix.
         """
 
         self.logger = class_logger(self)
@@ -93,7 +71,7 @@ class GRSIngredients(object):
 
         self._survey_par = survey_par
         self._d = data_spec
-        self._params_values_dict = params_values_dict
+        self._grs_par = grs_par
         
         ap_perp, ap_para = self._get_AP_perp_and_para()
         self._k_actual, self._mu_actual = self._d.get_k_and_mu_actual(ap_perp, ap_para)
@@ -117,7 +95,8 @@ class GRSIngredients(object):
             'fnl', \
             'growth_rate_f', \
         ]
-        self._ingredients = {'fnl': params_values_dict['fnl'] }
+
+        self._ingredients = {'fnl': self._grs_par.fnl}
 
     def _get_matter_power_at_z_and_ks(self, z, ks):
         matter_power = self._cosmo.get_matter_power_at_z_and_k(z, ks)
@@ -325,22 +304,25 @@ class GRSIngredients(object):
 
     def _calc_gaussian_bias(self):
         """"Returns a 2-d numpy array of shape (nsample, nz) for gaussian galaxy bias,
-        a number for each galaxy sample and redshift.
+        a number for each galaxy sample and redshift. We use the default gaussian
+        bias values in survey_par and overwrite individual values as in input the grs_par. 
         """
         assert 'gaussian_bias' not in self._ingredients.keys(), \
             ('gaussian_bias is not in keys of grs_ingredients')
 
-        gaussian_bias = np.zeros((self._d.nsample, self._d.nz))
         gaussian_bias_default = self._survey_par.get_galaxy_bias_array()
-        if 'gaussian_bias_sample_1_z_1' not in self._params_values_dict.keys():
-            gaussian_bias = copy.copy(gaussian_bias_default)
-        else:
-            for isample in range(self._d.nsample):
-                for iz in range(self._d.nz):
-                    key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
-                    gaussian_bias[isample, iz] = self._params_values_dict[key]
-
+        gaussian_bias = copy.copy(gaussian_bias_default)
+        if self._grs_par is not None:
+            gaussian_bias = self._update_gaussian_bias_with_grs_par(gaussian_bias)
         self._ingredients['gaussian_bias'] = gaussian_bias
+
+    def _update_gaussian_bias_with_grs_par(self, gaussian_bias):
+        for isample in range(self._d.nsample):
+            for iz in range(self._d.nz):
+                param = 'gaussian_bias_s%s_z%s' % (isample + 1, iz + 1)
+                if param in self._grs_par.params_list:
+                    gaussian_bias[isample, iz] = getattr(self._grs_par, param)
+        return gaussian_bias
 
     def _calc_sigp(self):
         """"Returns a 2-d numpy array of shape (nsample, nz) for sigmap,

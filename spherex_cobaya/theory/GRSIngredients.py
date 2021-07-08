@@ -10,6 +10,7 @@ from lss_theory.data_vector import GRSIngredients as GRSIng
 from lss_theory.data_vector import PowerSpectrum3DSpec
 from lss_theory.params.cosmo_par import CosmoPar
 from lss_theory.params.survey_par import SurveyPar
+from lss_theory.params.other_par import OtherPar
 
 from lss_theory.data_vector.cosmo_interface import CosmoInterfaceCreator
 
@@ -55,7 +56,7 @@ def make_dictionary_for_bias_params(survey_par, \
     for isample in range(nsample):
         for iz in range(nz):
             
-            key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
+            key = 'gaussian_bias_s%s_z%s' % (isample + 1, iz + 1)
             
             latex = 'b_g^{%i}(z_{%i})' % (isample + 1, iz + 1)
             default_value = bias_default[isample, iz]
@@ -222,14 +223,16 @@ class GRSIngredients(Theory):
     def calculate(self, state, want_derived=True, **params_values_dict):
 
         self.logger.debug('About to get grs_ingredients')
+        #TODO Not going through grs ingredient creator, may not work well.
 
         option = 'Cobaya'
         cosmo = self.cosmo_creator.create(option, self.z, self.nonlinear,
             cosmo_par=None, \
             provider=self.provider)
 
+        other_par = OtherPar(params_values_dict)
         grs_ingredients = GRSIng(cosmo, self.cosmo_fid, self.survey_par, \
-            self.data_spec, **params_values_dict)
+            self.data_spec, other_par)
 
         state['grs_ingredients'] = grs_ingredients 
 
