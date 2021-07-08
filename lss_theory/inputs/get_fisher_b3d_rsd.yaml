@@ -34,9 +34,9 @@ AllDerivatives:
     - As
     - ns
     - fnl
-    #- omch2
-    #- ombh2
-    #- theta_MC_100
+    - omch2
+    - ombh2
+    - theta_MC_100
     - "*gaussian_biases"
   method: 'finite_diff' #finite_diff or five_point
 

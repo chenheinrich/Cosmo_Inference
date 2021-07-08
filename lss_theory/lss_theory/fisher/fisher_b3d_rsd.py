@@ -46,9 +46,12 @@ class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
 
 class Bispectrum3DRSDFisher(Fisher):
 
-    def __init__(self, info, inverse_atol):
+    def __init__(self, info, inverse_atol, der_conv_eps):
         self._cov_type = info['fisher']['cov_type'] 
-        super().__init__(info, inverse_atol=inverse_atol)
+        super().__init__(info, 
+            inverse_atol=inverse_atol, \
+            der_conv_eps=der_conv_eps
+        )
 
     def _setup_dims(self):
         (self._nparam, self._nb, self._nz, self._ntri, self._nori) = \
@@ -133,7 +136,8 @@ def check_for_convergence(info):
     class_name = 'Bispectrum3DRSD_AllDerivatives'
     der_conv = AllDerivativesConvergence(info, module_name, class_name, \
         ignore_cache=False, do_save=True,\
-        parent_dir = './results/b3d_rsd/derivatives/')
+        parent_dir = './results/b3d_rsd/derivatives/', \
+        eps = 0.001, eps_plot=0.1)
     return der_conv
     
 if __name__ == '__main__':
@@ -186,7 +190,10 @@ if __name__ == '__main__':
 
     # Get Fisher
     if do_fisher == True:
-        b3d_rsd_fisher = Bispectrum3DRSDFisher(info_input, inverse_atol=1e-3)
+        b3d_rsd_fisher = Bispectrum3DRSDFisher(info_input, \
+            inverse_atol=1e-3,
+            der_conv_eps=1e-3
+        )
 
     
 

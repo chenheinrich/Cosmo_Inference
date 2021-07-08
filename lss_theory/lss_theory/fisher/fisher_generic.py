@@ -10,10 +10,11 @@ from lss_theory.math_utils import matrix
 
 class Fisher():
 
-    def __init__(self, info, inverse_atol=1e-6):
+    def __init__(self, info, inverse_atol=1e-6, der_conv_eps=1e-3):
         self._info = copy.deepcopy(info)
         self._inverse_atol = inverse_atol
         self._dir = self._info['fisher']['data_dir']
+        self._der_conv_eps = der_conv_eps
         mkdir_p(self._dir)
         self._setup_paths()
 
@@ -76,7 +77,8 @@ class Fisher():
         info = copy.deepcopy(self._info)
         self._der_conv = AllDerivativesConvergence(info, module_name, class_name, \
             ignore_cache=False, do_save=True,\
-            parent_dir = parent_dir)
+            parent_dir=parent_dir, 
+            eps=self._der_conv_eps)
         return self._der_conv.data 
         
     def _get_fisher(self):
