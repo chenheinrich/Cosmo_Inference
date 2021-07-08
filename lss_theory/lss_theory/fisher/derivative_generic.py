@@ -455,7 +455,7 @@ class AllDerivativesConvergence():
 
     def __init__(self, info, module_name, class_name, 
             ignore_cache=False, do_save=True, parent_dir=None, 
-            eps = 1e-3, std_threshold=1e-2):
+            eps = 1e-3, std_threshold=1e-2, axis_to_vary=0):
 
         self._info = copy.deepcopy(info)
 
@@ -467,6 +467,7 @@ class AllDerivativesConvergence():
         self._parent_dir = parent_dir
         self._eps = eps
         self._std_threshold = std_threshold
+        self._axis_to_vary = axis_to_vary
 
         self._setup_fiducial_derivatives()
 
@@ -656,10 +657,7 @@ class AllDerivativesConvergence():
         indices = np.transpose(np.array(indices))
         npt = indices.shape[0]
 
-        #TODO make this an input 
-        self._check_convergence_axis_to_plot = 2
-
-        axis = self._check_convergence_axis_to_plot
+        axis = self._axis_to_vary
         nbh_range = range(-5,5)
 
         is_all_close_to_zero = True

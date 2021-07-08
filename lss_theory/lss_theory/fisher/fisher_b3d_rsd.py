@@ -50,7 +50,9 @@ class Bispectrum3DRSDFisher(Fisher):
         self._cov_type = info['fisher']['cov_type'] 
         super().__init__(info, 
             inverse_atol=inverse_atol, \
-            der_conv_eps=der_conv_eps
+            der_conv_eps=der_conv_eps, \
+            der_conv_std_threshold=1e-2, \
+            der_conv_axis_to_vary=2
         )
 
     def _setup_dims(self):
@@ -192,7 +194,9 @@ if __name__ == '__main__':
     if do_fisher == True:
         b3d_rsd_fisher = Bispectrum3DRSDFisher(info_input, \
             inverse_atol=1e-3,
-            der_conv_eps=1e-3
+            der_conv_eps=1e-3,
+            der_conv_std_threshold=1e-2,
+            der_conv_axis_to_vary=2
         )
 
     

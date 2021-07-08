@@ -1,4 +1,5 @@
 import os
+from matplotlib.pyplot import axis
 import numpy as np
 import json
 import copy
@@ -10,11 +11,21 @@ from lss_theory.math_utils import matrix
 
 class Fisher():
 
-    def __init__(self, info, inverse_atol=1e-6, der_conv_eps=1e-3):
+    def __init__(self, 
+            info, \
+            inverse_atol=1e-6, \
+            der_conv_eps=1e-3,\
+            der_conv_std_threshold=1e-2, \
+            der_conv_axis_to_vary=2
+        ):
+
         self._info = copy.deepcopy(info)
         self._inverse_atol = inverse_atol
-        self._dir = self._info['fisher']['data_dir']
         self._der_conv_eps = der_conv_eps
+        self._der_conv_std_threshold = der_conv_std_threshold
+        self._der_conv_axis_to_vary = der_conv_axis_to_vary
+
+        self._dir = self._info['fisher']['data_dir']
         mkdir_p(self._dir)
         self._setup_paths()
 
@@ -77,8 +88,11 @@ class Fisher():
         info = copy.deepcopy(self._info)
         self._der_conv = AllDerivativesConvergence(info, module_name, class_name, \
             ignore_cache=False, do_save=True,\
-            parent_dir=parent_dir, 
-            eps=self._der_conv_eps)
+            parent_dir=parent_dir, \
+            eps=self._der_conv_eps, \
+            std_threshold=self._der_conv_std_threshold,\
+            axis_to_vary=self._der_conv_axis_to_vary
+            )
         return self._der_conv.data 
         
     def _get_fisher(self):
