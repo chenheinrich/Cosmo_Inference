@@ -46,7 +46,12 @@ class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
 
 class Bispectrum3DRSDFisher(Fisher):
 
-    def __init__(self, info, inverse_atol, der_conv_eps):
+    def __init__(self, info, 
+            inverse_atol, 
+            der_conv_eps,
+            der_conv_std_threshold,
+            der_conv_axis_to_vary
+            ):
         self._cov_type = info['fisher']['cov_type'] 
         super().__init__(info, 
             inverse_atol=inverse_atol, \
