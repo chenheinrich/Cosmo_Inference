@@ -33,5 +33,5 @@ covariance:
   do_cvl_noise: False
   fsky: 0.75
   #b3d_rsd_cov_path: './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/cov.npy' 
-  b3d_rsd_cov_path: './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_True/theta_phi_2_4/test20210607/invcov_diag_in_orientation.npy'
+  b3d_rsd_cov_path: './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'
   data_dir: './results/bis_mult/covariance/'

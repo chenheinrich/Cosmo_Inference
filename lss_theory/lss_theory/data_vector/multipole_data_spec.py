@@ -52,6 +52,10 @@ class BispectrumMultipoleSpec(Bispectrum3DBaseSpec):
     @property
     def do_nonzero_m(self):
         return self._do_nonzero_m
+
+    @property
+    def do_negative_m(self):
+        return self._do_negative_m
     
     @property
     def lm_list(self):

@@ -14,6 +14,7 @@ BispectrumMultipole:
   multipole_info:
     lmax: 2
     do_nonzero_m: True
+    do_negative_m: False
   triangle_orientation_info:  #used for getting the right BispectrumRSD3D
     parametrization_name: 'theta1_phi12' 
     min_cos_theta1: -1.0 #0.0
@@ -28,12 +29,20 @@ BispectrumMultipole:
     sigp: null
     f_of_z: null
 
-derivatives:
+AllDerivatives:
   h_frac: 0.05
+  h:
+    fnl: 0.1
+    theta_MC_100: 0.01
   params:
     - As
     - ns
-  #  - fnl
+    - fnl
+    - omch2
+    - ombh2
+    - theta_MC_100
+    - "*gaussian_biases"
+  method: 'finite_diff' #finite_diff or five_point
 
 fisher:
   data_dir: './results/bis_mult/fisher/'

@@ -54,7 +54,9 @@ class BispectrumMultipole(DataVector):
             theta1 = self._data_spec.b3d_rsd_spec.theta1
             phi12 = self._data_spec.b3d_rsd_spec.phi12
             lmax = self._data_spec.lmax
-            spherical_harmonics_table = SphericalHarmonicsTable(theta1, phi12, lmax)
+            do_negative_m = self._data_spec.do_negative_m
+            spherical_harmonics_table = SphericalHarmonicsTable(\
+                theta1, phi12, lmax, do_negative_m)
         
         ylms = spherical_harmonics_table.data
         nori = self._data_spec.b3d_rsd_spec.nori

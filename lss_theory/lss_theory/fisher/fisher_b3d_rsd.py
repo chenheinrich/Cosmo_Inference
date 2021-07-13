@@ -65,9 +65,8 @@ class Bispectrum3DRSDFisher(Fisher):
             self._derivatives.shape
 
     def _load_invcov(self):
-        
-        #TODO temporary, we need to eliminate cov_type=full, inverse not stable
-        if self._cov_type == 'full': # Inverse not stable!! #HACK
+
+        if self._cov_type == 'full': # Not used; maybe one day for Gaussian covariance.
             invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210513/invcov_full.npy'
         
         elif self._cov_type == 'diagonal_in_triangle_orientation': 
@@ -77,7 +76,7 @@ class Bispectrum3DRSDFisher(Fisher):
         print('invcov.shape = {}'.format(invcov.shape))
         
         expected_ndim = 4 if self._cov_type == 'full' else 5
-        assert len(invcov.shape) == expected_ndim
+        assert len(invcov.shape) == expected_ndim, (len(invcov.shape), expected_ndim)
         
         return invcov
 
@@ -137,14 +136,13 @@ class Bispectrum3DRSDFisher(Fisher):
 
 #TODO merge fisher and derivatives so that they use the same save metadata functions etc.
 
-
 def check_for_convergence(info):
     module_name = 'lss_theory.fisher.fisher_b3d_rsd'
     class_name = 'Bispectrum3DRSD_AllDerivatives'
     der_conv = AllDerivativesConvergence(info, module_name, class_name, \
         ignore_cache=False, do_save=True,\
         parent_dir = './results/b3d_rsd/derivatives/', \
-        eps = 0.001, eps_plot=0.1)
+        eps = 0.001)
     return der_conv
     
 if __name__ == '__main__':
