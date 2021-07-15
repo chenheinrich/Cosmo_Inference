@@ -2,8 +2,8 @@ import numpy as np
 import os
 import scipy.linalg as linalg
 
-from lss_theory.math_utils.matrix import check_matrix_inverse
-from lss_theory.math_utils.matrix import check_matrix_symmetric
+from lss_theory.math_utils.matrix_utils import check_matrix_inverse
+from lss_theory.math_utils.matrix_utils import check_matrix_symmetric
 
 class CovarianceChecks():
 

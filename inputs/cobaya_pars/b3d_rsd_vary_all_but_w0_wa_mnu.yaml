@@ -224,7 +224,7 @@ params:
     latex: '{\rm{Age}}/\mathrm{Gyr}'
   rdrag:
     latex: r_\mathrm{drag}
-  gaussian_bias_sample_1_z_1:
+  gaussian_bias_s1_z1:
     prior:
       min: 0.5
       max: 2.3
@@ -234,7 +234,7 @@ params:
       scale: 0.0039
     propose: 0.0039
     latex: b_g^{1}(z_{1})
-  gaussian_bias_sample_1_z_2:
+  gaussian_bias_s1_z2:
     prior:
       min: 0.5
       max: 2.5
@@ -244,7 +244,7 @@ params:
       scale: 0.0045
     propose: 0.0045
     latex: b_g^{1}(z_{2})
-  gaussian_bias_sample_1_z_3:
+  gaussian_bias_s1_z3:
     prior:
       min: 0.8
       max: 2.8
@@ -254,7 +254,7 @@ params:
       scale: 0.0054
     propose: 0.0054
     latex: b_g^{1}(z_{3})
-  gaussian_bias_sample_1_z_4:
+  gaussian_bias_s1_z4:
     prior:
       min: 1.2999999999999998
       max: 3.3
@@ -264,7 +264,7 @@ params:
       scale: 0.006899999999999999
     propose: 0.006899999999999999
     latex: b_g^{1}(z_{4})
-  gaussian_bias_sample_1_z_5:
+  gaussian_bias_s1_z5:
     prior:
       min: 1.1
       max: 3.1
@@ -274,7 +274,7 @@ params:
       scale: 0.0063
     propose: 0.0063
     latex: b_g^{1}(z_{5})
-  gaussian_bias_sample_1_z_6:
+  gaussian_bias_s1_z6:
     prior:
       min: 1.7000000000000002
       max: 3.7
@@ -284,7 +284,7 @@ params:
       scale: 0.0081
     propose: 0.0081
     latex: b_g^{1}(z_{6})
-  gaussian_bias_sample_1_z_7:
+  gaussian_bias_s1_z7:
     prior:
       min: 2.6
       max: 4.6
@@ -294,7 +294,7 @@ params:
       scale: 0.0108
     propose: 0.0108
     latex: b_g^{1}(z_{7})
-  gaussian_bias_sample_1_z_8:
+  gaussian_bias_s1_z8:
     prior:
       min: 1.2999999999999998
       max: 3.3
@@ -304,7 +304,7 @@ params:
       scale: 0.006899999999999999
     propose: 0.006899999999999999
     latex: b_g^{1}(z_{8})
-  gaussian_bias_sample_1_z_9:
+  gaussian_bias_s1_z9:
     prior:
       min: 2.2
       max: 4.2
@@ -314,7 +314,7 @@ params:
       scale: 0.009600000000000001
     propose: 0.009600000000000001
     latex: b_g^{1}(z_{9})
-  gaussian_bias_sample_1_z_10:
+  gaussian_bias_s1_z10:
     prior:
       min: 1.7000000000000002
       max: 3.7
@@ -324,7 +324,7 @@ params:
       scale: 0.0081
     propose: 0.0081
     latex: b_g^{1}(z_{10})
-  gaussian_bias_sample_1_z_11:
+  gaussian_bias_s1_z11:
     prior:
       min: 2.8
       max: 4.8
@@ -334,7 +334,7 @@ params:
       scale: 0.011399999999999999
     propose: 0.011399999999999999
     latex: b_g^{1}(z_{11})
-  gaussian_bias_sample_2_z_1:
+  gaussian_bias_s2_z1:
     prior:
       min: 0.5
       max: 2.2
@@ -344,7 +344,7 @@ params:
       scale: 0.0036
     propose: 0.0036
     latex: b_g^{2}(z_{1})
-  gaussian_bias_sample_2_z_2:
+  gaussian_bias_s2_z2:
     prior:
       min: 0.5
       max: 2.4
@@ -354,7 +354,7 @@ params:
       scale: 0.0042
     propose: 0.0042
     latex: b_g^{2}(z_{2})
-  gaussian_bias_sample_2_z_3:
+  gaussian_bias_s2_z3:
     prior:
       min: 0.6000000000000001
       max: 2.6
@@ -364,7 +364,7 @@ params:
       scale: 0.0048000000000000004
     propose: 0.0048000000000000004
     latex: b_g^{2}(z_{3})
-  gaussian_bias_sample_2_z_4:
+  gaussian_bias_s2_z4:
     prior:
       min: 0.8999999999999999
       max: 2.9
@@ -374,7 +374,7 @@ params:
       scale: 0.005699999999999999
     propose: 0.005699999999999999
     latex: b_g^{2}(z_{4})
-  gaussian_bias_sample_2_z_5:
+  gaussian_bias_s2_z5:
     prior:
       min: 1.2999999999999998
       max: 3.3
@@ -384,7 +384,7 @@ params:
       scale: 0.006899999999999999
     propose: 0.006899999999999999
     latex: b_g^{2}(z_{5})
-  gaussian_bias_sample_2_z_6:
+  gaussian_bias_s2_z6:
     prior:
       min: 1.6
       max: 3.6
@@ -394,7 +394,7 @@ params:
       scale: 0.0078
     propose: 0.0078
     latex: b_g^{2}(z_{6})
-  gaussian_bias_sample_2_z_7:
+  gaussian_bias_s2_z7:
     prior:
       min: 2.4
       max: 4.4
@@ -404,7 +404,7 @@ params:
       scale: 0.010199999999999999
     propose: 0.010199999999999999
     latex: b_g^{2}(z_{7})
-  gaussian_bias_sample_2_z_8:
+  gaussian_bias_s2_z8:
     prior:
       min: 3.2
       max: 5.2
@@ -414,7 +414,7 @@ params:
       scale: 0.0126
     propose: 0.0126
     latex: b_g^{2}(z_{8})
-  gaussian_bias_sample_2_z_9:
+  gaussian_bias_s2_z9:
     prior:
       min: 3.3
       max: 5.3
@@ -424,7 +424,7 @@ params:
       scale: 0.0129
     propose: 0.0129
     latex: b_g^{2}(z_{9})
-  gaussian_bias_sample_2_z_10:
+  gaussian_bias_s2_z10:
     prior:
       min: 2.7
       max: 4.7
@@ -434,7 +434,7 @@ params:
       scale: 0.0111
     propose: 0.0111
     latex: b_g^{2}(z_{10})
-  gaussian_bias_sample_2_z_11:
+  gaussian_bias_s2_z11:
     prior:
       min: 3.5999999999999996
       max: 5.6
@@ -444,7 +444,7 @@ params:
       scale: 0.013799999999999998
     propose: 0.013799999999999998
     latex: b_g^{2}(z_{11})
-  gaussian_bias_sample_3_z_1:
+  gaussian_bias_s3_z1:
     prior:
       min: 0.5
       max: 2.0
@@ -454,7 +454,7 @@ params:
       scale: 0.003
     propose: 0.003
     latex: b_g^{3}(z_{1})
-  gaussian_bias_sample_3_z_2:
+  gaussian_bias_s3_z2:
     prior:
       min: 0.5
       max: 2.3
@@ -464,7 +464,7 @@ params:
       scale: 0.0039
     propose: 0.0039
     latex: b_g^{3}(z_{2})
-  gaussian_bias_sample_3_z_3:
+  gaussian_bias_s3_z3:
     prior:
       min: 0.5
       max: 2.5
@@ -474,7 +474,7 @@ params:
       scale: 0.0045
     propose: 0.0045
     latex: b_g^{3}(z_{3})
-  gaussian_bias_sample_3_z_4:
+  gaussian_bias_s3_z4:
     prior:
       min: 0.7
       max: 2.7
@@ -484,7 +484,7 @@ params:
       scale: 0.0050999999999999995
     propose: 0.0050999999999999995
     latex: b_g^{3}(z_{4})
-  gaussian_bias_sample_3_z_5:
+  gaussian_bias_s3_z5:
     prior:
       min: 0.8999999999999999
       max: 2.9
@@ -494,7 +494,7 @@ params:
       scale: 0.005699999999999999
     propose: 0.005699999999999999
     latex: b_g^{3}(z_{5})
-  gaussian_bias_sample_3_z_6:
+  gaussian_bias_s3_z6:
     prior:
       min: 1.6
       max: 3.6
@@ -504,7 +504,7 @@ params:
       scale: 0.0078
     propose: 0.0078
     latex: b_g^{3}(z_{6})
-  gaussian_bias_sample_3_z_7:
+  gaussian_bias_s3_z7:
     prior:
       min: 2.0
       max: 4.0
@@ -514,7 +514,7 @@ params:
       scale: 0.009
     propose: 0.009
     latex: b_g^{3}(z_{7})
-  gaussian_bias_sample_3_z_8:
+  gaussian_bias_s3_z8:
     prior:
       min: 2.2
       max: 4.2
@@ -524,7 +524,7 @@ params:
       scale: 0.009600000000000001
     propose: 0.009600000000000001
     latex: b_g^{3}(z_{8})
-  gaussian_bias_sample_3_z_9:
+  gaussian_bias_s3_z9:
     prior:
       min: 2.5
       max: 4.5
@@ -534,7 +534,7 @@ params:
       scale: 0.010499999999999999
     propose: 0.010499999999999999
     latex: b_g^{3}(z_{9})
-  gaussian_bias_sample_3_z_10:
+  gaussian_bias_s3_z10:
     prior:
       min: 3.0999999999999996
       max: 5.1
@@ -544,7 +544,7 @@ params:
       scale: 0.012299999999999998
     propose: 0.012299999999999998
     latex: b_g^{3}(z_{10})
-  gaussian_bias_sample_3_z_11:
+  gaussian_bias_s3_z11:
     prior:
       min: 4.0
       max: 6.0
@@ -554,7 +554,7 @@ params:
       scale: 0.015
     propose: 0.015
     latex: b_g^{3}(z_{11})
-  gaussian_bias_sample_4_z_1:
+  gaussian_bias_s4_z1:
     prior:
       min: 0.5
       max: 1.98
@@ -564,7 +564,7 @@ params:
       scale: 0.00294
     propose: 0.00294
     latex: b_g^{4}(z_{1})
-  gaussian_bias_sample_4_z_2:
+  gaussian_bias_s4_z2:
     prior:
       min: 0.5
       max: 2.3
@@ -574,7 +574,7 @@ params:
       scale: 0.0039
     propose: 0.0039
     latex: b_g^{4}(z_{2})
-  gaussian_bias_sample_4_z_3:
+  gaussian_bias_s4_z3:
     prior:
       min: 0.5
       max: 2.4
@@ -584,7 +584,7 @@ params:
       scale: 0.0042
     propose: 0.0042
     latex: b_g^{4}(z_{3})
-  gaussian_bias_sample_4_z_4:
+  gaussian_bias_s4_z4:
     prior:
       min: 0.5
       max: 2.5
@@ -594,7 +594,7 @@ params:
       scale: 0.0045
     propose: 0.0045
     latex: b_g^{4}(z_{4})
-  gaussian_bias_sample_4_z_5:
+  gaussian_bias_s4_z5:
     prior:
       min: 0.7
       max: 2.7
@@ -604,7 +604,7 @@ params:
       scale: 0.0050999999999999995
     propose: 0.0050999999999999995
     latex: b_g^{4}(z_{5})
-  gaussian_bias_sample_4_z_6:
+  gaussian_bias_s4_z6:
     prior:
       min: 1.2000000000000002
       max: 3.2
@@ -614,7 +614,7 @@ params:
       scale: 0.0066
     propose: 0.0066
     latex: b_g^{4}(z_{6})
-  gaussian_bias_sample_4_z_7:
+  gaussian_bias_s4_z7:
     prior:
       min: 2.6
       max: 4.6
@@ -624,7 +624,7 @@ params:
       scale: 0.0108
     propose: 0.0108
     latex: b_g^{4}(z_{7})
-  gaussian_bias_sample_4_z_8:
+  gaussian_bias_s4_z8:
     prior:
       min: 2.7
       max: 4.7
@@ -634,7 +634,7 @@ params:
       scale: 0.0111
     propose: 0.0111
     latex: b_g^{4}(z_{8})
-  gaussian_bias_sample_4_z_9:
+  gaussian_bias_s4_z9:
     prior:
       min: 1.7000000000000002
       max: 3.7
@@ -644,7 +644,7 @@ params:
       scale: 0.0081
     propose: 0.0081
     latex: b_g^{4}(z_{9})
-  gaussian_bias_sample_4_z_10:
+  gaussian_bias_s4_z10:
     prior:
       min: 1.9
       max: 3.9
@@ -654,7 +654,7 @@ params:
       scale: 0.0087
     propose: 0.0087
     latex: b_g^{4}(z_{10})
-  gaussian_bias_sample_4_z_11:
+  gaussian_bias_s4_z11:
     prior:
       min: 4.0
       max: 6.0
@@ -664,7 +664,7 @@ params:
       scale: 0.015
     propose: 0.015
     latex: b_g^{4}(z_{11})
-  gaussian_bias_sample_5_z_1:
+  gaussian_bias_s5_z1:
     prior:
       min: 0.5
       max: 1.83
@@ -674,7 +674,7 @@ params:
       scale: 0.00249
     propose: 0.00249
     latex: b_g^{5}(z_{1})
-  gaussian_bias_sample_5_z_2:
+  gaussian_bias_s5_z2:
     prior:
       min: 0.5
       max: 2.2
@@ -684,7 +684,7 @@ params:
       scale: 0.0036
     propose: 0.0036
     latex: b_g^{5}(z_{2})
-  gaussian_bias_sample_5_z_3:
+  gaussian_bias_s5_z3:
     prior:
       min: 0.5
       max: 2.3
@@ -694,7 +694,7 @@ params:
       scale: 0.0039
     propose: 0.0039
     latex: b_g^{5}(z_{3})
-  gaussian_bias_sample_5_z_4:
+  gaussian_bias_s5_z4:
     prior:
       min: 0.5
       max: 2.4
@@ -704,7 +704,7 @@ params:
       scale: 0.0042
     propose: 0.0042
     latex: b_g^{5}(z_{4})
-  gaussian_bias_sample_5_z_5:
+  gaussian_bias_s5_z5:
     prior:
       min: 0.6000000000000001
       max: 2.6
@@ -714,7 +714,7 @@ params:
       scale: 0.0048000000000000004
     propose: 0.0048000000000000004
     latex: b_g^{5}(z_{5})
-  gaussian_bias_sample_5_z_6:
+  gaussian_bias_s5_z6:
     prior:
       min: 1.1
       max: 3.1
@@ -724,7 +724,7 @@ params:
       scale: 0.0063
     propose: 0.0063
     latex: b_g^{5}(z_{6})
-  gaussian_bias_sample_5_z_7:
+  gaussian_bias_s5_z7:
     prior:
       min: 2.2
       max: 4.2
@@ -734,7 +734,7 @@ params:
       scale: 0.009600000000000001
     propose: 0.009600000000000001
     latex: b_g^{5}(z_{7})
-  gaussian_bias_sample_5_z_8:
+  gaussian_bias_s5_z8:
     prior:
       min: 3.2
       max: 5.2
@@ -744,7 +744,7 @@ params:
       scale: 0.0126
     propose: 0.0126
     latex: b_g^{5}(z_{8})
-  gaussian_bias_sample_5_z_9:
+  gaussian_bias_s5_z9:
     prior:
       min: 3.0999999999999996
       max: 5.1
@@ -754,7 +754,7 @@ params:
       scale: 0.012299999999999998
     propose: 0.012299999999999998
     latex: b_g^{5}(z_{9})
-  gaussian_bias_sample_5_z_10:
+  gaussian_bias_s5_z10:
     prior:
       min: 3.5
       max: 5.5
@@ -764,7 +764,7 @@ params:
       scale: 0.013500000000000002
     propose: 0.013500000000000002
     latex: b_g^{5}(z_{10})
-  gaussian_bias_sample_5_z_11:
+  gaussian_bias_s5_z11:
     prior:
       min: 4.0
       max: 6.0

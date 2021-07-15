@@ -9,6 +9,7 @@ from lss_theory.data_vector import Bispectrum3DRSD
 from lss_theory.utils.logging import class_logger
 from lss_theory.utils import file_tools
 from lss_theory.utils import profiler
+from lss_theory.math_utils import matrix_utils
 
 
 def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
@@ -50,6 +51,11 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         self._b3d_rsd = self._get_b3d()
         self._b3d_rsd_spec = self._b3d_rsd._data_spec
+
+        self._nb = self._b3d_rsd_spec.nb 
+        self._nz = self._b3d_rsd_spec.nz
+        self._ntri = self._b3d_rsd_spec.ntri
+        self._nori = self._b3d_rsd_spec.nori
 
         self._setup_cov_ingredients()
 
@@ -198,10 +204,10 @@ class Bispectrum3DRSDCovarianceCalculator():
         different orientations (which is not true in general).
         """ 
         
-        nb = self._b3d_rsd_spec.nb 
-        nz = self._b3d_rsd_spec.nz
-        ntri = self._b3d_rsd_spec.ntri
-        nori = self._b3d_rsd_spec.nori
+        nb = self._nb
+        nz = self._nz
+        ntri = self._ntri
+        nori = self._nori
 
         cov = np.zeros((nb, nb, nz, ntri, nori))
         
@@ -216,10 +222,20 @@ class Bispectrum3DRSDCovarianceCalculator():
 
                     cov_tmp = self.get_cov_nb_x_nb_block(iz, itri, iori, iori)\
                         * self._cov_rescale[iz, itri]
+    
                     cov[:, :, iz, itri, iori] = cov_tmp
 
                     if do_invcov == True:
-                        self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
+                        try:
+                            #HACK decide if want this? cuts mode off
+                            #self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
+                            self.invcov[:, :, iz, itri, iori] = \
+                                matrix_utils.invert_with_zero_cols_and_rows(\
+                                    cov_tmp, rows_null=None, fill_value=0) 
+                    
+                        except np.linalg.LinAlgError as e:
+                            print('Got error: {}'.format(e))
+                            print('cov_tmp = {}'.format(cov_tmp))
 
                     self.logger.debug('iz={}, itri={}, ib=0, iori={}: cov = {}'.format(iz, itri, iori, cov[0, 0, iz, itri, iori]))
                     #self.logger.debug('cov_tmp = {}'.format(cov_tmp))
@@ -290,6 +306,69 @@ class Bispectrum3DRSDCovarianceCalculator():
         #    print('cov = {}'.format(cov))
         return cov
 
+    def _get_nmode_rescale_from_kpara_cut(self):
+
+        """Returns the fraction of triangles orientations (of the same triangle shape
+        (k1, k2, k3)) that are not cutoff due to photo-z error as a 4d numpy array 
+        of shape (nb, nb, nz, ntri); use as a rescale (1 means nothing is cutoff).
+        """
+
+        nb = self._nb
+        nz = self._nz
+        ntri = self._ntri
+        nori = self._nori
+
+        is_cutoff = self._get_is_cutoff_from_kpara_cut()
+
+        axis_triangle_orientation = 4
+        fraction_cutoff = np.sum(is_cutoff, axis=axis_triangle_orientation)/nori 
+        nmodes_rescale = 1. - fraction_cutoff
+        
+        expected_shape = (nb, nb, nz, ntri)
+        assert nmodes_rescale.shape == expected_shape
+
+        print('nmodes_rescale = ', nmodes_rescale)
+
+        return nmodes_rescale
+
+    def _get_is_cutoff_from_kpara_cut(self):
+
+        """Returns integer array of 1 and 0 to indicate if mode is cutoff or not
+        due to photo-z error as a 5d numpy array of shape (nb, nb, nz, ntri, nori); 
+        """
+
+        nb = self._nb
+        nz = self._nz
+        ntri = self._ntri
+        nori = self._nori
+
+        is_cutoff = np.zeros((nb, nb, nz, ntri, nori))
+        
+        tri_array = self._b3d_rsd_spec.triangle_spec.tri_array[:,:] # (ntri, 3), 3 for k1, k2, k3
+        mu_array = self._b3d_rsd_spec.triangle_spec.mu_array[:,:,:] # (ntri, nori, 3), 3 for mu1, mu2, mu3
+        kpara_1to3 = tri_array[:, np.newaxis, :] * mu_array # (ntri, nori, 3), 3 for k1mu1, k2mu2, k3mu3
+
+        sigp = self._b3d_rsd._grs_ingredients.get('sigp')  # shape (nsample, nz)
+
+        kpara_1to3_cut = np.zeros((nb, nz, 3))
+        for ib in range(nb):
+            (is1, is2, is3) = self._b3d_rsd_spec.get_isamples(ib)
+            for iz in range(nz):
+                kpara_1to3_cut[ib, iz, :] = 2.*np.pi/sigp[[is1, is2, is3], iz]
+
+        # shape (nb, nz, ntri, nori, 3) --> (nb, nz, ntri, nori) after sum
+        is_cutoff_1to3 = np.any(\
+            kpara_1to3[np.newaxis, np.newaxis, :, :, :] \
+            > kpara_1to3_cut[:, :, np.newaxis, np.newaxis, :], \
+            axis = -1)
+        for ib in range(nb):
+            for jb in range(nb):
+                is_cutoff_ib = is_cutoff_1to3[ib, :, :, :]
+                is_cutoff_jb = is_cutoff_1to3[jb, :, :, :]
+                is_cutoff[ib, jb, :, :, :] = np.logical_or(is_cutoff_ib, is_cutoff_jb)
+
+        return is_cutoff 
+        
     #@profiler
     def get_cov_nb_x_nb_block(self, iz, itri, iori, jori):
 

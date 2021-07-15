@@ -241,8 +241,16 @@ class SingleDerivative():
         return derivative
     
     def _get_info_for_param_and_pvalue(self, param, pvalue):
+
+        # Assuming cosmo_par and other_par have distinctly named parameters
+        if param in self._cosmo_par.params_list:
+            key = 'overwrite_cosmo_par'
+        else: # SingleDerivative doesn't have other_par so not explicitly checking.
+            key = 'overwrite_other_par'
+
         info = copy.deepcopy(self._info)
-        info['overwrite_cosmo_par'] = {param: pvalue}    
+        info[key] = {param: pvalue}   
+
         return info    
 
     def _save(self):
@@ -447,7 +455,7 @@ class AllDerivativesConvergence():
 
     def __init__(self, info, module_name, class_name, 
             ignore_cache=False, do_save=True, parent_dir=None, 
-            eps = 1e-3):
+            eps = 1e-3, std_threshold=1e-2, axis_to_vary=0):
 
         self._info = copy.deepcopy(info)
 
@@ -458,6 +466,8 @@ class AllDerivativesConvergence():
         self._do_save = do_save
         self._parent_dir = parent_dir
         self._eps = eps
+        self._std_threshold = std_threshold
+        self._axis_to_vary = axis_to_vary
 
         self._setup_fiducial_derivatives()
 
@@ -527,7 +537,7 @@ class AllDerivativesConvergence():
 
         return is_converged_list, converged_h_frac_list, converged_h_list, all_derivatives
 
-    def _iterate_until_convergence_for_iparam(self, iparam, max_iter=10):
+    def _iterate_until_convergence_for_iparam(self, iparam, max_iter=5):
 
         metadata = self._all_derivatives_fid.metadata
         info_prev = copy.deepcopy(metadata)
@@ -588,7 +598,10 @@ class AllDerivativesConvergence():
         else:
             print('   Derivatives not converged (eps = {}) but max_iter = {} reached\n'.format(self._eps, max_iter))
             if not is_converged:
-                self._check_convergence_plot(derivatives, der_prev)
+                param = derivatives._params_list[0]
+                is_all_close_to_zero = self._check_convergence_plot(der_prev, der_new, param)
+                if is_all_close_to_zero == True:
+                    is_converged = True #TODO find a better way to document this distinction
         
         print('   Latest used h = {}'.format(desired_h_value))
     
@@ -604,121 +617,132 @@ class AllDerivativesConvergence():
         return convergence_info
 
     def _check_convergence(self, der1, der2):
+
         is_converged = False
+
         frac_diff = np.abs((der2-der1)/der1)
         max_frac_diff = np.nanmax(frac_diff[frac_diff != np.inf])
+        indices = []
         print('max_frac_diff = {}'.format(max_frac_diff))
-        if (frac_diff >= self._eps).any():
-            ind = np.where(frac_diff >= self._eps)
-            print('ind = {}'.format(ind))
-            print('der1[ind] = {}'.format(der1[ind]))
-            if np.allclose(der1[ind], np.zeros(der1[ind].shape)):
-                is_converged = True
-            print('is_converged = {}'.format(is_converged))
-        else:
-            is_converged = True
-        return is_converged, max_frac_diff
 
-    def _check_convergence_plot(self, derivatives, der_prev):
-
-        param = derivatives._params_list[0]
-
-        der2 = derivatives.data[0,...]
-        der1 = der_prev[0,...]
-        print('der1.shape', der1.shape)
-
-        #TODO hack
-        do_plot_signal = False
-        #do_plot_signal = hasattr(derivatives.derivatives_list[0], '_signals')
-        if do_plot_signal is True:
-            single_derivative = derivatives.derivatives_list[0]
-            signals = single_derivative .signals
-            if single_derivative._method == 'finite_difference':
-                signal_pos1 = signals[1]
-                signal_neg1 = signals[0]
-            # TODO add five_point?
-
-        frac_diff = np.abs((der2-der1)/der1)
-        max_frac_diff = np.nanmax(frac_diff[frac_diff != np.inf])
         if (frac_diff >= self._eps).any():
             indices = np.where(frac_diff >= self._eps)
-            # make 2d numpy array so each row is one point
-            indices = np.transpose(np.array(indices))
-            npt = indices.shape[0]
+            print('indices = {}'.format(indices))
+            
+            if np.allclose(der1[indices], np.zeros(der1[indices].shape)):
+                is_converged = True
+        else:
+            is_converged = True
 
-        self._check_convergence_axis_to_plot = 2
-        axis = self._check_convergence_axis_to_plot
+        print('is_converged = {}'.format(is_converged))
 
+        return is_converged, max_frac_diff
+
+    def _check_if_pt_is_close_to_zero(self, pt, der1, nbh_range, axis):
+        nbh, der1_nbh, der1_nbh = self._get_neighborhood(pt, der1, der1, nbh_range, axis)
+        std = np.std(der1_nbh)
+        return (der1[tuple(pt)] < std/self._std_threshold)
+
+    def _check_convergence_plot(self, der_prev, der_new, param):
+
+        der1 = der_prev[0,...]
+        der2 = der_new[0,...]
+
+        frac_diff = np.abs((der2-der1)/der1)
+        max_frac_diff = np.nanmax(frac_diff[frac_diff != np.inf])
+        self._eps_plot = max_frac_diff/10.0
+        
+        indices = np.where(frac_diff >= self._eps_plot)
+        # make 2d numpy array so each row is one point
+        indices = np.transpose(np.array(indices))
+        npt = indices.shape[0]
+
+        axis = self._axis_to_vary
+        nbh_range = range(-5,5)
+
+        is_all_close_to_zero = True
         for ipt in range(npt):
             pt = indices[ipt,:]
-            frac_diff_at_pt = frac_diff[tuple(pt)]
-            neighborhood = range(-5,5)
             print('pt = {}'.format(pt))
+            nbh, der1_nbh, der2_nbh = self._get_neighborhood(pt, der1, der2, nbh_range, axis)
+            is_close_to_zero = self._check_if_pt_is_close_to_zero(pt, der1, nbh_range, axis)
+            print('is_close_to_zero', is_close_to_zero)
+            if is_close_to_zero == False:
+                is_all_close_to_zero = False
+            frac_diff_at_pt = frac_diff[tuple(pt)]
 
-            nbh = []
-            der1_nbh = []
-            der2_nbh = []
+            self._make_plot(nbh, der1_nbh, der2_nbh, der1, der2, \
+                pt, frac_diff_at_pt, max_frac_diff, nbh_range, axis, param,\
+                is_close_to_zero)
+        
+        return is_all_close_to_zero 
 
-            for offset in neighborhood:
+        
+    def _make_plot(self, nbh, der1_nbh, der2_nbh, der1, der2, \
+            pt, frac_diff_at_pt, max_frac_diff, nbh_range, axis, param,\
+            is_close_to_zero):
+        figsize = (9, 6)
+        fig = plt.figure(figsize=figsize)
 
-                pt_varied = np.copy(pt)
-                ind_varied = pt[axis] + offset
+        gs = gridspec.GridSpec(2, 1)
+        gs.update(wspace=0.3, hspace=0.3)  # set the spacing between axes.
 
-                if ind_varied >= 0:
-                    nbh.append(offset)
-                    pt_varied[axis] = ind_varied
-                    pt_varied = tuple(pt_varied)
-                    
-                    der1_nbh.append(der1[pt_varied])
-                    der2_nbh.append(der2[pt_varied])
+        ax1 = plt.subplot(gs[0, 0])
+        ax2 = plt.subplot(gs[1, 0])
 
-                    if do_plot_signal is True:
-                        assert der1.shape == signal_pos1.shape, (der1.shape, signal_pos1.shape)
-                        signal_pos1_neighborhood = signal_pos1[pt_varied]
-                        signal_neg1_neighborhood = signal_neg1[pt_varied]
+        ax1.plot(nbh, der1_nbh, 'r-', lw=2)
+        ax1.plot(nbh, der2_nbh, 'k--', lw=1)
+        ax1.plot(0, der1[tuple(pt)], marker='x')
+        ax1.plot(0, der2[tuple(pt)], marker='x')
 
-            der1_nbh = np.array(der1_nbh)
-            der2_nbh = np.array(der2_nbh)
+        textstr1 =  '|fdiff|=%.2E (max=%.2E)'%(frac_diff_at_pt, max_frac_diff)
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        ax1.text(0.6, -0.15, textstr1, transform=ax1.transAxes, fontsize=8,
+            verticalalignment='top', bbox=props)
 
-            figsize = (9, 6)
-            fig = plt.figure(figsize=figsize)
+        textstr2 = 'Is close to zero (< %s std): %s'%(self._std_threshold, is_close_to_zero)
+        ax1.text(0.2, -0.15, textstr2, transform=ax1.transAxes, fontsize=8,
+            verticalalignment='top', bbox=props)    
 
-            gs = gridspec.GridSpec(2, 1)
-            gs.update(wspace=0.3, hspace=0.3)  # set the spacing between axes.
+        #ax1.set_xlim([10, 3000])
+        plt.yscale('log')
+        plt.xscale('log')
+        ax2.set_ylabel('signal')
+        ax1.set_ylabel('derivatives')
+        ax2.set_xlabel('axis to vary: %s'%axis)
 
-            ax1 = plt.subplot(gs[0, 0])
-            ax2 = plt.subplot(gs[1, 0])
+        plot_dir = os.path.join(self._dir, 'check_convergence/')
+        mkdir_p(plot_dir)
+        pt_string = '_'.join([str(p) for p in pt])
+        plot_name = os.path.join(plot_dir, 'plot_{}_pt_{}.png'.format(param, pt_string))
+        fig.savefig(plot_name)
+        print('Saved plot: {}'.format(plot_name))
+    
+    @staticmethod
+    def _get_neighborhood(pt, der1, der2, nbh_range, axis):
+        nbh = []
+        der1_nbh = []
+        der2_nbh = []
 
-            ax1.plot(nbh, der1_nbh, 'r-', lw=2)
-            ax1.plot(nbh, der2_nbh, 'k--', lw=1)
-            ax1.plot(0, der1[tuple(pt)], marker='x')
-            ax1.plot(0, der2[tuple(pt)], marker='x')
+        axis_size = der1.shape[axis]
 
-            if do_plot_signal is True:
-                color1 = plot_neg(
-                    ax2, neighborhood, signal_pos1_neighborhood, ls='-', lw=2)
-                color2 = plot_neg(
-                    ax2, neighborhood, signal_neg1_neighborhood, ls='--', lw=1)
+        for offset in nbh_range:
 
-            textstr1 =  '|fdiff|=%.2E (max=%.2E)'%(frac_diff_at_pt, max_frac_diff)
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            ax1.text(0.6, -0.15, textstr1, transform=ax1.transAxes, fontsize=8,
-                verticalalignment='top', bbox=props)
+            pt_varied = np.copy(pt)
+            ind_varied = pt[axis] + offset
 
-            #ax1.set_xlim([10, 3000])
-            plt.yscale('log')
-            plt.xscale('log')
-            ax2.set_ylabel('signal')
-            ax1.set_ylabel('derivatives')
-            ax2.set_xlabel('axis to vary: %s'%axis)
+            if (ind_varied >= 0) and (ind_varied < axis_size):
+                nbh.append(offset)
+                pt_varied[axis] = ind_varied
+                pt_varied = tuple(pt_varied)
+                
+                der1_nbh.append(der1[pt_varied])
+                der2_nbh.append(der2[pt_varied])
 
-            plot_dir = os.path.join(self._dir, 'check_convergence/')
-            mkdir_p(plot_dir)
-            pt_string = '_'.join([str(p) for p in pt])
-            plot_name = os.path.join(plot_dir, 'plot_{}_pt_{}.png'.format(param, pt_string))
-            fig.savefig(plot_name)
-            print('Saved plot: {}'.format(plot_name))
-            
+        der1_nbh = np.array(der1_nbh)
+        der2_nbh = np.array(der2_nbh)
+
+        return nbh, der1_nbh, der2_nbh
 
     def _get_metadata(self):
         metadata = copy.deepcopy(self._info)
@@ -749,7 +773,7 @@ class AllDerivativesConvergence():
         
         from lss_theory.utils.misc import strp
         param_list_string = '_'.join(param_list)
-        dir_name = '%s/%s/%s/'%(parent_dir, run_name, param_list_string)
+        dir_name = '%s/%s/all_derivatives_%s/'%(parent_dir, run_name, param_list_string)
         return dir_name
 
     def _setup_paths(self):

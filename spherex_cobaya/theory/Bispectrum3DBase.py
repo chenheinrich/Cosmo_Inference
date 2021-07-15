@@ -68,7 +68,7 @@ def make_dictionary_for_bias_params(survey_par, \
     for isample in range(nsample):
         for iz in range(nz):
             
-            key = 'gaussian_bias_sample_%s_z_%s' % (isample + 1, iz + 1)
+            key = 'gaussian_bias_s%s_z%s' % (isample + 1, iz + 1)
             
             latex = 'b_g^{%i}(z_{%i})' % (isample + 1, iz + 1)
             default_value = bias_default[isample, iz]

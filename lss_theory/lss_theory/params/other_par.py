@@ -1,6 +1,6 @@
 
 
-class OtherPar():
+class AnyPar():
       
     def __init__(self, dict_in):
           
@@ -13,3 +13,8 @@ class OtherPar():
     @property
     def params_list(self):
         return self._params_list
+
+class OtherPar(AnyPar):
+
+    def __init__(self, dict_in):
+        super().__init__(dict_in)

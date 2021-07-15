@@ -41,12 +41,12 @@ class CosmoInterfaceCreator():
     def __init__(self):
         self.logger = class_logger(self)
 
-    def create(self, option, zs, nonlinear, cosmo_par=None, provider=None):
+    def create(self, option, zs, nonlinear, cosmo_par=None, provider=None, **params_values_dict):
         if option == 'Cobaya':
             try:
                 self.logger.debug('About to create the CosmoInterfaceWithCobayaProvider subclass')
                 return CosmoInterfaceWithCobayaProvider(zs, \
-                    provider, nonlinear)
+                    provider, nonlinear, **params_values_dict)
             except Exception as e:
                 self.logger.error('Error creating CosmoInterfaceWithCobayaProvider: {}'.format(e))
                 sys.exit() #TODO
@@ -151,10 +151,11 @@ class CosmoInterface(object):
 
 class CosmoInterfaceWithCobayaProvider(CosmoInterface):
 
-    def __init__(self, zs, provider, nonlinear):
+    def __init__(self, zs, provider, nonlinear, **params_values_dict):
         super().__init__(zs)
 
         self._provider = provider
+        self._params_values_dict = params_values_dict
         self.logger.info('CosmoInterfaceWithCobayaProvider: nonlinear = {}'.format(nonlinear))
         self._log_Pk_interpolator = self._provider.get_Pk_interpolator(
             nonlinear=nonlinear)
@@ -169,7 +170,11 @@ class CosmoInterfaceWithCobayaProvider(CosmoInterface):
         return self._provider.get_angular_diameter_distance(zs)
 
     def get_param(self, paramname):
-        return self._provider.get_param(paramname)
+        """Values in params_values_dict used before that in provider."""
+        if paramname in self._params_values_dict.keys():
+            return self._params_values_dict[paramname]
+        else:
+            return self._provider.get_param(paramname)
         
     def get_H0(self):
         return self._provider.get('H0')
@@ -189,6 +194,7 @@ class CosmoInterfaceWithCobayaProvider(CosmoInterface):
 
     def get_matter_power_at_z_and_k(self, zs, ks):
         return self._Pk_interpolator(zs, ks)
+    
 
 
 class CosmoInterfaceWithCambResults(CosmoInterface):
@@ -253,11 +259,16 @@ class CosmoInterfaceWithCambResults(CosmoInterface):
 
         return matter_power_interpolator
 
-    
     #TODO to be implemented so we can call "As = self._cosmo.get_param('As')"
     #TODO reexamine if this is the best thing to do
     def get_param(self, paramname):
-        return getattr(self._cosmo_par, paramname)
+        """fnl is included in self._cosmo_par when calling camb directly
+        from outside of cobaya."""
+        if paramname in self._cosmo_par.params_list:
+            return getattr(self._cosmo_par, paramname)
+        else:
+            raise AttributeError
+            #TODO raise a proper error
 
     def get_matter_power_at_z_and_k(self, zs, ks):
         """

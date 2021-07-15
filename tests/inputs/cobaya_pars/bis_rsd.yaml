@@ -1,20 +1,17 @@
 debug: True
 
 sampler:
-  #evaluate:
-  mcmc:
-    max_tries: 10000000
-    drag: true 
-    oversample_power: 1
-    covmat: "./data/ps_base_v27/ps_base_v27_chain.covmat"
+  evaluate:
+  #mcmc:
+  #  max_tries: 10000000
 
-output: chains/bis_rsd_fix_all_but_As_ns_and_fnl/bis_base
+output: tests/outputs/bis_rsd/bis_rsd
 
 likelihood:
-  spherelikes.likelihood.LikeBispectrum3DRSD:
+  spherex_cobaya.likelihood.LikeBispectrum3DRSD:
     is_reference_likelihood: False # Set to True if invcov or simulated data are not yet calculated, then the following paths are not loaded.
-    invcov_path: "./data/b3d_rsd_v27/nk_11/invcov_diag_in_orientation.npy"
-    sim_data_path: "./data/b3d_rsd_v27/nk_11/sim_data.npy"
+    invcov_path: "./tests/data/Bispectrum3DRSD/nk_11_v27/fnl_0/invcov_diag_in_orientation.npy"
+    sim_data_path: "./tests/data/Bispectrum3DRSD/nk_11_v27/fnl_1/bis_rsd.npy"
     cov_type: "diagonal_in_orientation"
 
 theory:
@@ -30,7 +27,7 @@ theory:
         - 100
       WantTransfer: True
 
-  spherelikes.theory.GRSIngredients:
+  spherex_cobaya.theory.GRSIngredients:
     stop_at_error: True
 
     nk: 11 # number of k points 
@@ -45,7 +42,7 @@ theory:
     cosmo_fid_file: "./inputs/cosmo_pars/planck2018_fiducial.yaml"
     survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
 
-  spherelikes.theory.Bispectrum3DRSD:
+  spherex_cobaya.theory.Bispectrum3DRSD:
     stop_at_error: True
 
     nk: 11 # number of k points 
@@ -68,71 +65,27 @@ theory:
       sigp: null
       f_of_z: null
 
+
 params:
   fnl:
-    prior:
-      min: 0
-      max: 5
-    ref:
-      dist: norm
-      loc: 1.0
-      scale: 0.1
-    propose: 0.001
+    value: 1.0
     latex: f_{\rm{NL}}
   logA:
-    prior:
-      min: 1.61
-      max: 3.91
-    ref:
-      dist: norm
-      loc: 3.0447
-      scale: 0.01
-    proposal: 0.001
+    value: 3.0447
     latex: \log(10^{10} A_\mathrm{s})
     drop: true
   As:
     value: 'lambda logA: 1e-10*np.exp(logA)'
     latex: A_\mathrm{s}
+    derived: 'lambda As: As'
   ns:
-    prior:
-      min: 0.8
-      max: 1.2
-    ref:
-      dist: norm
-      loc: 0.965
-      scale: 0.005
-    proposal: 0.0001
+    value: 0.96589
     latex: n_\mathrm{s}
   nrun:
     value: 0
     latex: \rm{d}n_s/\rm{d\,ln\,} k
-  #theta_MC_100:
-  #  value: 1.04092
-  #  latex: 100\theta_\mathrm{MC}
-  #  drop: true
-  #  renames: theta
-  #cosmomc_theta:
-  #  value: 'lambda theta_MC_100: 1.e-2*theta_MC_100'
-  #  derived: false
-  #H0:
-  #  latex: H_0
-  #  min: 20
-  #  max: 100
-  #ombh2:
-  #  value: 0.022377
-  #  latex: \Omega_\mathrm{b} h^2
-  #omch2:
-  #  value: 0.1201
-  #  latex: \Omega_\mathrm{c} h^2
   theta_MC_100:
-    prior:
-      min: 0.5
-      max: 10
-    ref:
-      dist: norm
-      loc: 1.041
-      scale: 0.0003
-    proposal: 3.0e-05
+    value: 1.04092
     latex: 100\theta_\mathrm{MC}
     drop: true
     renames: theta
@@ -143,34 +96,20 @@ params:
     latex: H_0
     min: 20
     max: 100
+    derived: true
   ombh2:
     value: 0.022377
     latex: \Omega_\mathrm{b} h^2
-  #ombh2:
-  #  prior:
-  #    min: 0.005
-  #    max: 0.05
-  #  ref:
-  #    dist: norm
-  #    loc: 0.0224
-  #    scale: 0.0001
-  #  proposal: 0.0001
-  #  latex: \Omega_\mathrm{b} h^2
+    renames:
+    - omegabh2
   omch2:
-    value: 0.12010
+    value: 0.1201
     latex: \Omega_\mathrm{c} h^2
-  #omch2:
-  #  prior:
-  #    min: 0.001
-  #    max: 0.99
-  #  ref:
-  #    dist: norm
-  #    loc: 0.12
-  #    scale: 0.001
-  #  proposal: 0.0005
-  #  latex: \Omega_\mathrm{c} h^2
+    renames:
+    - omegach2
   omegam:
     latex: \Omega_\mathrm{m}
+    derived: true
   omegamh2:
     derived: 'lambda omegam, H0: omegam*(H0/100)**2'
     latex: \Omega_\mathrm{m} h^2
@@ -179,14 +118,20 @@ params:
     latex: \sum m_{\nu}
   omeganu:
     latex: \Omega_{\nu}
+    derived: true
   omeganuh2:
     derived: 'lambda omeganu, H0: omeganu*(H0/100)**2'
     latex: \Omega_{\nu} h^2
   omegak:
     value: 0
     latex: \Omega_\mathrm{K}
+    renames:
+    - omk
   omega_de:
     latex: \Omega_\Lambda
+    derived: true
+    renames:
+    - omegal
   w:
     value: -1
     latex: w_0
@@ -195,8 +140,15 @@ params:
     latex: w_a
   YHe:
     latex: Y_\mathrm{P}
+    derived: true
+    renames:
+    - yheused
+    - yhe
   Y_p:
     latex: Y_P^\mathrm{BBN}
+    derived: true
+    renames:
+    - YpBBN
   DHBBN:
     derived: 'lambda DH: 10**5*DH'
     latex: 10^5 \mathrm{D}/\mathrm{H}
@@ -208,22 +160,76 @@ params:
   sigma8:
     latex: \sigma_8
   s8h5:
-    derived: 'lambda sigma8, H0: sigma8*(H0*1e-2)**(-0.5)'
+    derived: "lambda sigma8, H0: sigma8*(H0*1e-2)**(-0.5)"
     latex: \sigma_8/h^{0.5}
   s8omegamp5:
-    derived: 'lambda sigma8, omegam: sigma8*omegam**0.5'
+    derived: "lambda sigma8, omegam: sigma8*omegam**0.5"
     latex: \sigma_8 \Omega_\mathrm{m}^{0.5}
   s8omegamp25:
-    derived: 'lambda sigma8, omegam: sigma8*omegam**0.25'
+    derived: "lambda sigma8, omegam: sigma8*omegam**0.25"
     latex: \sigma_8 \Omega_\mathrm{m}^{0.25}
   A:
-    derived: 'lambda As: 1e9*As'
+    derived: "lambda As: 1e9*As"
     latex: 10^9 A_\mathrm{s}
   clamp:
-    derived: 'lambda As, tau: 1e9*As*np.exp(-2*tau)'
+    derived: "lambda As, tau: 1e9*As*np.exp(-2*tau)"
     latex: 10^9 A_\mathrm{s} e^{-2\tau}
   age:
     latex: '{\rm{Age}}/\mathrm{Gyr}'
   rdrag:
     latex: r_\mathrm{drag}
-  
+  gaussian_bias_sample_1_z_1: 1.3
+  gaussian_bias_sample_1_z_2: 1.5
+  gaussian_bias_sample_1_z_3: 1.8
+  gaussian_bias_sample_1_z_4: 2.3 
+  gaussian_bias_sample_1_z_5: 2.1 
+  gaussian_bias_sample_1_z_6: 2.7 
+  gaussian_bias_sample_1_z_7: 3.6 
+  gaussian_bias_sample_1_z_8: 2.3 
+  gaussian_bias_sample_1_z_9: 3.2 
+  gaussian_bias_sample_1_z_10: 2.7 
+  gaussian_bias_sample_1_z_11: 3.8 
+  gaussian_bias_sample_2_z_1: 1.2 
+  gaussian_bias_sample_2_z_2: 1.4 
+  gaussian_bias_sample_2_z_3: 1.6 
+  gaussian_bias_sample_2_z_4: 1.9 
+  gaussian_bias_sample_2_z_5: 2.3 
+  gaussian_bias_sample_2_z_6: 2.6 
+  gaussian_bias_sample_2_z_7: 3.4 
+  gaussian_bias_sample_2_z_8: 4.2 
+  gaussian_bias_sample_2_z_9: 4.3 
+  gaussian_bias_sample_2_z_10: 3.7
+  gaussian_bias_sample_2_z_11: 4.6 
+  gaussian_bias_sample_3_z_1: 1.0 
+  gaussian_bias_sample_3_z_2: 1.3 
+  gaussian_bias_sample_3_z_3: 1.5 
+  gaussian_bias_sample_3_z_4: 1.7 
+  gaussian_bias_sample_3_z_5: 1.9 
+  gaussian_bias_sample_3_z_6: 2.6 
+  gaussian_bias_sample_3_z_7: 3.0 
+  gaussian_bias_sample_3_z_8: 3.2 
+  gaussian_bias_sample_3_z_9: 3.5 
+  gaussian_bias_sample_3_z_10: 4.1
+  gaussian_bias_sample_3_z_11: 5.0 
+  gaussian_bias_sample_4_z_1: 0.98 
+  gaussian_bias_sample_4_z_2: 1.3 
+  gaussian_bias_sample_4_z_3: 1.4 
+  gaussian_bias_sample_4_z_4: 1.5 
+  gaussian_bias_sample_4_z_5: 1.7 
+  gaussian_bias_sample_4_z_6: 2.2 
+  gaussian_bias_sample_4_z_7: 3.6 
+  gaussian_bias_sample_4_z_8: 3.7 
+  gaussian_bias_sample_4_z_9: 2.7 
+  gaussian_bias_sample_4_z_10: 2.9 
+  gaussian_bias_sample_4_z_11: 5.0 
+  gaussian_bias_sample_5_z_1: 0.83 
+  gaussian_bias_sample_5_z_2: 1.2 
+  gaussian_bias_sample_5_z_3: 1.3 
+  gaussian_bias_sample_5_z_4: 1.4 
+  gaussian_bias_sample_5_z_5: 1.6 
+  gaussian_bias_sample_5_z_6: 2.1 
+  gaussian_bias_sample_5_z_7: 3.2 
+  gaussian_bias_sample_5_z_8: 4.2 
+  gaussian_bias_sample_5_z_9: 4.1 
+  gaussian_bias_sample_5_z_10: 4.5 
+  gaussian_bias_sample_5_z_11: 5.0
