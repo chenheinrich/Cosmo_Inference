@@ -7,7 +7,7 @@ import scipy.linalg as linalg
 
 from lss_theory.fisher.derivative_generic import AllDerivativesConvergence
 from lss_theory.utils.file_tools import mkdir_p
-from lss_theory.math_utils import matrix
+from lss_theory.math_utils import matrix_utils
 
 class Fisher():
 
@@ -66,10 +66,10 @@ class Fisher():
         inv_fisher = linalg.inv(self._fisher)
         print('inv_fisher = {}'.format(inv_fisher))
 
-        is_symmetric = matrix.check_matrix_symmetric(inv_fisher)
+        is_symmetric = matrix_utils.check_matrix_symmetric(inv_fisher)
         print('Passed test inverse fisher is symmetric? - {}'.format(is_symmetric))
 
-        is_inverse_passed = matrix.check_matrix_inverse(self._fisher, inv_fisher, atol=self._inverse_atol, feedback_level=0)
+        is_inverse_passed = matrix_utils.check_matrix_inverse(self._fisher, inv_fisher, atol=self._inverse_atol, feedback_level=0)
         print('Passed inverse test (atol={})? - {}'.format(self._inverse_atol, is_inverse_passed))
         
         errors = np.sqrt(np.diag(inv_fisher))
@@ -105,7 +105,7 @@ class Fisher():
 
         print('fisher', fisher) 
         
-        is_symmetric = matrix.check_matrix_symmetric(fisher)
+        is_symmetric = matrix_utils.check_matrix_symmetric(fisher)
         print('Passed test fisher is symmetric? - {}'.format(is_symmetric))
 
         return fisher

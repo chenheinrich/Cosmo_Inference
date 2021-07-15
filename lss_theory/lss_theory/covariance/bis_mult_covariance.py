@@ -6,7 +6,7 @@ import scipy.linalg as linalg
 
 from lss_theory.data_vector.multipole_data_spec import BispectrumMultipoleSpec
 from lss_theory.math_utils.spherical_harmonics import SphericalHarmonicsTable
-import lss_theory.math_utils.matrix as matrix
+import lss_theory.math_utils.matrix_utils as matrix_utils
 from lss_theory.scripts.get_bis_mult import get_subdir_name_for_bis_mult
 from lss_theory.utils.file_tools import mkdir_p
 from lss_theory.params.survey_par import SurveyPar
@@ -113,7 +113,7 @@ class BispectrumMultipoleCovariance():
                 #cov_nori_blocks_of_nb_x_nb = self._b3d_rsd_cov[:, :, iz, itri] 
                 #cov_nb_blocks_of_nori_x_nori = self._reshape(cov_nori_blocks_of_nb_x_nb)
                 #cov_nb_blocks_of_nlm_x_nlm = self._apply_ylm_integral(cov_nb_blocks_of_nori_x_nori)
-                #matrix.check_matrix_symmetric(cov_nb_blocks_of_nlm_x_nlm)
+                #matrix_utils.check_matrix_symmetric(cov_nb_blocks_of_nlm_x_nlm)
 
                 #cov[:, :, iz, itri] = cov_nb_blocks_of_nlm_x_nlm
                 #invcov[:, :, iz, itri] = linalg.inv(cov_nb_blocks_of_nlm_x_nlm)
@@ -141,21 +141,21 @@ class BispectrumMultipoleCovariance():
                         
                         cov[ib*(nlm):(ib+1)*nlm, jb*nlm:(jb+1)*nlm, iz, itri] = one_block_nlm_x_nlm
                         cov[jb*(nlm):(jb+1)*nlm, ib*nlm:(ib+1)*nlm, iz, itri] = one_block_nlm_x_nlm  
-                        #matrix.check_matrix_symmetric(one_block_nlm_x_nlm)
+                        #matrix_utils.check_matrix_symmetric(one_block_nlm_x_nlm)
                         
                         #HACK debugging:
                         inv_one_block = linalg.inv(one_block_nlm_x_nlm)
-                        is_passed = matrix.check_matrix_inverse(one_block_nlm_x_nlm, inv_one_block,
+                        is_passed = matrix_utils.check_matrix_inverse(one_block_nlm_x_nlm, inv_one_block,
                             atol=1e-3, feedback_level=1)
                         assert is_passed
-                #matrix.check_matrix_symmetric(cov[:, :, iz, itri])
+                #matrix_utils.check_matrix_symmetric(cov[:, :, iz, itri])
                 
                 print('about to get inverse')
                 invcov[:, :, iz, itri] = linalg.inv(cov[:, :, iz, itri])
 
-                #matrix.check_matrix_symmetric(invcov[:, :, iz, itri])
+                #matrix_utils.check_matrix_symmetric(invcov[:, :, iz, itri])
                 
-                matrix.check_matrix_inverse(cov[:,:,iz,itri], \
+                matrix_utils.check_matrix_inverse(cov[:,:,iz,itri], \
                     invcov[:,:,iz,itri], atol=1e-6, feedback_level=1)
 
                 sys.exit()
@@ -167,7 +167,7 @@ class BispectrumMultipoleCovariance():
         nblock_old = self._nori
         block_size_old = self._nb
         cov_nb_blocks_of_nori_x_nori = \
-            matrix.reshape_blocks_of_matrix(cov_nori_blocks_of_nb_x_nb, nblock_old, block_size_old)
+            matrix_utils.reshape_blocks_of_matrix(cov_nori_blocks_of_nb_x_nb, nblock_old, block_size_old)
         return cov_nb_blocks_of_nori_x_nori
         
     #TODO not used
@@ -176,7 +176,7 @@ class BispectrumMultipoleCovariance():
         nlm = self._nlm
         nb = self._nb
         nbxnlm = nb * nlm
-        cov_nb_blocks_of_nori_x_nori_3d = matrix.split_matrix_into_blocks(cov_nb_blocks_of_nori_x_nori, nori, nori)
+        cov_nb_blocks_of_nori_x_nori_3d = matrix_utils.split_matrix_into_blocks(cov_nb_blocks_of_nori_x_nori, nori, nori)
         cov_nb_blocks_of_nlm_x_nlm_3d = np.zeros((nb**2, nlm, nlm), dtype=complex)
         
         iblock = 0
@@ -192,7 +192,7 @@ class BispectrumMultipoleCovariance():
 
                 iblock = iblock + 1
 
-        cov_nb_blocks_of_nlm_x_nlm = matrix.assemble_matrix_from_blocks(\
+        cov_nb_blocks_of_nlm_x_nlm = matrix_utils.assemble_matrix_from_blocks(\
             cov_nb_blocks_of_nlm_x_nlm_3d, nb)
 
         assert cov_nb_blocks_of_nlm_x_nlm.shape == (nbxnlm, nbxnlm)

@@ -167,7 +167,7 @@ def check_identity(cov, invcov, rtol=1e-3, atol=1e-8):
 
 def check_cov_symmetric(cov):
 
-    from lss_theory.math_utils.matrix import check_matrix_symmetric
+    from lss_theory.math_utils.matrix_utils import check_matrix_symmetric
 
     if cov_type == 'full':
         (nbxnori, nbxnori, nz, ntri) = cov.shape

@@ -53,6 +53,7 @@ class Bispectrum3DRSDFisher(Fisher):
             der_conv_axis_to_vary
             ):
         self._cov_type = info['fisher']['cov_type'] 
+        self._invcov_path = info['fisher']['invcov_path'] 
         super().__init__(info, 
             inverse_atol=inverse_atol, \
             der_conv_eps=der_conv_eps, \
@@ -66,17 +67,14 @@ class Bispectrum3DRSDFisher(Fisher):
 
     def _load_invcov(self):
 
-        if self._cov_type == 'full': # Not used; maybe one day for Gaussian covariance.
-            invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210513/invcov_full.npy'
-        
-        elif self._cov_type == 'diagonal_in_triangle_orientation': 
-            invcov_path = './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'
-        
-        invcov = np.load(invcov_path)
+        invcov = np.load(self._invcov_path)
         print('invcov.shape = {}'.format(invcov.shape))
         
         expected_ndim = 4 if self._cov_type == 'full' else 5
         assert len(invcov.shape) == expected_ndim, (len(invcov.shape), expected_ndim)
+
+        #HACK
+        #raise error properly here with a good messages
         
         return invcov
 
