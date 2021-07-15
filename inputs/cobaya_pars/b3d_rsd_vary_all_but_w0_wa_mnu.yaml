@@ -6,7 +6,7 @@ sampler:
     max_tries: 10000000
     drag: true 
     oversample_power: 1
-    covmat: "./data/ps_base_v27/ps_base_v27_chain.covmat"
+    #covmat: "./data/ps_base_v27/ps_base_v27_chain.covmat"
 
 output: chains/b3d_rsd_vary_all_but_w0_wa_mnu/b3d_rsd
 
