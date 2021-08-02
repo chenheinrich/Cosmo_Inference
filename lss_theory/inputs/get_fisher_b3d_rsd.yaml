@@ -38,6 +38,8 @@ AllDerivatives:
     - ombh2
     - theta_MC_100
     - "*gaussian_biases"
+    - "*b2"
+    #- "*b2_first_two"
   method: 'finite_diff' #finite_diff or five_point
 
 fisher:

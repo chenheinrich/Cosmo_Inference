@@ -8,8 +8,8 @@ import yaml
 @pytest.mark.debug
 @pytest.mark.parametrize("yaml_file, cosmo_par_file, fn_expected", \
     [
-        ("./galaxy_3d/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './galaxy_3d/tests/data/bis_base_fnl_0.npy'), \
-        ("./galaxy_3d/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './galaxy_3d/tests/data/bis_base_fnl_1.npy'), \
+        ("./lss_theory/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './lss_theory/tests/data/bis_base_fnl_0.npy'), \
+        ("./lss_theory/tests/data/get_bis_base.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './lss_theory/tests/data/bis_base_fnl_1.npy'), \
     ]
 )
 def test_Bispectrum3DBase_mu_set_to_zero(yaml_file, cosmo_par_file, fn_expected):

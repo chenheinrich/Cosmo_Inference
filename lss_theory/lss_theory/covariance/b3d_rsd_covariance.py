@@ -372,64 +372,67 @@ class Bispectrum3DRSDCovarianceCalculator():
     #@profiler
     def get_cov_nb_x_nb_block(self, iz, itri, iori, jori):
 
-        (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
-
         nb = self._b3d_rsd_spec.nb
-
         cov = np.zeros((nb, nb))
 
-        debug_sigp = self._b3d_rsd_spec._debug_sigp
+        if iori != jori: 
+            return cov
 
-        for ib in range(nb):
+        else:
+            (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
 
-            (a, b, c) = self._b3d_rsd_spec.get_isamples(ib)
+            debug_sigp = self._b3d_rsd_spec._debug_sigp
 
-            for jb in range(nb):
+            for ib in range(nb):
 
-                (d, e, f) = self._b3d_rsd_spec.get_isamples(jb)
+                (a, b, c) = self._b3d_rsd_spec.get_isamples(ib)
 
-                ips1 = self._p3d._data_spec.get_ips(a, d)
-                ips2 = self._p3d._data_spec.get_ips(b, e)
-                ips3 = self._p3d._data_spec.get_ips(c, f)
+                for jb in range(nb):
+
+                    (d, e, f) = self._b3d_rsd_spec.get_isamples(jb)
+
+                    ips1 = self._p3d._data_spec.get_ips(a, d)
+                    ips2 = self._p3d._data_spec.get_ips(b, e)
+                    ips3 = self._p3d._data_spec.get_ips(c, f)
 
 
-                if (debug_sigp is None) or (debug_sigp > 0):
-                    fog_a = self._get_fog(a, iz, ik1, itri, iori, 0)
-                    fog_b = self._get_fog(b, iz, ik2, itri, iori, 1)
-                    fog_c = self._get_fog(c, iz, ik3, itri, iori, 2)
+                    if (debug_sigp is None) or (debug_sigp > 0):
+                        fog_a = self._get_fog(a, iz, ik1, itri, iori, 0)
+                        fog_b = self._get_fog(b, iz, ik2, itri, iori, 1)
+                        fog_c = self._get_fog(c, iz, ik3, itri, iori, 2)
 
-                    fog_d = self._get_fog(d, iz, ik1, itri, jori, 0)
-                    fog_e = self._get_fog(e, iz, ik2, itri, jori, 1)
-                    fog_f = self._get_fog(f, iz, ik3, itri, jori, 2)
+                        fog_d = self._get_fog(d, iz, ik1, itri, jori, 0)
+                        fog_e = self._get_fog(e, iz, ik2, itri, jori, 1)
+                        fog_f = self._get_fog(f, iz, ik3, itri, jori, 2)
 
-                    fog1 = fog_a * fog_d
-                    fog2 = fog_b * fog_e
-                    fog3 = fog_c * fog_f
+                        fog1 = fog_a * fog_d
+                        fog2 = fog_b * fog_e
+                        fog3 = fog_c * fog_f
 
-                elif debug_sigp == 0:
+                    elif debug_sigp == 0:
 
-                    fog1 = fog2 = fog3 = 1.0
+                        fog1 = fog2 = fog3 = 1.0
 
-                kaiser_a = self._kaiser_all[a, iz, ik1, itri, iori, 0]
-                kaiser_b = self._kaiser_all[b, iz, ik2, itri, iori, 1]
-                kaiser_c = self._kaiser_all[c, iz, ik3, itri, iori, 2]
+                    kaiser_a = self._kaiser_all[a, iz, ik1, itri, iori, 0]
+                    kaiser_b = self._kaiser_all[b, iz, ik2, itri, iori, 1]
+                    kaiser_c = self._kaiser_all[c, iz, ik3, itri, iori, 2]
 
-                kaiser_d = self._kaiser_all[d, iz, ik1, itri, jori, 0]
-                kaiser_e = self._kaiser_all[e, iz, ik2, itri, jori, 1]
-                kaiser_f = self._kaiser_all[f, iz, ik3, itri, jori, 2]
+                    kaiser_d = self._kaiser_all[d, iz, ik1, itri, jori, 0]
+                    kaiser_e = self._kaiser_all[e, iz, ik2, itri, jori, 1]
+                    kaiser_f = self._kaiser_all[f, iz, ik3, itri, jori, 2]
 
-                kaiser_1 = kaiser_a * kaiser_d
-                kaiser_2 = kaiser_b * kaiser_e
-                kaiser_3 = kaiser_c * kaiser_f
+                    kaiser_1 = kaiser_a * kaiser_d
+                    kaiser_2 = kaiser_b * kaiser_e
+                    kaiser_3 = kaiser_c * kaiser_f
 
-                cov[ib, jb] = self._get_observed_ps(ips1, iz, ik1, fog=fog1, kaiser=kaiser_1) \
-                    * self._get_observed_ps(ips2, iz, ik2, fog=fog2, kaiser=kaiser_2) \
-                    * self._get_observed_ps(ips3, iz, ik3, fog=fog3, kaiser=kaiser_3)
+                    cov[ib, jb] = self._get_observed_ps(ips1, iz, ik1, fog=fog1, kaiser=kaiser_1) \
+                        * self._get_observed_ps(ips2, iz, ik2, fog=fog2, kaiser=kaiser_2) \
+                        * self._get_observed_ps(ips3, iz, ik3, fog=fog3, kaiser=kaiser_3)
 
-                # TODO not accounting for equilateral and isoceles triangles yet 
-                # TODO for these other terms in the cov, will need to change fog definition
+                    # TODO not accounting for equilateral and isoceles triangles yet 
+                    # TODO for these other terms in the cov, will need to change fog definition
 
-        return cov
+            return cov
 
     #@profiler #too slow,not sure why
     def get_cov_nb_x_nb_block2(self, iz, itri, iori, jori):

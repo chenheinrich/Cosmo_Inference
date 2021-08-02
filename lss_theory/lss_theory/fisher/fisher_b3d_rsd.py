@@ -18,6 +18,12 @@ class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
         super().__init__(info, ignore_cache, do_save, parent_dir)
     
     def get_other_par(self, info):
+        params_dict = self._get_gaussian_bias_default(info)
+        params_dict.update(self._get_b2_default(info))
+        other_par = OtherPar(params_dict)
+        return other_par
+    
+    def _get_gaussian_bias_default(self, info):
 
         survey_par = SurveyPar(info['survey_par_file'])
 
@@ -27,17 +33,60 @@ class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
         params_dict = {}
         for isample in range(nsample):
             for iz in range(nz):
-                params_dict['gaussian_bias_s%i_z%i'%(isample+1, iz+1)] = gaussian_bias[isample, iz]
-        
-        other_par = OtherPar(params_dict)
+                name = self._get_key_from_name_isample_iz('gaussian_bias', isample, iz)
+                params_dict[name] = gaussian_bias[isample, iz]
 
-        return other_par
+        return params_dict
     
+    def _get_b2_default(self, info):
+        """Returns a dictionary for the second-order galaxy 
+        bias, a key for each galaxy sample and redshift.
+        """
+
+        survey_par = SurveyPar(info['survey_par_file'])
+        
+        nsample = survey_par.get_nsample() #TODO change to property!
+        nz = survey_par.get_nz()
+
+        b1_dict = self._get_gaussian_bias_default(info)
+
+        params_dict = {}
+        for isample in range(nsample):
+            for iz in range(nz):
+                key_b1 = self._get_key_from_name_isample_iz('gaussian_bias', isample, iz)
+                key_b2 = self._get_key_from_name_isample_iz('b2', isample, iz)
+                b2 = self._get_b2_Lezeyras_2016_for_b1(b1_dict[key_b1])
+                params_dict[key_b2] = b2
+
+        return params_dict
+
+    @staticmethod
+    def _get_key_from_name_isample_iz(name, isample, iz):
+        return '%s_s%i_z%i'%(name, isample+1, iz+1)
+
+    @staticmethod
+    def _get_b2_Lezeyras_2016_for_b1(b1):
+        """Returns b2 given b1 using GR fit from Lezeyras et al. 2016
+        https://arxiv.org/pdf/1511.01096.pdf Eq. 5.2 
+        (Also used in SPHEREx forecast) defined with 
+        delta_g(x) = b1 * delta_m(x) + 0.5 * b2 * delta_m^2(x).
+        """
+        b2 = 0.412 - 2.143 * b1 + 0.929 * b1 * b1 + 0.008 * b1 * b1 * b1
+        return b2
+
     def get_param_set_definition(self, info):
-        other_par = self.get_other_par(info)
+        """Returns a dictionary that map a name denoting a set of parameters,
+        to the list of names for all the parameters it contains."""
+        
+        b1_param_list = list(self._get_gaussian_bias_default(info).keys())
+        b2_param_list = list(self._get_b2_default(info).keys())
         param_set_def = {\
-            "*gaussian_biases": other_par.params_list, 
-            "*gaussian_biases_first_two": [other_par.params_list[0], other_par.params_list[1]]}
+            "*gaussian_biases": b1_param_list,
+            "*gaussian_biases_first_two": [b1_param_list[0], b1_param_list[1]],
+            "*b2": b2_param_list,
+            "*b2_first_two": [b2_param_list[0], b2_param_list[1]],
+        }
+
         return param_set_def
 
     def _get_signal_for_info(self, info): 

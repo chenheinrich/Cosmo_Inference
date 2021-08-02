@@ -123,9 +123,10 @@ class GRSIngredients(Theory):
     nonlinear = False
     is_reference_model = False
 
+
     cosmo_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
     survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
-    
+
     # Note: The following block needs to be reprocessed during initialize()
     # since the survey_par_file specified in the yaml file could be 
     # different than class default

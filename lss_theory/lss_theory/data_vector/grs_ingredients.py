@@ -290,6 +290,8 @@ class GRSIngredients(object):
         """
         b1 = self.get('gaussian_bias')
         b2 = self._get_b2_Lezeyras_2016_for_b1(b1)
+        if self._grs_par is not None:
+            b2 = self._update_b2_with_grs_par(b2)
         self._ingredients['galaxy_bias_20'] = b2 
 
     @staticmethod
@@ -300,6 +302,14 @@ class GRSIngredients(object):
         delta_g(x) = b1 * delta_m(x) + 0.5 * b2 * delta_m^2(x).
         """
         b2 = 0.412 - 2.143 * b1 + 0.929 * b1 * b1 + 0.008 * b1 * b1 * b1
+        return b2
+
+    def _update_b2_with_grs_par(self, b2):
+        for isample in range(self._d.nsample):
+            for iz in range(self._d.nz):
+                param = 'b2_s%s_z%s' % (isample + 1, iz + 1)
+                if param in self._grs_par.params_list:
+                    b2[isample, iz] = getattr(self._grs_par, param)
         return b2
 
     def _calc_gaussian_bias(self):

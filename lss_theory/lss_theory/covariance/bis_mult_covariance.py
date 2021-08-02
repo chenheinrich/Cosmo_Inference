@@ -1,4 +1,4 @@
-from collections import abc
+import yaml
 import numpy as np
 import os
 import copy
@@ -10,9 +10,9 @@ import lss_theory.math_utils.matrix_utils as matrix_utils
 from lss_theory.scripts.get_bis_mult import get_subdir_name_for_bis_mult
 from lss_theory.utils.file_tools import mkdir_p
 from lss_theory.params.survey_par import SurveyPar
-from lss_theory.utils import profiler
+from lss_theory.utils.logging import class_logger
 
-class BispectrumMultipoleCovariance():
+class BispectrumMultipoleCovarianceBase():
     """This class takes in the 3D Fourier galaxy bispectrum covariance
     and performs two integrals over the spherical harmonics to
     return the bispectrum multipole covariance"""
@@ -20,6 +20,7 @@ class BispectrumMultipoleCovariance():
     def __init__(self, info):
         """Args:
         """
+        self._logger = class_logger(self)
         self._info = copy.deepcopy(info)
         self._setup_dir()
         self._setup_paths()
@@ -30,12 +31,10 @@ class BispectrumMultipoleCovariance():
         self._bis_mult_spec = BispectrumMultipoleSpec(survey_par, self._info['BispectrumMultipole'])
         self._setup_dims()
 
+        self._theta1, self._phi12, self._lmax = self._get_theta1_phi12_lmax()
         self._do_negative_m = self._bis_mult_spec.do_negative_m
         self._ylms_conj = self._get_ylms_conj()
         self._ylms_conj_transpose = np.transpose(self._ylms_conj)
-
-        self._cov, self._invcov = self._get_cov_and_invcov()
-        self._save()
 
     def _setup_dir(self):
         self._dir = self._info['covariance']['data_dir']
@@ -84,15 +83,312 @@ class BispectrumMultipoleCovariance():
         precomputed spherical harmonics on the theta-phi grid and 
         lmax specified in data_spec.
         """
-        theta1 = self._bis_mult_spec.b3d_rsd_spec.theta1
-        phi12 = self._bis_mult_spec.b3d_rsd_spec.phi12
-        lmax = self._bis_mult_spec.lmax
-
-        spherical_harmonics_table = SphericalHarmonicsTable(theta1, phi12, lmax, \
+        spherical_harmonics_table = SphericalHarmonicsTable(self._theta1, self._phi12, self._lmax, \
             self._do_negative_m)
         ylms = spherical_harmonics_table.data
 
         return np.conj(ylms)
+
+    def _get_theta1_phi12_lmax(self):
+        theta1 = self._bis_mult_spec.b3d_rsd_spec.theta1
+        phi12 = self._bis_mult_spec.b3d_rsd_spec.phi12
+        lmax = self._bis_mult_spec.lmax
+        return theta1, phi12, lmax
+
+    def _save(self):
+        np.save(self._bis_mult_cov_path, self._cov)
+        np.save(self._bis_mult_invcov_path, self._invcov)
+        print('Saved cov at {}'.format(self._bis_mult_cov_path))
+        print('Saved invcov at {}'.format(self._bis_mult_invcov_path))
+
+class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
+    """This class takes in the 3D Fourier galaxy bispectrum covariance
+    and performs two integrals over the spherical harmonics to
+    return the bispectrum multipole covariance"""
+
+    def __init__(self, info):
+        
+        self._b3d_cov_calc = self._setup_cov_b3d_rsd()
+        super().__init__(info)
+        
+        self._cov, self._invcov = self._get_cov_and_invcov()
+        self._save()
+    
+    def _get_theta1_phi12_lmax(self):
+        theta1 = self._b3d_cov_calc._b3d_rsd_spec.theta1
+        phi12 = self._b3d_cov_calc._b3d_rsd_spec.phi12
+        lmax = self._bis_mult_spec.lmax
+        return theta1, phi12, lmax
+
+    #TODO to delete when new is tested to work
+    def _get_cov_and_invcov_old(self):
+
+        nbxnlm = self._nb * self._nlm
+        nlm = self._nlm
+        shape = (nbxnlm, nbxnlm, self._nz, self._ntri)
+
+        cov = np.zeros(shape, dtype=complex)
+        invcov = np.zeros(shape, dtype=complex)
+        
+        for iz in range(self._nz):
+            for itri in range(self._ntri):
+
+                print('iz = {}, itri = {}'.format(iz, itri))
+            
+                for ib in range(self._nb):
+                    for jb in range(ib, self._nb): 
+                        
+                        print('ib = {}, jb = {}'.format(ib, jb))
+                        #HACK
+                        #array_nori = self._b3d_rsd_cov[ib, jb, iz, itri, :]
+                        #one_block_nori_x_nori = np.diag(array_nori)
+                        #dOmega = (4.*np.pi)/(self._nori)
+                        #one_block_nlm_x_nlm = self._apply_ylm_integral_on_one_block_nori_x_nori(\
+                        #    one_block_nori_x_nori) * dOmega 
+
+                        one_block_nlm_x_nlm = self._get_one_block_nlm_x_nlm(ib, jb, iz, itri)
+                        
+                        #HACK debugging now:
+                        #inv_one_block = linalg.inv(one_block_nlm_x_nlm)
+                        #is_passed = matrix_utils.check_matrix_inverse(one_block_nlm_x_nlm, inv_one_block,
+                        #    atol=1e-3, feedback_level=1)
+                        #assert is_passed
+
+                        #HACK restore later, debug a smaller block first
+                        cov[ib*(nlm):(ib+1)*nlm, jb*nlm:(jb+1)*nlm, iz, itri] = one_block_nlm_x_nlm
+                        cov[jb*(nlm):(jb+1)*nlm, ib*nlm:(ib+1)*nlm, iz, itri] = one_block_nlm_x_nlm  
+                        #matrix_utils.check_matrix_symmetric(one_block_nlm_x_nlm)
+                
+                print('about to get inverse')
+                invcov[:, :, iz, itri] = linalg.inv(cov[:, :, iz, itri])
+
+                #matrix_utils.check_matrix_symmetric(cov[:, :, iz, itri])
+                #matrix_utils.check_matrix_symmetric(invcov[:, :, iz, itri])
+                matrix_utils.check_matrix_inverse(cov[:,:,iz,itri], \
+                    invcov[:,:,iz,itri], atol=1e-6, feedback_level=1)
+
+                #HACK
+                sys.exit()
+
+        return cov, invcov
+
+    def _get_cov_and_invcov(self):
+
+        nb = self._b3d_cov_calc._nb
+        nbxnlm = self._nb * self._nlm
+        nlm = self._nlm
+
+        shape = (nbxnlm, nbxnlm, self._nz, self._ntri)
+        cov = np.zeros(shape, dtype=complex)
+        invcov = np.zeros(shape, dtype=complex)
+
+        nori = self._b3d_cov_calc._nori
+        blocks_of_nori_x_nori = np.zeros((nb, nb, nori, nori))
+        
+        for iz in range(self._nz):
+            for itri in range(self._ntri):
+
+                print('iz = {}, itri = {}'.format(iz, itri))
+
+                for iori in range(nori):
+                    #print('iori=', iori)
+                    for jori in range(nori):
+                        #print('iori = {}, jori = {}'.format(iori, jori))
+                        blocks_of_nori_x_nori[:, :, iori, jori] = self._b3d_cov_calc.get_cov_nb_x_nb_block(iz, itri, iori, jori)
+                        #print('blocks_of_nori_x_nori[:, :, iori, jori] ={}'.format(blocks_of_nori_x_nori[:, :, iori, jori] ))
+                        #TODO to remove later if no longer needed
+                        #one_block_nori_x_nori[iori, jori] = self._b3d_cov_calc.get_cov_nb_x_nb_block(iz, itri, iori, jori)[ib, jb]
+                
+                for ib in range(nb):
+                    #print('ib = {}'.format(ib))
+                    for jb in range(nb):
+                    
+                        one_block_nori_x_nori = blocks_of_nori_x_nori[ib, jb, :, :]
+                        
+                        #HACK
+                        #is_symmetric_cov_passed = matrix_utils.check_matrix_symmetric(one_block_nori_x_nori, rtol=1e-3)
+                        #HACK
+                        #self._test_ylm_orthogonality(rtol=0.5) # not even passed for rtol=0.5!!
+
+                        one_block_nlm_x_nlm = self._apply_ylm_integral_on_one_block_nori_x_nori(one_block_nori_x_nori)
+                        
+                        #To test individual blocks
+                        #inv_one_block = linalg.inv(one_block_nlm_x_nlm)
+                        #self._test_matrix_and_inverse(one_block_nlm_x_nlm, inv_one_block, \
+                        #    atol_inv=1e-5, feedback_level_inv=0, use_tests=['symmetric_mat', 'symmetric_inv'])
+
+                        cov[ib*(nlm):(ib+1)*nlm, jb*nlm:(jb+1)*nlm, iz, itri] = one_block_nlm_x_nlm
+
+                invcov[:, :, iz, itri] = linalg.inv(cov[:, :, iz, itri])
+                print('invcov[:, :, iz, itri] = {}'.format(invcov[:, :, iz, itri]))
+                
+                #self._test_matrix_and_inverse(cov[:, :, iz, itri], invcov[:, :, iz, itri], 
+                #    atol_inv=1e-3, feedback_level_inv=0, use_tests=['symmetric_mat', 'symmetric_inv'])
+        
+        return cov, invcov
+
+    def _test_matrix_and_inverse(self, mat, inv, atol_inv=1e-3, feedback_level_inv=0,\
+            use_tests=['symmetric_mat', 'symmetric_inv', 'inverse']):
+        """Checks through assertion if a matrix (mat) and its inverse (inv) 
+        pass the symmetric matrix test individual and the inverse tests.
+        To select a subset of tests, use the flag use_tests, e.g.
+        use_tests = ['inverse']"""
+
+        is_symmetric_cov_passed = matrix_utils.check_matrix_symmetric(mat)
+        is_symmetric_invcov_passed = matrix_utils.check_matrix_symmetric(inv)
+        is_inverse_test_passed = matrix_utils.check_matrix_inverse(mat, \
+            inv, atol=atol_inv, feedback_level=feedback_level_inv)
+
+        self._logger.info('is_inverse_test_passed = {}'.format(is_inverse_test_passed))
+        self._logger.info('is_symmetric_invcov_passed = {}'.format(is_symmetric_invcov_passed))
+        self._logger.info('is_inverse_test_passed = {}'.format(is_inverse_test_passed))
+
+        if 'symmetric_mat' in use_tests:
+            assert is_symmetric_cov_passed
+        if 'symmetric_inv' in use_tests:
+            assert is_symmetric_invcov_passed
+        if 'inverse' in use_tests:
+            assert is_inverse_test_passed
+        
+
+    def _apply_ylm_integral_on_one_block_nori_x_nori(self, one_block_nori_x_nori):
+        """Performs integral \int dOmega Ylm* Cov Ylm"""
+        cov = np.matmul(one_block_nori_x_nori, self._ylms_conj) 
+        cov = np.matmul(self._ylms_conj_transpose, cov)
+
+        dOmega = self._b3d_cov_calc._b3d_rsd_spec.dOmega
+        cov = cov * dOmega
+        #print('cov=', cov)
+        #TODO need to add some conversion factor here:
+        # 2) Calculate the number of modes here with Volume
+        return cov
+
+    def _test_ylm_orthogonality(self, rtol=1e-3):
+        nori = self._b3d_cov_calc._nori
+        one_block_nori_x_nori = np.identity(nori)
+        cov = np.matmul(one_block_nori_x_nori, self._ylms_conj) 
+        cov = np.matmul(np.conj(self._ylms_conj_transpose), cov)
+        dOmega = self._b3d_cov_calc._b3d_rsd_spec.dOmega
+        cov = cov * dOmega
+        nlm = self._ylms_conj.shape[1]
+        
+        is_symmetric = matrix_utils.check_matrix_symmetric(cov)
+        is_identity = np.allclose(cov, np.identity(nlm), rtol=rtol)
+
+        print('_test_ylm_orthogonality: is_symmetric = {}'.format(is_symmetric))
+        assert is_symmetric
+
+        print('_test_ylm_orthogonality: is_identity = {}'.format(is_identity))
+        print('_test_ylm_orthogonality: orthogonality test = {}'.format(cov))
+        assert is_identity
+        
+
+    def _setup_cov_b3d_rsd(self):
+
+        from lss_theory.covariance import Bispectrum3DRSDCovarianceCalculator
+
+        config_file = './lss_theory/inputs/get_covariance_b3d_rsd.yaml'
+        with open(config_file) as file:
+            info = yaml.load(file, Loader=yaml.FullLoader)
+        
+        nbin_cos_theta1 = 10
+        nbin_phi12 = 10
+        do_folded_signal = False
+
+        info_b3d_rsd = info['Bispectrum3DRSDCovariance']['Bispectrum3DRSD']['triangle_orientation_info']
+        info_b3d_rsd['min_cos_theta1'] = -1
+        info_b3d_rsd['max_cos_theta1'] = 1.0
+        info_b3d_rsd['nbin_cos_theta1'] = nbin_cos_theta1
+        info_b3d_rsd['min_phi12'] = 0.0
+        info_b3d_rsd['max_phi12'] = 2.*np.pi
+        info_b3d_rsd['nbin_phi12'] = nbin_phi12
+        info_b3d_rsd['do_folded_signal'] = do_folded_signal
+
+        info['result_dir'] = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_%s/theta_phi_%s_%s/debug/'%(do_folded_signal, nbin_cos_theta1, nbin_phi12)
+        info['plot_dir'] = './plots/theory/covariance/b3d_rsd_theta1_phi12_%s_%s/fnl_0/nk_11/'%(nbin_cos_theta1, nbin_phi12)
+
+        b3d_cov_calc = Bispectrum3DRSDCovarianceCalculator(info)
+        
+        cov_type = info['Bispectrum3DRSDCovariance']['cov_type'] 
+
+        fn_cov = os.path.join(info['result_dir'], 'cov_%s.npy'%cov_type)
+        fn_invcov = os.path.join(info['result_dir'], 'invcov_%s.npy'%cov_type)
+
+        return b3d_cov_calc
+
+
+    def _get_cov_nb_x_nb_block(self, iz, itri, iori, jori):
+
+        (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
+
+        nb = self._b3d_rsd_spec.nb
+
+        cov = np.zeros((nb, nb))
+
+        debug_sigp = self._b3d_rsd_spec._debug_sigp
+
+        for ib in range(nb):
+
+            (a, b, c) = self._b3d_rsd_spec.get_isamples(ib)
+
+            for jb in range(nb):
+
+                (d, e, f) = self._b3d_rsd_spec.get_isamples(jb)
+
+                ips1 = self._p3d._data_spec.get_ips(a, d)
+                ips2 = self._p3d._data_spec.get_ips(b, e)
+                ips3 = self._p3d._data_spec.get_ips(c, f)
+
+
+                if (debug_sigp is None) or (debug_sigp > 0):
+                    fog_a = self._get_fog(a, iz, ik1, itri, iori, 0)
+                    fog_b = self._get_fog(b, iz, ik2, itri, iori, 1)
+                    fog_c = self._get_fog(c, iz, ik3, itri, iori, 2)
+
+                    fog_d = self._get_fog(d, iz, ik1, itri, jori, 0)
+                    fog_e = self._get_fog(e, iz, ik2, itri, jori, 1)
+                    fog_f = self._get_fog(f, iz, ik3, itri, jori, 2)
+
+                    fog1 = fog_a * fog_d
+                    fog2 = fog_b * fog_e
+                    fog3 = fog_c * fog_f
+
+                elif debug_sigp == 0:
+
+                    fog1 = fog2 = fog3 = 1.0
+
+                kaiser_a = self._kaiser_all[a, iz, ik1, itri, iori, 0]
+                kaiser_b = self._kaiser_all[b, iz, ik2, itri, iori, 1]
+                kaiser_c = self._kaiser_all[c, iz, ik3, itri, iori, 2]
+
+                kaiser_d = self._kaiser_all[d, iz, ik1, itri, jori, 0]
+                kaiser_e = self._kaiser_all[e, iz, ik2, itri, jori, 1]
+                kaiser_f = self._kaiser_all[f, iz, ik3, itri, jori, 2]
+
+                kaiser_1 = kaiser_a * kaiser_d
+                kaiser_2 = kaiser_b * kaiser_e
+                kaiser_3 = kaiser_c * kaiser_f
+
+                cov[ib, jb] = self._get_observed_ps(ips1, iz, ik1, fog=fog1, kaiser=kaiser_1) \
+                    * self._get_observed_ps(ips2, iz, ik2, fog=fog2, kaiser=kaiser_2) \
+                    * self._get_observed_ps(ips3, iz, ik3, fog=fog3, kaiser=kaiser_3)
+
+                # TODO not accounting for equilateral and isoceles triangles yet 
+                # TODO for these other terms in the cov, will need to change fog definition
+
+        return cov
+
+#TODO to delete when new (BispectrumMultipoleCovariance) is tested to work        
+class BispectrumMultipoleCovarianceOld(BispectrumMultipoleCovarianceBase):
+    """This class takes in the 3D Fourier galaxy bispectrum covariance
+    and performs two integrals over the spherical harmonics to
+    return the bispectrum multipole covariance"""
+
+    def __init__(self, info):
+        super().__init__(info)
+
+        self._cov, self._invcov = self._get_cov_and_invcov()
+        self._save()
 
     def _get_cov_and_invcov(self):
 
@@ -216,10 +512,4 @@ class BispectrumMultipoleCovariance():
     def _apply_nmodes(self):
         pass
 
-    def _save(self):
-        np.save(self._bis_mult_cov_path, self._cov)
-        np.save(self._bis_mult_invcov_path, self._invcov)
-        print('Saved cov at {}'.format(self._bis_mult_cov_path))
-        print('Saved invcov at {}'.format(self._bis_mult_invcov_path))
-
-        
+    

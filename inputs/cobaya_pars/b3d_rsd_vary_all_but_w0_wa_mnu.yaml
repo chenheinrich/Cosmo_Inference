@@ -42,9 +42,9 @@ theory:
     nonlinear: False
     is_reference_model: False # if calculating reference model for AP, set to True
     
-    cosmo_fid_file: "./inputs/cosmo_pars/planck2018_fiducial.yaml"
-    survey_par_file: "./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
-
+    cosmo_fid_file: ".inputs/cosmo_pars/planck2018_fiducial.yaml"
+    survey_par_file: ".inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
+    
   spherex_cobaya.theory.Bispectrum3DRSD:
     stop_at_error: True
 

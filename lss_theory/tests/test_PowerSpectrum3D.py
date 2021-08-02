@@ -8,8 +8,8 @@ import yaml
 @pytest.mark.debug
 @pytest.mark.parametrize("yaml_file, cosmo_par_file, fn_expected", \
     [
-        ("./galaxy_3d/tests/data/get_ps.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './galaxy_3d/tests/data/ps_fnl_0.npy'), \
-        ("./galaxy_3d/tests/data/get_ps.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './galaxy_3d/tests/data/ps_fnl_1.npy'), \
+        ("./lss_theory/tests/data/get_ps.yaml", './inputs/cosmo_pars/planck2018_fiducial.yaml', './lss_theory/tests/data/ps_fnl_0.npy'), \
+        ("./lss_theory/tests/data/get_ps.yaml", './inputs/cosmo_pars/planck2018_fnl_1p0.yaml', './lss_theory/tests/data/ps_fnl_1.npy'), \
     ]
 )
 def test_PowerSpectrum3D(yaml_file, cosmo_par_file, fn_expected):
