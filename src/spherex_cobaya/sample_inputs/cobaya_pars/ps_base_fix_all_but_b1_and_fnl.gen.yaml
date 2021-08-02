@@ -1,0 +1,683 @@
+debug: true
+sampler:
+  mcmc:
+    max_tries: 10000000
+output: chains/ps_base_fix_all_but_b1_and_fnl/ps_base
+likelihood:
+  spherex_cobaya.likelihood.LikePowerSpectrum3D:
+    is_reference_likelihood: false
+    invcov_path: ./data/ps_base_v27/invcov.npy
+    sim_data_path: ./data/ps_base_v27/sim_data.pickle
+theory:
+  camb:
+    extra_args:
+      halofit_version: mead
+      bbn_predictor: PArthENoPE_880.2_standard.dat
+      lens_potential_accuracy: 1
+      num_massive_neutrinos: 1
+      nnu: 3.046
+      theta_H0_range:
+      - 20
+      - 100
+      WantTransfer: true
+  spherex_cobaya.theory.PowerSpectrum3D:
+    stop_at_error: true
+    is_reference_model: false
+    survey_par_file: ./inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml
+    model_path: ./data/ps_base_v27/ref.pickle
+    nk: 21
+    nmu: 5
+    kmin: 0.0007
+    kmax: 0.14
+    do_test: false
+    do_test_plot: true
+    test_plot_names: null
+params:
+  fnl:
+    prior:
+      min: 0
+      max: 5
+    ref:
+      dist: norm
+      loc: 1.0
+      scale: 0.1
+    propose: 0.001
+    latex: f_{\rm{NL}}
+  logA:
+    value: 3.0447
+    latex: \log(10^{10} A_\mathrm{s})
+    drop: true
+  As:
+    value: 'lambda logA: 1e-10*np.exp(logA)'
+    latex: A_\mathrm{s}
+  ns:
+    value: 0.96589
+    latex: n_\mathrm{s}
+  nrun:
+    value: 0
+    latex: \rm{d}n_s/\rm{d\,ln\,} k
+  theta_MC_100:
+    value: 1.04092
+    latex: 100\theta_\mathrm{MC}
+    drop: true
+    renames: theta
+  cosmomc_theta:
+    value: 'lambda theta_MC_100: 1.e-2*theta_MC_100'
+    derived: false
+  H0:
+    latex: H_0
+    min: 20
+    max: 100
+  ombh2:
+    value: 0.022377
+    latex: \Omega_\mathrm{b} h^2
+  omch2:
+    value: 0.1201
+    latex: \Omega_\mathrm{c} h^2
+  omegam:
+    latex: \Omega_\mathrm{m}
+  omegamh2:
+    derived: 'lambda omegam, H0: omegam*(H0/100)**2'
+    latex: \Omega_\mathrm{m} h^2
+  mnu:
+    value: 0.06
+    latex: \sum m_{\nu}
+  omeganu:
+    latex: \Omega_{\nu}
+  omeganuh2:
+    derived: 'lambda omeganu, H0: omeganu*(H0/100)**2'
+    latex: \Omega_{\nu} h^2
+  omegak:
+    value: 0
+    latex: \Omega_\mathrm{K}
+  omega_de:
+    latex: \Omega_\Lambda
+  w:
+    value: -1
+    latex: w_0
+  wa:
+    value: 0.0
+    latex: w_a
+  YHe:
+    latex: Y_\mathrm{P}
+  Y_p:
+    latex: Y_P^\mathrm{BBN}
+  DHBBN:
+    derived: 'lambda DH: 10**5*DH'
+    latex: 10^5 \mathrm{D}/\mathrm{H}
+  tau:
+    value: 0.0543
+    latex: \tau_\mathrm{reio}
+  zre:
+    latex: z_\mathrm{re}
+  sigma8:
+    latex: \sigma_8
+  s8h5:
+    derived: 'lambda sigma8, H0: sigma8*(H0*1e-2)**(-0.5)'
+    latex: \sigma_8/h^{0.5}
+  s8omegamp5:
+    derived: 'lambda sigma8, omegam: sigma8*omegam**0.5'
+    latex: \sigma_8 \Omega_\mathrm{m}^{0.5}
+  s8omegamp25:
+    derived: 'lambda sigma8, omegam: sigma8*omegam**0.25'
+    latex: \sigma_8 \Omega_\mathrm{m}^{0.25}
+  A:
+    derived: 'lambda As: 1e9*As'
+    latex: 10^9 A_\mathrm{s}
+  clamp:
+    derived: 'lambda As, tau: 1e9*As*np.exp(-2*tau)'
+    latex: 10^9 A_\mathrm{s} e^{-2\tau}
+  age:
+    latex: '{\rm{Age}}/\mathrm{Gyr}'
+  rdrag:
+    latex: r_\mathrm{drag}
+  gaussian_bias_sample_1_z_1:
+    prior:
+      min: 0.5
+      max: 2.3
+    ref:
+      dist: norm
+      loc: 1.3
+      scale: 0.0039
+    propose: 0.0039
+    latex: b_g^{1}(z_{1})
+  gaussian_bias_sample_1_z_2:
+    prior:
+      min: 0.5
+      max: 2.5
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.0045
+    propose: 0.0045
+    latex: b_g^{1}(z_{2})
+  gaussian_bias_sample_1_z_3:
+    prior:
+      min: 0.8
+      max: 2.8
+    ref:
+      dist: norm
+      loc: 1.8
+      scale: 0.0054
+    propose: 0.0054
+    latex: b_g^{1}(z_{3})
+  gaussian_bias_sample_1_z_4:
+    prior:
+      min: 1.2999999999999998
+      max: 3.3
+    ref:
+      dist: norm
+      loc: 2.3
+      scale: 0.006899999999999999
+    propose: 0.006899999999999999
+    latex: b_g^{1}(z_{4})
+  gaussian_bias_sample_1_z_5:
+    prior:
+      min: 1.1
+      max: 3.1
+    ref:
+      dist: norm
+      loc: 2.1
+      scale: 0.0063
+    propose: 0.0063
+    latex: b_g^{1}(z_{5})
+  gaussian_bias_sample_1_z_6:
+    prior:
+      min: 1.7000000000000002
+      max: 3.7
+    ref:
+      dist: norm
+      loc: 2.7
+      scale: 0.0081
+    propose: 0.0081
+    latex: b_g^{1}(z_{6})
+  gaussian_bias_sample_1_z_7:
+    prior:
+      min: 2.6
+      max: 4.6
+    ref:
+      dist: norm
+      loc: 3.6
+      scale: 0.0108
+    propose: 0.0108
+    latex: b_g^{1}(z_{7})
+  gaussian_bias_sample_1_z_8:
+    prior:
+      min: 1.2999999999999998
+      max: 3.3
+    ref:
+      dist: norm
+      loc: 2.3
+      scale: 0.006899999999999999
+    propose: 0.006899999999999999
+    latex: b_g^{1}(z_{8})
+  gaussian_bias_sample_1_z_9:
+    prior:
+      min: 2.2
+      max: 4.2
+    ref:
+      dist: norm
+      loc: 3.2
+      scale: 0.009600000000000001
+    propose: 0.009600000000000001
+    latex: b_g^{1}(z_{9})
+  gaussian_bias_sample_1_z_10:
+    prior:
+      min: 1.7000000000000002
+      max: 3.7
+    ref:
+      dist: norm
+      loc: 2.7
+      scale: 0.0081
+    propose: 0.0081
+    latex: b_g^{1}(z_{10})
+  gaussian_bias_sample_1_z_11:
+    prior:
+      min: 2.8
+      max: 4.8
+    ref:
+      dist: norm
+      loc: 3.8
+      scale: 0.011399999999999999
+    propose: 0.011399999999999999
+    latex: b_g^{1}(z_{11})
+  gaussian_bias_sample_2_z_1:
+    prior:
+      min: 0.5
+      max: 2.2
+    ref:
+      dist: norm
+      loc: 1.2
+      scale: 0.0036
+    propose: 0.0036
+    latex: b_g^{2}(z_{1})
+  gaussian_bias_sample_2_z_2:
+    prior:
+      min: 0.5
+      max: 2.4
+    ref:
+      dist: norm
+      loc: 1.4
+      scale: 0.0042
+    propose: 0.0042
+    latex: b_g^{2}(z_{2})
+  gaussian_bias_sample_2_z_3:
+    prior:
+      min: 0.6000000000000001
+      max: 2.6
+    ref:
+      dist: norm
+      loc: 1.6
+      scale: 0.0048000000000000004
+    propose: 0.0048000000000000004
+    latex: b_g^{2}(z_{3})
+  gaussian_bias_sample_2_z_4:
+    prior:
+      min: 0.8999999999999999
+      max: 2.9
+    ref:
+      dist: norm
+      loc: 1.9
+      scale: 0.005699999999999999
+    propose: 0.005699999999999999
+    latex: b_g^{2}(z_{4})
+  gaussian_bias_sample_2_z_5:
+    prior:
+      min: 1.2999999999999998
+      max: 3.3
+    ref:
+      dist: norm
+      loc: 2.3
+      scale: 0.006899999999999999
+    propose: 0.006899999999999999
+    latex: b_g^{2}(z_{5})
+  gaussian_bias_sample_2_z_6:
+    prior:
+      min: 1.6
+      max: 3.6
+    ref:
+      dist: norm
+      loc: 2.6
+      scale: 0.0078
+    propose: 0.0078
+    latex: b_g^{2}(z_{6})
+  gaussian_bias_sample_2_z_7:
+    prior:
+      min: 2.4
+      max: 4.4
+    ref:
+      dist: norm
+      loc: 3.4
+      scale: 0.010199999999999999
+    propose: 0.010199999999999999
+    latex: b_g^{2}(z_{7})
+  gaussian_bias_sample_2_z_8:
+    prior:
+      min: 3.2
+      max: 5.2
+    ref:
+      dist: norm
+      loc: 4.2
+      scale: 0.0126
+    propose: 0.0126
+    latex: b_g^{2}(z_{8})
+  gaussian_bias_sample_2_z_9:
+    prior:
+      min: 3.3
+      max: 5.3
+    ref:
+      dist: norm
+      loc: 4.3
+      scale: 0.0129
+    propose: 0.0129
+    latex: b_g^{2}(z_{9})
+  gaussian_bias_sample_2_z_10:
+    prior:
+      min: 2.7
+      max: 4.7
+    ref:
+      dist: norm
+      loc: 3.7
+      scale: 0.0111
+    propose: 0.0111
+    latex: b_g^{2}(z_{10})
+  gaussian_bias_sample_2_z_11:
+    prior:
+      min: 3.5999999999999996
+      max: 5.6
+    ref:
+      dist: norm
+      loc: 4.6
+      scale: 0.013799999999999998
+    propose: 0.013799999999999998
+    latex: b_g^{2}(z_{11})
+  gaussian_bias_sample_3_z_1:
+    prior:
+      min: 0.5
+      max: 2.0
+    ref:
+      dist: norm
+      loc: 1.0
+      scale: 0.003
+    propose: 0.003
+    latex: b_g^{3}(z_{1})
+  gaussian_bias_sample_3_z_2:
+    prior:
+      min: 0.5
+      max: 2.3
+    ref:
+      dist: norm
+      loc: 1.3
+      scale: 0.0039
+    propose: 0.0039
+    latex: b_g^{3}(z_{2})
+  gaussian_bias_sample_3_z_3:
+    prior:
+      min: 0.5
+      max: 2.5
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.0045
+    propose: 0.0045
+    latex: b_g^{3}(z_{3})
+  gaussian_bias_sample_3_z_4:
+    prior:
+      min: 0.7
+      max: 2.7
+    ref:
+      dist: norm
+      loc: 1.7
+      scale: 0.0050999999999999995
+    propose: 0.0050999999999999995
+    latex: b_g^{3}(z_{4})
+  gaussian_bias_sample_3_z_5:
+    prior:
+      min: 0.8999999999999999
+      max: 2.9
+    ref:
+      dist: norm
+      loc: 1.9
+      scale: 0.005699999999999999
+    propose: 0.005699999999999999
+    latex: b_g^{3}(z_{5})
+  gaussian_bias_sample_3_z_6:
+    prior:
+      min: 1.6
+      max: 3.6
+    ref:
+      dist: norm
+      loc: 2.6
+      scale: 0.0078
+    propose: 0.0078
+    latex: b_g^{3}(z_{6})
+  gaussian_bias_sample_3_z_7:
+    prior:
+      min: 2.0
+      max: 4.0
+    ref:
+      dist: norm
+      loc: 3.0
+      scale: 0.009
+    propose: 0.009
+    latex: b_g^{3}(z_{7})
+  gaussian_bias_sample_3_z_8:
+    prior:
+      min: 2.2
+      max: 4.2
+    ref:
+      dist: norm
+      loc: 3.2
+      scale: 0.009600000000000001
+    propose: 0.009600000000000001
+    latex: b_g^{3}(z_{8})
+  gaussian_bias_sample_3_z_9:
+    prior:
+      min: 2.5
+      max: 4.5
+    ref:
+      dist: norm
+      loc: 3.5
+      scale: 0.010499999999999999
+    propose: 0.010499999999999999
+    latex: b_g^{3}(z_{9})
+  gaussian_bias_sample_3_z_10:
+    prior:
+      min: 3.0999999999999996
+      max: 5.1
+    ref:
+      dist: norm
+      loc: 4.1
+      scale: 0.012299999999999998
+    propose: 0.012299999999999998
+    latex: b_g^{3}(z_{10})
+  gaussian_bias_sample_3_z_11:
+    prior:
+      min: 4.0
+      max: 6.0
+    ref:
+      dist: norm
+      loc: 5.0
+      scale: 0.015
+    propose: 0.015
+    latex: b_g^{3}(z_{11})
+  gaussian_bias_sample_4_z_1:
+    prior:
+      min: 0.5
+      max: 1.98
+    ref:
+      dist: norm
+      loc: 0.98
+      scale: 0.00294
+    propose: 0.00294
+    latex: b_g^{4}(z_{1})
+  gaussian_bias_sample_4_z_2:
+    prior:
+      min: 0.5
+      max: 2.3
+    ref:
+      dist: norm
+      loc: 1.3
+      scale: 0.0039
+    propose: 0.0039
+    latex: b_g^{4}(z_{2})
+  gaussian_bias_sample_4_z_3:
+    prior:
+      min: 0.5
+      max: 2.4
+    ref:
+      dist: norm
+      loc: 1.4
+      scale: 0.0042
+    propose: 0.0042
+    latex: b_g^{4}(z_{3})
+  gaussian_bias_sample_4_z_4:
+    prior:
+      min: 0.5
+      max: 2.5
+    ref:
+      dist: norm
+      loc: 1.5
+      scale: 0.0045
+    propose: 0.0045
+    latex: b_g^{4}(z_{4})
+  gaussian_bias_sample_4_z_5:
+    prior:
+      min: 0.7
+      max: 2.7
+    ref:
+      dist: norm
+      loc: 1.7
+      scale: 0.0050999999999999995
+    propose: 0.0050999999999999995
+    latex: b_g^{4}(z_{5})
+  gaussian_bias_sample_4_z_6:
+    prior:
+      min: 1.2000000000000002
+      max: 3.2
+    ref:
+      dist: norm
+      loc: 2.2
+      scale: 0.0066
+    propose: 0.0066
+    latex: b_g^{4}(z_{6})
+  gaussian_bias_sample_4_z_7:
+    prior:
+      min: 2.6
+      max: 4.6
+    ref:
+      dist: norm
+      loc: 3.6
+      scale: 0.0108
+    propose: 0.0108
+    latex: b_g^{4}(z_{7})
+  gaussian_bias_sample_4_z_8:
+    prior:
+      min: 2.7
+      max: 4.7
+    ref:
+      dist: norm
+      loc: 3.7
+      scale: 0.0111
+    propose: 0.0111
+    latex: b_g^{4}(z_{8})
+  gaussian_bias_sample_4_z_9:
+    prior:
+      min: 1.7000000000000002
+      max: 3.7
+    ref:
+      dist: norm
+      loc: 2.7
+      scale: 0.0081
+    propose: 0.0081
+    latex: b_g^{4}(z_{9})
+  gaussian_bias_sample_4_z_10:
+    prior:
+      min: 1.9
+      max: 3.9
+    ref:
+      dist: norm
+      loc: 2.9
+      scale: 0.0087
+    propose: 0.0087
+    latex: b_g^{4}(z_{10})
+  gaussian_bias_sample_4_z_11:
+    prior:
+      min: 4.0
+      max: 6.0
+    ref:
+      dist: norm
+      loc: 5.0
+      scale: 0.015
+    propose: 0.015
+    latex: b_g^{4}(z_{11})
+  gaussian_bias_sample_5_z_1:
+    prior:
+      min: 0.5
+      max: 1.83
+    ref:
+      dist: norm
+      loc: 0.83
+      scale: 0.00249
+    propose: 0.00249
+    latex: b_g^{5}(z_{1})
+  gaussian_bias_sample_5_z_2:
+    prior:
+      min: 0.5
+      max: 2.2
+    ref:
+      dist: norm
+      loc: 1.2
+      scale: 0.0036
+    propose: 0.0036
+    latex: b_g^{5}(z_{2})
+  gaussian_bias_sample_5_z_3:
+    prior:
+      min: 0.5
+      max: 2.3
+    ref:
+      dist: norm
+      loc: 1.3
+      scale: 0.0039
+    propose: 0.0039
+    latex: b_g^{5}(z_{3})
+  gaussian_bias_sample_5_z_4:
+    prior:
+      min: 0.5
+      max: 2.4
+    ref:
+      dist: norm
+      loc: 1.4
+      scale: 0.0042
+    propose: 0.0042
+    latex: b_g^{5}(z_{4})
+  gaussian_bias_sample_5_z_5:
+    prior:
+      min: 0.6000000000000001
+      max: 2.6
+    ref:
+      dist: norm
+      loc: 1.6
+      scale: 0.0048000000000000004
+    propose: 0.0048000000000000004
+    latex: b_g^{5}(z_{5})
+  gaussian_bias_sample_5_z_6:
+    prior:
+      min: 1.1
+      max: 3.1
+    ref:
+      dist: norm
+      loc: 2.1
+      scale: 0.0063
+    propose: 0.0063
+    latex: b_g^{5}(z_{6})
+  gaussian_bias_sample_5_z_7:
+    prior:
+      min: 2.2
+      max: 4.2
+    ref:
+      dist: norm
+      loc: 3.2
+      scale: 0.009600000000000001
+    propose: 0.009600000000000001
+    latex: b_g^{5}(z_{7})
+  gaussian_bias_sample_5_z_8:
+    prior:
+      min: 3.2
+      max: 5.2
+    ref:
+      dist: norm
+      loc: 4.2
+      scale: 0.0126
+    propose: 0.0126
+    latex: b_g^{5}(z_{8})
+  gaussian_bias_sample_5_z_9:
+    prior:
+      min: 3.0999999999999996
+      max: 5.1
+    ref:
+      dist: norm
+      loc: 4.1
+      scale: 0.012299999999999998
+    propose: 0.012299999999999998
+    latex: b_g^{5}(z_{9})
+  gaussian_bias_sample_5_z_10:
+    prior:
+      min: 3.5
+      max: 5.5
+    ref:
+      dist: norm
+      loc: 4.5
+      scale: 0.013500000000000002
+    propose: 0.013500000000000002
+    latex: b_g^{5}(z_{10})
+  gaussian_bias_sample_5_z_11:
+    prior:
+      min: 4.0
+      max: 6.0
+    ref:
+      dist: norm
+      loc: 5.0
+      scale: 0.015
+    propose: 0.015
+    latex: b_g^{5}(z_{11})
