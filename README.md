@@ -35,6 +35,7 @@ We recommend using `virtualenv` instead of `conda`, since installing with pip in
 2. From inside Cosmo_Inference, install packages (`spherex_cobaya` and `lss_theory`) in this repository (add `--user` if you're on a cluster; and `-e` for installing in editable mode if you are actively developing these packages):
 
     `python -m pip install [-e] ./src/lss_theory [--user]`
+    
     `python -m pip install [-e] ./src/spherex_cobaya [--user] `
 
 3. Test that the packages are properly installed:
@@ -58,11 +59,14 @@ Note: Use `python -m pytest` instead of `pytest` to ensure that you are using th
 same `pytest` you installed earlier with `requirements.txt` if there are various
 python versions.
 
-## Run scripts from individual packages (current directory must be Cosmo_Inference):
+## Run scripts from individual packages:
+
+Current directory must be Cosmo_Inference.
 
 Run lss_theory sample scripts:
 
     `python -m lss_theory.scripts.get_ps ./src/lss_theory/sample_inputs/get_ps.yaml`
+    
     `python -m lss_theory.scripts.get_b3d_rsd ./src/lss_theory/sample_inputs/get_b3d_rsd.yaml`
 
 [Other scripts are still under construction (covariance, Fisher matrix, bispectrum multipole signal).]
@@ -77,7 +81,9 @@ To get the data needed for running MCMC chains (covariance matrix and simulated 
 
 [Other yaml files are still being upgraded.]
 
-## Run sample pipeline (current directory must be Cosmo_Inference):
+## Run sample pipeline:
+
+Current directory must be Cosmo_Inference.
 
 There is a draft pipeline under construction:
 
