@@ -23,13 +23,10 @@ jobs:
               liblapack-dev \
               gfortran \
               git 
-          python -m pip install cobaya==3.0.3 
-          cobaya-install camb -p ./cosmo 
-          pip install -r requirements.txt
-          pip install -e .
-          pip install -e ./lss_theory/
-          pip install pytest
-          pip install pytest-cov
+          python -m pip install -e ./src/lss_theory/
+          python -m pip install -e ./src/spherex_cobaya/
+          python -m pip install pytest
+          python -m pip install pytest-cov
       #- name: Run tests
         #run: |
         #  python -m pytest ./tests/ -v -m short
