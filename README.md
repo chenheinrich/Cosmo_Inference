@@ -17,11 +17,11 @@ We make use of the public code [Cobaya](https://cobaya.readthedocs.io/en/latest/
     
 2. It is recommended you create a [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) before installing the dependencies (Note that Python 2 is decaprecated, we are using Python 3; if you are on a cluster, do `module avail python` to see what's available and use `module load python<X>` to select the version that corresponds to Python 3.7):
 
-    `python -m pip install pipenv [--user]`
+    `python3 -m pip install virtualenv [--user]`
 
-    `virtualenv venv`
+    `python3 -m venv env`
 
-    `source venv/bin/activate`
+    `source env/bin/activate`
 
 or 
     `conda create -n spherex python=3.7`
