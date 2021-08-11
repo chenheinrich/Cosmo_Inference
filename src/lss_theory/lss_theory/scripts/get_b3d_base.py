@@ -57,7 +57,7 @@ def save_galaxy_bis(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.scripts. ./lss_theory/sample_inputs/get_bis_base.yaml 
+        python3 -m lss_theory.scripts.get_b3d_base ./src/lss_theory/sample_inputs/get_b3d_base.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

@@ -65,9 +65,17 @@ Current directory must be Cosmo_Inference.
 
 Run lss_theory sample scripts:
 
+- Power spectrum signal with RSD (linear theory + FoG)
+
     `python -m lss_theory.scripts.get_ps ./src/lss_theory/sample_inputs/get_ps.yaml`
-    
+
+- Bispectrum signal with RSD (linear theory + FoG)
+
     `python -m lss_theory.scripts.get_b3d_rsd ./src/lss_theory/sample_inputs/get_b3d_rsd.yaml`
+
+- Bispectrum signal without RSD (linear theory)  
+
+    `python3 -m lss_theory.scripts.get_b3d_base ./src/lss_theory/sample_inputs/get_b3d_base.yaml `
 
 [Other scripts are still under construction (covariance, Fisher matrix, bispectrum multipole signal).]
 
