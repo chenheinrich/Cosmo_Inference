@@ -185,7 +185,7 @@ class Bispectrum3DBaseCovarianceCalculator():
 
     #changed
     def _get_b3d(self):
-        from lss_theory.scripts.get_bis_base import get_b3d_base
+        from lss_theory.scripts. import get_b3d_base
         info_b3d = self._info.copy()
         info_b3d['Bispectrum3DBase'] = self._info['Bispectrum3DBaseCovariance']['Bispectrum3DBase'] 
         b3d = get_b3d_base(info_b3d)

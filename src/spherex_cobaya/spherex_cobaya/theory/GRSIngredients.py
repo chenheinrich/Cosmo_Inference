@@ -126,8 +126,8 @@ class GRSIngredients(Theory):
     #HACK
     #cosmo_fid_file = './inputs/cosmo_pars/planck2018_fiducial.yaml'
     #survey_par_file = './inputs/survey_pars/survey_pars_v28_base_cbe.yaml'
-    cosmo_fid_file = "./src/spherex_cobaya/sample_inputs/cosmo_pars/planck2018_fiducial.yaml"
-    survey_par_file = "./src/spherex_cobaya/sample_inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
+    cosmo_fid_file = "./pipeline/sample_inputs/cosmo_pars/planck2018_fiducial.yaml"
+    survey_par_file = "./pipeline//spherex_cobaya/sample_inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml"
     
     # Note: The following block needs to be reprocessed during initialize()
     # since the survey_par_file specified in the yaml file could be 

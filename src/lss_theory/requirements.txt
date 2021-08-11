@@ -1,2 +1,2 @@
-pytest>=6.0.2
 camb==1.3.2
+pytest>=6.0.2

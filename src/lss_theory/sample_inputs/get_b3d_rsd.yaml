@@ -1,6 +1,6 @@
 run_name: 'b3d_rsd'
 
-cosmo_par_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fnl_1p0.yaml' #fiducial
+cosmo_par_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fnl_1p0.yaml' 
 
 cosmo_par_fid_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fiducial.yaml'
 

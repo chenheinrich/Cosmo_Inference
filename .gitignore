@@ -5,7 +5,7 @@
 
 # Other tools
 .vscode
-venv
+env
 cosmo
 *.DS_Store
 docker_interactive

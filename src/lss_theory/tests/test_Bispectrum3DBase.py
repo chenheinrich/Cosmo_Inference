@@ -36,7 +36,7 @@ info['plot_dir'] = os.path.join(test_dir, 'plots/theory/bispectrum/')
     ] \
 ) 
 def test_Bispectrum3DBase_mu_set_to_zero(info, cosmo_par_file, fn_expected):
-    from lss_theory.scripts.get_bis_base import get_b3d_base
+    from lss_theory.scripts.get_b3d_base import get_b3d_base
         
     info['cosmo_par_file'] = cosmo_par_file
     info['Bispectrum3DBase']['kmax'] = 0.14
@@ -49,7 +49,7 @@ def test_Bispectrum3DBase_mu_set_to_zero(info, cosmo_par_file, fn_expected):
     assert np.allclose(exp, galaxy_bis, rtol=1e-2)
 
 
-from lss_theory.scripts.get_bis_base import get_b3d_base, get_data_spec
+from lss_theory.scripts.get_b3d_base import get_b3d_base, get_data_spec
 data_vec = get_b3d_base(info)
 data_spec = get_data_spec(info)
 

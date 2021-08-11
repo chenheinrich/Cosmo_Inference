@@ -32,11 +32,11 @@ We recommend using `virtualenv` instead of `conda`, since installing with pip in
 
 ## Install Requirements
 
-2. From inside Cosmo_Inference, install packages (`spherex_cobaya` and `lss_theory`) in this repository (add `--user` if you're on a cluster; and `-e` for installing in editable mode if you are actively developing these packages):
+2. From inside Cosmo_Inference, install packages (`spherex_cobaya` and `lss_theory`) in this repository (add `--user` if you're on a cluster; and remove `-e` if you are not activately developing these packages):
 
-    `python -m pip install [-e] ./src/lss_theory [--user]`
+    `python -m pip install -e ./src/lss_theory [--user]`
     
-    `python -m pip install [-e] ./src/spherex_cobaya [--user] `
+    `python -m pip install -e ./src/spherex_cobaya [--user] `
 
 3. Test that the packages are properly installed:
 
