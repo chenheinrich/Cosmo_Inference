@@ -1,0 +1,9 @@
+chain_dir: '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/chains/tacc_chains/ps_base_bias_loose_and_lcdm_nrun_tight_updated/'
+roots: 
+  - 'ps_base'
+plot_dir: './analysis/plots/'
+nsample: 5
+nz: 11
+analysis_settings:
+  ignore_rows: 0.1
+data_cosmo_par_file: "./inputs/cosmo_pars/planck2018_fnl_1p0.yaml"

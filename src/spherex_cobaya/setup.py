@@ -9,9 +9,9 @@ setup(
     author_email='chenhe@caltech.edu',
     license='BSD 2-clause',
     packages=['spherex_cobaya'],
-    install_requires=['numpy',
-                      ],
-
+    install_requires=['camb==1.3.2',
+                      'cobaya==3.0.3',\
+                      'pytest>=6.0.2'],
     # TODO double check license
     classifiers=[
         'Development Status :: 1 - Planning',

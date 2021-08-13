@@ -13,22 +13,22 @@ docker_interactive
 
 # User generated files
 *profiler/
+*sample_outputs/
 *chains/
 *.png
+*.npy
+!src/lss_theory/tests/data/*.npy
 demo*
 plots/
-*.npy
-!theory/tests/data/*.npy
 data/unit_test
 analysis/inputs
 analysis/plots
-data/
-!theory/tests/data/
+*data/
+!src/lss_theory/tests/data/
 job/
 out/
 inputs/cobaya_pars/chen
 tests/outputs/
-*draft*
 *chen/
 
 # Distribution / packaging

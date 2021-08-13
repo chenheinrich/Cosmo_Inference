@@ -1,0 +1,9 @@
+chain_dir: '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/chains/tacc_chains/ps_base_v27_fix_all_but_b1_and_fnl_nearly_converged/'
+roots: 
+  - 'ps_base'
+plot_dir: './analysis/plots/'
+nsample: 5
+nz: 11
+analysis_settings:
+  ignore_rows: 0.1
+data_cosmo_par_file: "./chains/tacc_chains/data/ps_base_v27/sim_data.cosmo.yaml"
