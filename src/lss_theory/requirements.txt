@@ -1,2 +1,3 @@
 camb==1.3.2
-pytest>=6.0.2
+deepdiff>=5.5.0
+pytest==6.0.2

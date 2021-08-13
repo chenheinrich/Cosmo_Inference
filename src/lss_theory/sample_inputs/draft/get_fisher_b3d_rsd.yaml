@@ -11,6 +11,7 @@ Bispectrum3DRSD:
   nmu: -1 # number of mu bins 
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
+  do_unique_multitracer: False
   triangle_orientation_info: 
     parametrization_name: 'theta1_phi12' 
     min_cos_theta1: 0.0
@@ -38,8 +39,6 @@ AllDerivatives:
     - ombh2
     - theta_MC_100
     - "*gaussian_biases"
-    - "*b2"
-    #- "*b2_first_two"
   method: 'finite_diff' #finite_diff or five_point
 
 fisher:

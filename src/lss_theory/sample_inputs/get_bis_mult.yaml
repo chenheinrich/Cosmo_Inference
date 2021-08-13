@@ -1,33 +1,36 @@
 run_name: 'bis_mult'
 
-cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml' #fiducial
+cosmo_par_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fnl_1p0.yaml' 
 
-cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
+cosmo_par_fid_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fiducial.yaml'
 
-survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
+survey_par_file: './pipeline/sample_inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
 
 BispectrumMultipole: 
   nk: 11 # number of k points (to be changed into bins)
   nmu: -1 # number of mu bins 
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
-  kmax: 0.14 # equivalent to 0.2 h/Mpc''
+  kmax: 0.14 # equivalent to 0.2 h/Mpc'
+  do_unique_multitracer: False
   multipole_info:
     lmax: 4
     do_nonzero_m: True
     do_negative_m: False
-  triangle_orientation_info:  #used for getting the right BispectrumRSD3D
+  triangle_orientation_info:  #used for getting the right Bispectrum3DRSD
     parametrization_name: 'theta1_phi12' 
-    min_cos_theta1: -1.0 #0.0
+    min_cos_theta1: -1.0 
     max_cos_theta1: 1.0
     nbin_cos_theta1: 20
     min_phi12: 0
-    max_phi12: '2.0*np.pi' #'np.pi'
+    max_phi12: '2.0*np.pi' 
     nbin_phi12: 20
-    do_folded_signal: False #True
+    do_folded_signal: False 
   debug_settings:
     set_mu_to_zero: False
     sigp: null
     f_of_z: null
 
-result_dir: './results/bis_mult/signal/'
-plot_dir: './plots/theory/bispectrum_multipole/'
+output_dir: './pipeline/sample_outputs/lss_theory/BispectrumMultipole/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/do_folded_signal_False/theta_phi_20_20/' 
+
+do_plot: False
+plot_dir: './pipeline/sample_outputs/lss_theory/BispectrumMultipole/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/do_folded_signal_False/theta_phi_20_20/plots/' 

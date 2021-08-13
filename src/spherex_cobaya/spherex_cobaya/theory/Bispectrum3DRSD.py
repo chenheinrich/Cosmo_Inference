@@ -130,6 +130,8 @@ class Bispectrum3DRSD(Theory):
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
 
+    do_unique_multitracer = False
+
     triangle_orientation_info = {}
     debug_settings = {}
     
@@ -143,6 +145,7 @@ class Bispectrum3DRSD(Theory):
             'nmu': self.nmu, # number of mu bins
             'kmin': self.kmin, # equivalent to 0.001 h/Mpc
             'kmax': self.kmax, # equivalent to 0.2 h/Mpc
+            'do_unique_multitracer': self.do_unique_multitracer,
             'triangle_orientation_info': self.triangle_orientation_info,
             'debug_settings': self.debug_settings
         }

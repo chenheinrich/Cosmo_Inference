@@ -4,7 +4,7 @@ import scipy
 import sys
 
 from lss_theory.scripts.get_ps import get_data_vec_p3d
-from lss_theory.scripts.get_bis_rsd import get_b3d_rsd
+from lss_theory.scripts.get_b3d_rsd import get_b3d_rsd
 from lss_theory.data_vector import Bispectrum3DRSD
 from lss_theory.utils.logging import class_logger
 from lss_theory.utils import file_tools
@@ -39,10 +39,10 @@ class Bispectrum3DRSDCovarianceCalculator():
         self._do_unique_multitracer = self._info['Bispectrum3DRSDCovariance']\
             ['Bispectrum3DRSD']['do_unique_multitracer']
         self._plot_dir = self._info['plot_dir']
-        self._result_dir = self._info['result_dir']
+        self._output_dir = self._info['output_dir']
 
         file_tools.mkdir_p(self._plot_dir)
-        file_tools.mkdir_p(self._result_dir)
+        file_tools.mkdir_p(self._output_dir)
         self._run_name = self._info['run_name']
 
         self._fn_cov = self._get_fn_cov()
@@ -263,11 +263,11 @@ class Bispectrum3DRSDCovarianceCalculator():
         return b3d
     
     def _get_fn_cov(self):
-        fn = os.path.join(self._result_dir, self._info['run_name'] + 'cov.npy')
+        fn = os.path.join(self._output_dir, self._info['run_name'] + 'cov.npy')
         return fn
     
     def _get_fn_invcov(self):
-        fn = os.path.join(self._result_dir, self._info['run_name'] + 'invcov.npy')
+        fn = os.path.join(self._output_dir, self._info['run_name'] + 'invcov.npy')
         return fn
 
     def _get_noise(self):

@@ -90,7 +90,7 @@ class Bispectrum3DRSD_AllDerivatives(AllDerivatives):
         return param_set_def
 
     def _get_signal_for_info(self, info): 
-        from lss_theory.scripts.get_bis_rsd import get_galaxy_bis
+        from lss_theory.scripts.get_b3d_rsd import get_galaxy_bis
         return get_galaxy_bis(info)
 
 class Bispectrum3DRSDFisher(Fisher):
@@ -232,7 +232,7 @@ if __name__ == '__main__':
 
     # Plot converged derivatives
     if do_plot_derivative == True:
-        from lss_theory.scripts.get_bis_rsd import get_data_spec
+        from lss_theory.scripts.get_b3d_rsd import get_data_spec
         from lss_theory.plotting.bis_plotter import Bispectrum3DRSDDerivativePlotter
         
         data_spec = get_data_spec(info)

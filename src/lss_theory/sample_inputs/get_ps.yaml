@@ -1,11 +1,11 @@
 run_name: 'ps'
 
-cosmo_par_file: './inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
+cosmo_par_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fnl_1p0.yaml'
 
-cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
+cosmo_par_fid_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fiducial.yaml'
 
 #survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
-survey_par_file: "./inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
+survey_par_file: "./pipeline/sample_inputs/survey_pars/survey_pars_v28_base_cbe.yaml"
 
 PowerSpectrum3D: 
   nk: 21 # number of k points (to be changed into bins)
@@ -13,4 +13,9 @@ PowerSpectrum3D:
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
 
-plot_dir: './plots/theory/PowerSpectrum3D/nk_21_nmu_5_v28/fnl_1/'
+output_dir: './pipeline/sample_outputs/lss_theory/PowerSpectrum3D/cosmo_planck2018_fnl_1p0/survey_v28/nk_11/' 
+
+do_plot: False
+plot_dir: './pipeline/sample_outputs/lss_theory/PowerSpectrum3D/cosmo_planck2018_fnl_1p0/survey_v28/nk_11/plots/'
+
+

@@ -75,9 +75,28 @@ Run lss_theory sample scripts:
 
 - Bispectrum signal without RSD (linear theory)  
 
-    `python3 -m lss_theory.scripts.get_b3d_base ./src/lss_theory/sample_inputs/get_b3d_base.yaml `
+    `python3 -m lss_theory.scripts.get_b3d_base ./src/lss_theory/sample_inputs/get_b3d_base.yaml`
 
-[Other scripts are still under construction (covariance, Fisher matrix, bispectrum multipole signal).]
+- Bispectrum multipole signal (linear theory)  
+
+    `python3 -m lss_theory.scripts.get_bis_mult ./src/lss_theory/sample_inputs/get_bis_mult.yaml`
+
+- Covariance for Bispectrum with RSD [Not validated; under construction]
+
+    `python3 -m lss_theory.scripts.get_covariance_b3d_rsd ./src/lss_theory/sample_inputs/get_covariance_b3d_rsd.yaml`
+
+- Covariance for Bispectrum multipole [Not validated; under construction]
+
+    `python3 -m lss_theory.scripts.get_covariance_bis_mult ./src/lss_theory/sample_inputs/get_covariance_bis_mult.yaml`
+
+- Fisher matrix for Bispectrum with RSD [Not validated; to be relocated]
+
+    `python3 -m lss_theory.fisher.fisher_b3d_rsd ./src/lss_theory/sample_inputs/get_fisher_b3d_rsd.yaml`
+
+- Fisher matrix for Bispectrum multipoles [Not validated; to be relocated]
+
+    `python3 -m lss_theory.fisher.fisher_bis_mult ./src/lss_theory/sample_inputs/get_fisher_bis_mult.yaml`
+
 
 Run spherex_cobaya sample scripts:
 

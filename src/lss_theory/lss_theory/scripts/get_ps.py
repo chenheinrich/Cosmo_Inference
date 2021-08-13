@@ -42,10 +42,10 @@ def get_data_vec_p3d(info):
     return data_vec
 
 def get_fn(info):
-    file_tools.mkdir_p(info['plot_dir'])
-    return os.path.join(info['plot_dir'], info['run_name'] + '.npy')
+    file_tools.mkdir_p(info['output_dir'])
+    return os.path.join(info['output_dir'], info['run_name'] + '.npy')
 
-@profiler
+#@profiler
 def get_galaxy_ps(info):
     data_vec = get_data_vec_p3d(info)
     return data_vec.get('galaxy_ps')
@@ -59,7 +59,7 @@ def save_galaxy_ps(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m theory.scripts.get_ps ./inputs_theory/get_ps.yaml
+        python3 -m lss_theory.scripts.get_ps ./lss_theory/sample_inputs/get_ps.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

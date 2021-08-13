@@ -11,6 +11,7 @@ Bispectrum3DRSD:
   nmu: -1 # number of mu bins 
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
+  do_unique_multitracer: False
   triangle_orientation_info: 
     parametrization_name: 'mur_muphi' 
     min_mur: 0.0

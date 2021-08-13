@@ -35,10 +35,10 @@ class Bispectrum3DBaseCovarianceCalculator():
         self._fsky = self._info['Bispectrum3DBaseCovariance']['fsky']
         self._do_cvl_noise = self._info['Bispectrum3DBaseCovariance']['do_cvl_noise']
         self._plot_dir = self._info['plot_dir']
-        self._result_dir = self._info['result_dir']
+        self._output_dir = self._info['output_dir']
         
         file_tools.mkdir_p(self._plot_dir)
-        file_tools.mkdir_p(self._result_dir)
+        file_tools.mkdir_p(self._output_dir)
         self._run_name = self._info['run_name']
         
         self._fn_cov = self._get_fn_cov()
@@ -192,11 +192,11 @@ class Bispectrum3DBaseCovarianceCalculator():
         return b3d
     
     def _get_fn_cov(self):
-        fn = os.path.join(self._result_dir, 'cov.npy')
+        fn = os.path.join(self._output_dir, 'cov.npy')
         return fn
     
     def _get_fn_invcov(self):
-        fn = os.path.join(self._result_dir, 'invcov.npy')
+        fn = os.path.join(self._output_dir, 'invcov.npy')
         return fn
 
     def _get_noise(self):

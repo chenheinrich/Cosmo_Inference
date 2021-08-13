@@ -1,0 +1,19 @@
+run_name: 'b3d_base'
+
+cosmo_par_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fnl_1p0.yaml' 
+
+cosmo_par_fid_file: './pipeline/sample_inputs/cosmo_pars/planck2018_fiducial.yaml'
+
+survey_par_file: './pipeline/sample_inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
+
+Bispectrum3DBase: 
+  nk: 11 # number of k points (to be changed into bins)
+  nmu: -1 # number of mu bins 
+  kmin: 0.0007 # equivalent to 0.001 h/Mpc
+  kmax: 0.14 # equivalent to 0.2 h/Mpc
+  do_unique_multitracer: False
+
+output_dir: './pipeline/sample_outputs/lss_theory/Bispectrum3DBase/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/' 
+
+do_plot: False
+plot_dir: './pipeline/sample_outputs/lss_theory/Bispectrum3DBase/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/plots/' 

@@ -12,7 +12,7 @@ def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.scripts.get_covariance_bis_mult ./lss_theory/inputs/get_covariance_bis_mult.yaml
+        python3 -m lss_theory.scripts.get_covariance_bis_mult ./lss_theory/sample_inputs/get_covariance_bis_mult.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

@@ -133,6 +133,8 @@ class Bispectrum3DBase(Theory):
     kmin = 1e-3 * h # in 1/Mpc
     kmax = 0.2 * h # in 1/Mpc
 
+    do_unique_multitracer = False
+
     def initialize(self):
         """called from __init__ to initialize"""
         self.logger = class_logger(self)

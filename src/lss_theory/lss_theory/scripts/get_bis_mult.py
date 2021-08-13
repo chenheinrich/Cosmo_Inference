@@ -44,8 +44,8 @@ def get_data_vector(info):
     return data_vec
 
 def get_fn(info):
-    file_tools.mkdir_p(info['result_dir'])
-    return os.path.join(info['result_dir'], info['run_name'] + '.npy')
+    file_tools.mkdir_p(info['output_dir'])
+    return os.path.join(info['output_dir'], info['run_name'] + '.npy')
 
 #@profiler
 def get_galaxy_bis_mult(info):
@@ -87,7 +87,7 @@ def get_subdir_name_for_bis_mult(info):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.scripts.get_bis_mult ./lss_theory/inputs/get_bis_mult.yaml 
+        python3 -m lss_theory.scripts.get_bis_mult ./lss_theory/sample_inputs/get_bis_mult.yaml 
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(

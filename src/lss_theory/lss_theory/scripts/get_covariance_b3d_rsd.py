@@ -214,7 +214,7 @@ def check_cov_symmetric(cov):
 if __name__ == '__main__':
     """
     Example usage:
-        python3 -m lss_theory.scripts.get_covariance_b3d_rsd ./lss_theory/inputs/get_covariance_b3d_rsd.yaml
+        python3 -m lss_theory.scripts.get_covariance_b3d_rsd ./lss_theory/sample_inputs/get_covariance_b3d_rsd.yaml
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -232,10 +232,10 @@ if __name__ == '__main__':
     
     cov_type = info['Bispectrum3DRSDCovariance']['cov_type'] 
 
-    fn_cov = os.path.join(info['result_dir'], 'cov_%s.npy'%cov_type)
-    fn_invcov = os.path.join(info['result_dir'], 'invcov_%s.npy'%cov_type)
+    fn_cov = os.path.join(info['output_dir'], 'cov_%s.npy'%cov_type)
+    fn_invcov = os.path.join(info['output_dir'], 'invcov_%s.npy'%cov_type)
 
-    #HACK
+    #For a single block
     iz = 0
     itri = 1
     iori = 0
@@ -253,9 +253,6 @@ if __name__ == '__main__':
 
     invcov = np.load(fn_invcov)
     is_symmetric = check_cov_symmetric(invcov, cov_type=cov_type)
-
-    #TODO why this part is so slow???
-    #check_identity(cov, invcov)    
     
     #cov_calculator.load_cov_from_fn(fn)
 

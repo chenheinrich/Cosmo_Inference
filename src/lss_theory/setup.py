@@ -18,5 +18,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.7.0',
-    install_requires=['camb==1.3.2', 'pytest>=6.0.2']
+    install_requires=['camb==1.3.2', 'deepdiff>=5.5.0', 'pytest>=6.0.2']
 )

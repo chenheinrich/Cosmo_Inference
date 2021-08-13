@@ -12,6 +12,7 @@ Bispectrum3D:
   nmu: -1 # number of mu bins 
   kmin: 0.0007 # equivalent to 0.001 h/Mpc
   kmax: 0.14 # equivalent to 0.2 h/Mpc
+  do_unique_multitracer: False
   triangle_orientation_info: 
     parametrization_name: 'theta1_phi12' #TODO make this a separate dictionary for triangle orientation object
     min_cos_theta1: 0.0

@@ -374,7 +374,8 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
 
         from lss_theory.covariance import Bispectrum3DRSDCovarianceCalculator
 
-        config_file = './lss_theory/inputs/get_covariance_b3d_rsd.yaml'
+        #TODO buried file path, need to change this
+        config_file = './src/lss_theory/sample_inputs/get_covariance_b3d_rsd.yaml'
         with open(config_file) as file:
             info = yaml.load(file, Loader=yaml.FullLoader)
         
@@ -394,15 +395,15 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
 
         info['Bispectrum3DRSDCovariance']['Bispectrum3DRSD']['do_unique_multitracer'] = do_unique_multitracer
 
-        info['result_dir'] = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_%s/theta_phi_%s_%s/debug/'%(do_folded_signal, nbin_cos_theta1, nbin_phi12)
+        info['output_dir'] = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_%s/theta_phi_%s_%s/debug/'%(do_folded_signal, nbin_cos_theta1, nbin_phi12)
         info['plot_dir'] = './plots/theory/covariance/b3d_rsd_theta1_phi12_%s_%s/fnl_0/nk_11/'%(nbin_cos_theta1, nbin_phi12)
 
         b3d_cov_calc = Bispectrum3DRSDCovarianceCalculator(info)
         
         cov_type = info['Bispectrum3DRSDCovariance']['cov_type'] 
 
-        fn_cov = os.path.join(info['result_dir'], 'cov_%s.npy'%cov_type)
-        fn_invcov = os.path.join(info['result_dir'], 'invcov_%s.npy'%cov_type)
+        fn_cov = os.path.join(info['output_dir'], 'cov_%s.npy'%cov_type)
+        fn_invcov = os.path.join(info['output_dir'], 'invcov_%s.npy'%cov_type)
 
         return b3d_cov_calc
 
