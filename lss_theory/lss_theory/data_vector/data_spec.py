@@ -268,8 +268,14 @@ class Bispectrum3DBaseSpec(DataSpec):
     def __init__(self, survey_par, data_spec_dict):
         super().__init__(survey_par, data_spec_dict) 
         
-        self._dict_isamples_to_ib, self._dict_ib_to_isamples, self._nb = \
-            self._get_multi_tracer_config_all(self.nsample)
+        self._do_unique_multitracer = data_spec_dict['do_unique_multitracer']
+        
+        if self._do_unique_multitracer:
+            self._dict_isamples_to_ib, self._dict_ib_to_isamples, self._nb = \
+                self._get_multi_tracer_unique_config_all(self.nsample)
+        else:
+            self._dict_isamples_to_ib, self._dict_ib_to_isamples, self._nb = \
+                self._get_multi_tracer_config_all(self.nsample)
 
         self._setup_ntri()
         self._overwrite_shape_for_b3d_base()
@@ -313,12 +319,25 @@ class Bispectrum3DBaseSpec(DataSpec):
         assert ib == nb
         
         return dict_isamples_to_ib, dict_ib_to_isamples, nb
+
+    @staticmethod    
+    def _get_multi_tracer_unique_config_all(nsample):
+        ib = 0
+        dict_ib_to_isamples = {}
+        dict_isamples_to_ib = {}
+        for isample1 in range(nsample):
+            for isample2 in range(isample1, nsample):
+                for isample3 in range(isample2, nsample):
+                    triplets = (isample1, isample2, isample3)
+                    print('ib = {}, triplets = {}'.format(ib, triplets))
+                    dict_ib_to_isamples['%i'%ib] = triplets
+                    dict_isamples_to_ib['%i_%i_%i'%(isample1, isample2, isample3)] = ib
+                    ib = ib + 1
+        nb = ib
+        return dict_isamples_to_ib, dict_ib_to_isamples, nb
     
     def _setup_ntri(self):
         self._ntri = self.triangle_spec.ntri
-
-    def _setup_nb(self):
-        self._nb = self.nsample**3
 
     def _overwrite_shape_for_b3d_base(self):
         self._shape = (self.nb, self.nz, self.ntri)

@@ -35,7 +35,9 @@ class Bispectrum3DRSDCovarianceCalculator():
         self._fsky = self._info['Bispectrum3DRSDCovariance']['fsky']
         self._do_cvl_noise = self._info['Bispectrum3DRSDCovariance']['do_cvl_noise']
         self._do_folded_signal = self._info['Bispectrum3DRSDCovariance']\
-            ['Bispectrum3DRSD']['triangle_orientation_info']['do_folded_signal']
+            ['Bispectrum3DRSD']
+        self._do_unique_multitracer = self._info['Bispectrum3DRSDCovariance']\
+            ['Bispectrum3DRSD']['do_unique_multitracer']
         self._plot_dir = self._info['plot_dir']
         self._result_dir = self._info['result_dir']
 
@@ -368,71 +370,199 @@ class Bispectrum3DRSDCovarianceCalculator():
                 is_cutoff[ib, jb, :, :, :] = np.logical_or(is_cutoff_ib, is_cutoff_jb)
 
         return is_cutoff 
-        
-    #@profiler
-    def get_cov_nb_x_nb_block(self, iz, itri, iori, jori):
 
+    def get_cov_nb_x_nb_block(self, iz, itri, iori, jori, do_signal_noise_split=False):
+        
         nb = self._b3d_rsd_spec.nb
-        cov = np.zeros((nb, nb))
+        if do_signal_noise_split == True:
+            cov = np.zeros((nb, nb, 2))
+        else:
+            cov = np.zeros((nb, nb))
 
         if iori != jori: 
             return cov
 
         else:
-            (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
-
-            debug_sigp = self._b3d_rsd_spec._debug_sigp
-
             for ib in range(nb):
-
-                (a, b, c) = self._b3d_rsd_spec.get_isamples(ib)
-
                 for jb in range(nb):
-
-                    (d, e, f) = self._b3d_rsd_spec.get_isamples(jb)
-
-                    ips1 = self._p3d._data_spec.get_ips(a, d)
-                    ips2 = self._p3d._data_spec.get_ips(b, e)
-                    ips3 = self._p3d._data_spec.get_ips(c, f)
-
-
-                    if (debug_sigp is None) or (debug_sigp > 0):
-                        fog_a = self._get_fog(a, iz, ik1, itri, iori, 0)
-                        fog_b = self._get_fog(b, iz, ik2, itri, iori, 1)
-                        fog_c = self._get_fog(c, iz, ik3, itri, iori, 2)
-
-                        fog_d = self._get_fog(d, iz, ik1, itri, jori, 0)
-                        fog_e = self._get_fog(e, iz, ik2, itri, jori, 1)
-                        fog_f = self._get_fog(f, iz, ik3, itri, jori, 2)
-
-                        fog1 = fog_a * fog_d
-                        fog2 = fog_b * fog_e
-                        fog3 = fog_c * fog_f
-
-                    elif debug_sigp == 0:
-
-                        fog1 = fog2 = fog3 = 1.0
-
-                    kaiser_a = self._kaiser_all[a, iz, ik1, itri, iori, 0]
-                    kaiser_b = self._kaiser_all[b, iz, ik2, itri, iori, 1]
-                    kaiser_c = self._kaiser_all[c, iz, ik3, itri, iori, 2]
-
-                    kaiser_d = self._kaiser_all[d, iz, ik1, itri, jori, 0]
-                    kaiser_e = self._kaiser_all[e, iz, ik2, itri, jori, 1]
-                    kaiser_f = self._kaiser_all[f, iz, ik3, itri, jori, 2]
-
-                    kaiser_1 = kaiser_a * kaiser_d
-                    kaiser_2 = kaiser_b * kaiser_e
-                    kaiser_3 = kaiser_c * kaiser_f
-
-                    cov[ib, jb] = self._get_observed_ps(ips1, iz, ik1, fog=fog1, kaiser=kaiser_1) \
-                        * self._get_observed_ps(ips2, iz, ik2, fog=fog2, kaiser=kaiser_2) \
-                        * self._get_observed_ps(ips3, iz, ik3, fog=fog3, kaiser=kaiser_3)
-
-                    # TODO not accounting for equilateral and isoceles triangles yet 
-                    # TODO for these other terms in the cov, will need to change fog definition
-
+                    if do_signal_noise_split == True:
+                        (cov[ib, jb, 0], cov[ib, jb, 1]) = self._get_cov_ib_jb(ib, jb, iz, itri, iori, jori, do_signal_noise_split=True)
+                    else:
+                        cov[ib, jb] = self._get_cov_ib_jb(ib, jb, iz, itri, iori, jori, do_signal_noise_split)
             return cov
+
+    def _get_cov_ib_jb(self, ib, jb, iz, itri, iori, jori, do_signal_noise_split):
+
+        if self._do_unique_multitracer == True:
+            return self._get_cov_ib_jb_unique_multitracer(ib, jb, iz, itri, iori, jori, do_signal_noise_split)
+        else:
+            return self._get_cov_ib_jb_all_multitracer(ib, jb, iz, itri, iori, jori, do_signal_noise_split)
+        
+    def _get_cov_ib_jb_unique_multitracer(self, ib, jb, iz, itri, iori, jori, do_signal_noise_split=False):
+
+        list_of_isamples = self._get_list_of_isamples_for_ib_unique_multitracer(ib)
+        list_of_jsamples = self._get_list_of_isamples_for_ib_unique_multitracer(jb)
+
+        cov_ib_jb = 0.0
+        cov_ib_jb_no_noise = 0.0
+        cov_ib_jb_noise = 0.0
+        
+        #print('ib = {}, jb = {}'.format(ib, jb))
+        #print('isamples = {}, jsamples = {}'.format(list_of_isamples, list_of_jsamples))
+        for isamples in list_of_isamples:
+            for jsamples in list_of_jsamples:
+
+                if do_signal_noise_split == True:
+                    cov_tmp_no_noise, cov_tmp_noise = self._get_cov_isamples_jsamples(isamples, jsamples, iz, itri, iori, jori, do_signal_noise_split = True)
+                    cov_ib_jb_no_noise += cov_tmp_no_noise
+                    cov_ib_jb_noise += cov_tmp_noise
+
+                else:
+                    cov_tmp = self._get_cov_isamples_jsamples(isamples, jsamples, iz, itri, iori, jori)
+                    cov_ib_jb += cov_tmp
+                    # TODO not accounting for equilateral and isoceles triangles yet 
+        
+        if do_signal_noise_split == True:
+            return cov_ib_jb_no_noise, cov_ib_jb_noise
+        else:
+            return cov_ib_jb
+
+    def _get_cov_ib_jb_all_multitracer(self, ib, jb, iz, itri, iori, jori, do_signal_noise_split=False):
+
+        isamples = self._b3d_rsd_spec.get_isamples(ib)
+        jsamples = self._b3d_rsd_spec.get_isamples(jb)
+
+        if do_signal_noise_split == True:
+            cov_ib_jb_no_noise, cov_ib_jb_noise = \
+                self._get_cov_isamples_jsamples(isamples, jsamples, iz, itri, iori, jori,\
+                     do_signal_noise_split=True)
+            return cov_ib_jb_no_noise, cov_ib_jb_noise
+
+        else:
+            cov_ib_jb = self._get_cov_isamples_jsamples(isamples, jsamples, iz, itri, iori, jori)
+            # TODO not accounting for equilateral and isoceles triangles yet 
+            return cov_ib_jb
+
+    def _get_list_of_isamples_for_ib_unique_multitracer_debug_one_term(self, ib):
+        triplet = self._b3d_rsd_spec.get_isamples(ib)
+        list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
+        return list_of_isamples
+
+    def _get_list_of_isamples_for_ib_unique_multitracer(self, ib):
+
+        triplet = self._b3d_rsd_spec.get_isamples(ib)
+
+        if self._is_equilateral(*triplet):
+            list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
+
+        elif self._is_isoceles(*triplet):
+            list_of_isamples = self._get_cyclic_perm_for_a_b_c(*triplet)
+
+        elif self._is_scalene(*triplet):
+            list_of_isamples = self._get_all_perm_for_a_b_c(*triplet)
+
+        return list_of_isamples
+
+    @staticmethod
+    def _get_one_perm_for_a_b_c(a, b, c):
+        return [(a, b, c)]
+    
+    @staticmethod
+    def _get_cyclic_perm_for_a_b_c(a, b, c):
+        return [(a, b, c), (b, c, a), (c, a, b)]
+    
+    @staticmethod
+    def _get_all_perm_for_a_b_c(a, b, c):
+        return [(a, b, c), (b, c, a), (c, a, b), \
+                (c, b, a), (b, a, c), (a, c, b)] 
+
+    @staticmethod
+    def _is_equilateral(a, b, c):
+        return ((a == b) and (b == c))
+    
+    @staticmethod
+    def _is_isoceles_a_b(a, b, c):
+        return ((a == b) and (a != c))
+    
+    @staticmethod
+    def _is_isoceles_b_c(a, b, c):
+        return ((b == c) and (b != a))
+
+    @staticmethod
+    def _is_isoceles_a_c(a, b, c):
+        return ((a == c) and (a != b))
+
+    def _is_isoceles(self, a, b, c):
+        t = (a, b, c)
+        iso1 = self._is_isoceles_a_b(*t)
+        iso2 = self._is_isoceles_b_c(*t)
+        iso3 = self._is_isoceles_a_c(*t)
+        return ((iso1 or iso2) or iso3)
+
+    @staticmethod
+    def _is_scalene(a, b, c):
+        return (((a != b) and (b != c)) and (a != b))
+
+    def _get_cov_isamples_jsamples(self, isamples, jsamples, iz, itri, iori, jori, do_signal_noise_split=False):
+        """Can be used for both do_unique_multitracer = True/False."""
+
+        (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
+
+        debug_sigp = self._b3d_rsd_spec._debug_sigp
+
+        (a, b, c) = isamples
+        (d, e, f) = jsamples
+
+        ips1 = self._p3d._data_spec.get_ips(a, d)
+        ips2 = self._p3d._data_spec.get_ips(b, e)
+        ips3 = self._p3d._data_spec.get_ips(c, f)
+
+        if (debug_sigp is None) or (debug_sigp > 0):
+            fog_a = self._get_fog(a, iz, ik1, itri, iori, 0)
+            fog_b = self._get_fog(b, iz, ik2, itri, iori, 1)
+            fog_c = self._get_fog(c, iz, ik3, itri, iori, 2)
+
+            fog_d = self._get_fog(d, iz, ik1, itri, jori, 0)
+            fog_e = self._get_fog(e, iz, ik2, itri, jori, 1)
+            fog_f = self._get_fog(f, iz, ik3, itri, jori, 2)
+
+            fog1 = fog_a * fog_d
+            fog2 = fog_b * fog_e
+            fog3 = fog_c * fog_f
+
+        elif debug_sigp == 0:
+
+            fog1 = fog2 = fog3 = 1.0
+
+        kaiser_a = self._kaiser_all[a, iz, ik1, itri, iori, 0]
+        kaiser_b = self._kaiser_all[b, iz, ik2, itri, iori, 1]
+        kaiser_c = self._kaiser_all[c, iz, ik3, itri, iori, 2]
+
+        kaiser_d = self._kaiser_all[d, iz, ik1, itri, jori, 0]
+        kaiser_e = self._kaiser_all[e, iz, ik2, itri, jori, 1]
+        kaiser_f = self._kaiser_all[f, iz, ik3, itri, jori, 2]
+
+        kaiser_1 = kaiser_a * kaiser_d
+        kaiser_2 = kaiser_b * kaiser_e
+        kaiser_3 = kaiser_c * kaiser_f
+
+        cov_isamples_jsamples = \
+              self._get_observed_ps(ips1, iz, ik1, fog=fog1, kaiser=kaiser_1) \
+            * self._get_observed_ps(ips2, iz, ik2, fog=fog2, kaiser=kaiser_2) \
+            * self._get_observed_ps(ips3, iz, ik3, fog=fog3, kaiser=kaiser_3)
+
+        if do_signal_noise_split == True:
+            #P^3 term only
+            cov_isamples_jsamples_no_noise = \
+                  self._get_observed_ps(ips1, iz, ik1, fog=fog1, kaiser=kaiser_1, no_noise=True) \
+                * self._get_observed_ps(ips2, iz, ik2, fog=fog2, kaiser=kaiser_2, no_noise=True) \
+                * self._get_observed_ps(ips3, iz, ik3, fog=fog3, kaiser=kaiser_3, no_noise=True)
+            cov_isamples_jsamples_noise = cov_isamples_jsamples - cov_isamples_jsamples_no_noise
+            return (cov_isamples_jsamples_no_noise, cov_isamples_jsamples_noise)
+        else:
+            return cov_isamples_jsamples
+
+
 
     #@profiler #too slow,not sure why
     def get_cov_nb_x_nb_block2(self, iz, itri, iori, jori):
@@ -508,10 +638,11 @@ class Bispectrum3DRSDCovarianceCalculator():
     def _get_sigp(self, isample, iz):
         return self._b3d_rsd._grs_ingredients.get('sigp')[isample, iz]
     
-    def _get_observed_ps(self, ips, iz, ik, fog=1, kaiser=1):
+    def _get_observed_ps(self, ips, iz, ik, fog=1, kaiser=1, no_noise=False):
         """Returns a float for the observed galaxy power spectrum with shot noise."""
         ps = self._galaxy_ps[ips, iz, ik] * kaiser * fog 
-        ps += self._ps_noise_all[ips, iz]
+        if no_noise == False:
+            ps += self._ps_noise_all[ips, iz]
         return ps
 
     def _get_ps_noise_all(self):
@@ -547,6 +678,10 @@ class Bispectrum3DRSDCovarianceCalculator():
             k = self._b3d_rsd_spec.k
 
             #TODO Need to optimize and not compute for all k and tri.
+            #TODO Could make a variant of mu_array but for k1mu1, k2mu2, k3mu3 
+            # instead of mu1, mu2, mu3 for a given itri and iori.
+            # then the return results can have smaller dimension.
+
             #shape (nk, ntri, nori, ntri_side)
             k1mu1 = k[:, np.newaxis, np.newaxis, np.newaxis] * self._b3d_rsd_spec.triangle_spec.mu_array[:,:,:]
             #shape (nsample, nz, nk, ntri, nori, ntri_side)

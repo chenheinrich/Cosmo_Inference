@@ -569,6 +569,23 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
         return (Z1_k1, Z1_k2, Z1_k3)
 
+    def _get_sigp_kmu_squared_for_isamples(self, isample1, isample2, isample3, k1, k2, k3, sigp):
+        #shape (ntri, nori)
+        k1mu1 = k1[:,np.newaxis] * self._triangle_spec.mu_array[:,:,0]
+        k2mu2 = k2[:,np.newaxis] * self._triangle_spec.mu_array[:,:,1]
+        k3mu3 = k3[:,np.newaxis] * self._triangle_spec.mu_array[:,:,2]         
+
+        #shape (nz, ntri, nori)
+        sigp_kmu_squared = (k1mu1[np.newaxis, :, :] \
+                * sigp[isample1, :, np.newaxis, np.newaxis])**2 \
+            + (k2mu2[np.newaxis, :, :] \
+                * sigp[isample2, :, np.newaxis, np.newaxis]) ** 2 \
+            + (k3mu3[np.newaxis, :, :] \
+                * sigp[isample3, :, np.newaxis, np.newaxis]) ** 2
+
+        return sigp_kmu_squared
+
+
     def _get_fog_all(self):
 
         k1, k2, k3 = self._get_k1_k2_k3_array()
@@ -578,26 +595,33 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         fog = np.zeros((self._data_spec.nb, self._data_spec.nz, \
             self._data_spec.ntri, self._data_spec.nori))
         
-        for isample1 in range(self._data_spec.nsample):
-            for isample2 in range(self._data_spec.nsample):
-                for isample3 in range(self._data_spec.nsample):
+        # TODO could write more succintly by creating a list of 
+        # (isample1, isample2, isample3) tuples to iterate over instead.
+        if self._data_spec._do_unique_multitracer == True:
 
-                    #shape (ntri, nori)
-                    k1mu1 = k1[:,np.newaxis] * self._triangle_spec.mu_array[:,:,0]
-                    k2mu2 = k2[:,np.newaxis] * self._triangle_spec.mu_array[:,:,1]
-                    k3mu3 = k3[:,np.newaxis] * self._triangle_spec.mu_array[:,:,2]         
+            for isample1 in range(self._data_spec.nsample):
+                for isample2 in range(isample1, self._data_spec.nsample):
+                    for isample3 in range(isample2, self._data_spec.nsample):
+                        #shape (nz, ntri, nori)
+                        sigp_kmu_squared = self._get_sigp_kmu_squared_for_isamples(
+                            isample1, isample2, isample3, k1, k2, k3, sigp
+                        )
+                        fog[ib,:,:,:] = np.exp( -0.5 * (sigp_kmu_squared))
 
-                    #shape (nz, ntri, nori)
-                    sigp_kmu_squared = (k1mu1[np.newaxis, :, :] \
-                            * sigp[isample1, :, np.newaxis, np.newaxis])**2 \
-                        + (k2mu2[np.newaxis, :, :] \
-                            * sigp[isample2, :, np.newaxis, np.newaxis]) ** 2 \
-                        + (k3mu3[np.newaxis, :, :] \
-                            * sigp[isample3, :, np.newaxis, np.newaxis]) ** 2
+                        ib = ib + 1
 
-                    fog[ib,:,:,:] = np.exp( -0.5 * (sigp_kmu_squared))
+        else:
 
-                    ib = ib + 1
+            for isample1 in range(self._data_spec.nsample):
+                for isample2 in range(self._data_spec.nsample):
+                    for isample3 in range(self._data_spec.nsample):
+                        #shape (nz, ntri, nori)
+                        sigp_kmu_squared = self._get_sigp_kmu_squared_for_isamples(
+                            isample1, isample2, isample3, k1, k2, k3, sigp
+                        )
+                        fog[ib,:,:,:] = np.exp( -0.5 * (sigp_kmu_squared))
+
+                        ib = ib + 1
 
         return fog
 

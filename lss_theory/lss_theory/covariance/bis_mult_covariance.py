@@ -108,7 +108,8 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
 
     def __init__(self, info):
         
-        self._b3d_cov_calc = self._setup_cov_b3d_rsd()
+        self._do_unique_multitracer = info['BispectrumMultipole']['do_unique_multitracer']
+        self._b3d_cov_calc = self._setup_cov_b3d_rsd(self._do_unique_multitracer)
         super().__init__(info)
         
         self._cov, self._invcov = self._get_cov_and_invcov()
@@ -135,6 +136,7 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
 
                 print('iz = {}, itri = {}'.format(iz, itri))
             
+                #HACK
                 for ib in range(self._nb):
                     for jb in range(ib, self._nb): 
                         
@@ -174,7 +176,16 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
 
     def _get_cov_and_invcov(self):
 
+        #HACK debug, make input later if useful
+        do_signal_noise_split = True 
+
         nb = self._b3d_cov_calc._nb
+
+        #TODO delete later
+        for ib in range(nb):
+            isamples = self._b3d_cov_calc._b3d_rsd_spec.get_isamples(ib)
+            #print('ib = {}, isamples = {}'.format(ib, isamples))
+
         nbxnlm = self._nb * self._nlm
         nlm = self._nlm
 
@@ -183,87 +194,158 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         invcov = np.zeros(shape, dtype=complex)
 
         nori = self._b3d_cov_calc._nori
-        blocks_of_nori_x_nori = np.zeros((nb, nb, nori, nori))
-        
+        blocks_of_nori_x_nori = np.zeros((nb, nb, nori, nori), dtype=complex)
+        one_block_nori_x_nori = np.zeros((nori, nori), dtype=complex)
+
+        blocks_of_nori_x_nori_signal_noise_split = np.zeros((nb, nb, 2, nori, nori), dtype=complex)
+        one_block_nori_x_nori_signal_noise_split = np.zeros((nori, nori, 2), dtype=complex)
+        cov_signal = np.zeros(shape, dtype=complex)
+        cov_noise = np.zeros(shape, dtype=complex)
+
         for iz in range(self._nz):
             for itri in range(self._ntri):
 
                 print('iz = {}, itri = {}'.format(iz, itri))
 
+                #HACK remove later test
+                #print('testing ylm orthogonality')
+                #self._test_ylm_orthogonality(rtol=1e-2, atol=1e-2)
+
                 for iori in range(nori):
-                    #print('iori=', iori)
+                    print('iori=', iori)
                     for jori in range(nori):
-                        #print('iori = {}, jori = {}'.format(iori, jori))
-                        blocks_of_nori_x_nori[:, :, iori, jori] = self._b3d_cov_calc.get_cov_nb_x_nb_block(iz, itri, iori, jori)
-                        #print('blocks_of_nori_x_nori[:, :, iori, jori] ={}'.format(blocks_of_nori_x_nori[:, :, iori, jori] ))
-                        #TODO to remove later if no longer needed
-                        #one_block_nori_x_nori[iori, jori] = self._b3d_cov_calc.get_cov_nb_x_nb_block(iz, itri, iori, jori)[ib, jb]
+                        blocks_of_nori_x_nori_signal_noise_split[:, :, :, iori, jori] = \
+                            self._b3d_cov_calc.get_cov_nb_x_nb_block(iz, itri, iori, jori, do_signal_noise_split=True)
+                        
+                        blocks_of_nori_x_nori[:, :, iori, jori] = \
+                            self._b3d_cov_calc.get_cov_nb_x_nb_block(iz, itri, iori, jori, do_signal_noise_split=False)
                 
+                assert np.allclose(blocks_of_nori_x_nori, blocks_of_nori_x_nori_signal_noise_split[:,:,0,:,:] + blocks_of_nori_x_nori_signal_noise_split[:,:,1,:,:])
+
+                rescale = np.ones(nb*nb, dtype=complex)
+                
+                rescale_of_large_matrix = np.ones(nb, dtype=complex)
+
+                iib = 0
                 for ib in range(nb):
-                    #print('ib = {}'.format(ib))
                     for jb in range(nb):
                     
                         one_block_nori_x_nori = blocks_of_nori_x_nori[ib, jb, :, :]
-                        
-                        #HACK
-                        #is_symmetric_cov_passed = matrix_utils.check_matrix_symmetric(one_block_nori_x_nori, rtol=1e-3)
-                        #HACK
-                        #self._test_ylm_orthogonality(rtol=0.5) # not even passed for rtol=0.5!!
-
+                    
                         one_block_nlm_x_nlm = self._apply_ylm_integral_on_one_block_nori_x_nori(one_block_nori_x_nori)
                         
-                        #To test individual blocks
-                        #inv_one_block = linalg.inv(one_block_nlm_x_nlm)
-                        #self._test_matrix_and_inverse(one_block_nlm_x_nlm, inv_one_block, \
-                        #    atol_inv=1e-5, feedback_level_inv=0, use_tests=['symmetric_mat', 'symmetric_inv'])
+                        #HACK debug
+                        one_block_nori_x_nori_signal_noise_split = blocks_of_nori_x_nori_signal_noise_split[ib, jb, :, :, :]
+                        one_block_nlm_x_nlm_signal = self._apply_ylm_integral_on_one_block_nori_x_nori(one_block_nori_x_nori_signal_noise_split[0,:,:])
+                        one_block_nlm_x_nlm_noise = self._apply_ylm_integral_on_one_block_nori_x_nori(one_block_nori_x_nori_signal_noise_split[1,:,:])
+                        
+                        assert np.allclose(one_block_nori_x_nori, one_block_nori_x_nori_signal_noise_split[0,:,:] + one_block_nori_x_nori_signal_noise_split[1,:,:])
+                        #assert np.allclose(one_block_nlm_x_nlm, one_block_nlm_x_nlm_signal+one_block_nlm_x_nlm_noise)
 
+                        inv_one_block = linalg.inv(one_block_nlm_x_nlm)
+
+                        print('testing for one_block_nlm_x_nlm')
+                        rescale[iib] = np.mean(np.diag(one_block_nori_x_nori))
+
+                        #if ib == jb:
+                        #    rescale_of_large_matrix[ib] = np.sqrt(np.mean(one_block_nlm_x_nlm))
+
+                        self._test_matrix_and_inverse(one_block_nlm_x_nlm/rescale[iib], inv_one_block*rescale[iib], \
+                            atol_inv=1e-5, feedback_level_inv=0, assert_tests=['symmetric_mat', 'symmetric_inv', 'inverse'])
+
+                        #HACK
                         cov[ib*(nlm):(ib+1)*nlm, jb*nlm:(jb+1)*nlm, iz, itri] = one_block_nlm_x_nlm
+                        cov_signal[ib*(nlm):(ib+1)*nlm, jb*nlm:(jb+1)*nlm, iz, itri] = one_block_nlm_x_nlm_signal
+                        cov_noise[ib*(nlm):(ib+1)*nlm, jb*nlm:(jb+1)*nlm, iz, itri] = one_block_nlm_x_nlm_noise
 
-                invcov[:, :, iz, itri] = linalg.inv(cov[:, :, iz, itri])
-                print('invcov[:, :, iz, itri] = {}'.format(invcov[:, :, iz, itri]))
+                        iib = iib + 1
+
+                #print('rescale', rescale)
+                #print('max rescale = ', np.max(rescale))
+                #print('min rescale = ', np.min(rescale))
+                #print('mean rescale = ', np.mean(rescale))
+                mean_rescale = np.mean(rescale)
+
+                mat = cov[:, :, iz, itri]
+                invcov[:, :, iz, itri] = linalg.inv(mat)
                 
-                #self._test_matrix_and_inverse(cov[:, :, iz, itri], invcov[:, :, iz, itri], 
-                #    atol_inv=1e-3, feedback_level_inv=0, use_tests=['symmetric_mat', 'symmetric_inv'])
+                rescale_array_tmp = np.ones(nb*nlm, dtype=complex)
+                for ib in range(nb):
+                    rescale_array_tmp[ib*nlm:(ib+1)*nlm] = np.ones(nlm)*rescale_of_large_matrix[ib]
+                
+                rescale_matrix = np.diag(rescale_array_tmp)
+
+                #mat = np.matmul(rescale_matrix, np.matmul(cov[:, :, iz, itri], rescale_matrix))
+                #invmat = linalg.inv(mat)
+                #invcov[:, :, iz, itri] = np.matmul(rescale_matrix, np.matmul(invmat, rescale_matrix))
+                
+                #print('testing for entire nbxnlm, nbxnlm block - rescaled')
+                #self._test_matrix_and_inverse(mat, invmat,
+                #    atol_inv=1e-3, feedback_level_inv=1, assert_tests=[])
+                #INFO:BispectrumMultipoleCovariance:is_symmetric_cov_passed = False
+                #INFO:BispectrumMultipoleCovariance:is_symmetric_invcov_passed = True
+                #INFO:BispectrumMultipoleCovariance:is_inverse_test_passed = False
+                
+                print('blocks_of_nori_x_nori.shape = {}'.format(blocks_of_nori_x_nori.shape))
+
+                print('testing for entire nbxnlm, nbxnlm block')
+
+                fn_cov = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35/cov.npy'
+                fn_cov_signal = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35/cov_signal.npy'
+                fn_cov_noise = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35/cov_noise.npy'
+
+                np.save(fn_cov, cov[:,:,iz,itri])
+                np.save(fn_cov_signal, cov_signal[:,:,iz,itri])
+                np.save(fn_cov_noise, cov_noise[:,:,iz,itri])
+                print('Saved files: {}'.format(fn_cov))
+                print('Saved files: {}'.format(fn_cov_signal))
+                print('Saved files: {}'.format(fn_cov_noise))
+
+                assert np.allclose(cov[:,:,iz,itri], cov_signal[:,:,iz,itri]+cov_noise[:,:,iz,itri])
+                
+                self._test_matrix_and_inverse(cov[:, :, iz, itri], invcov[:, :, iz, itri], 
+                    atol_inv=1e-3, feedback_level_inv=1, assert_tests=['inverse'])
         
         return cov, invcov
 
     def _test_matrix_and_inverse(self, mat, inv, atol_inv=1e-3, feedback_level_inv=0,\
-            use_tests=['symmetric_mat', 'symmetric_inv', 'inverse']):
+            assert_tests=['symmetric_mat', 'symmetric_inv', 'inverse']):
         """Checks through assertion if a matrix (mat) and its inverse (inv) 
         pass the symmetric matrix test individual and the inverse tests.
-        To select a subset of tests, use the flag use_tests, e.g.
-        use_tests = ['inverse']"""
+        To select a subset of tests, use the flag assert_tests, e.g.
+        assert_tests = ['inverse']"""
 
         is_symmetric_cov_passed = matrix_utils.check_matrix_symmetric(mat)
         is_symmetric_invcov_passed = matrix_utils.check_matrix_symmetric(inv)
         is_inverse_test_passed = matrix_utils.check_matrix_inverse(mat, \
             inv, atol=atol_inv, feedback_level=feedback_level_inv)
 
-        self._logger.info('is_inverse_test_passed = {}'.format(is_inverse_test_passed))
+        self._logger.info('is_symmetric_cov_passed = {}'.format(is_symmetric_cov_passed))
         self._logger.info('is_symmetric_invcov_passed = {}'.format(is_symmetric_invcov_passed))
         self._logger.info('is_inverse_test_passed = {}'.format(is_inverse_test_passed))
 
-        if 'symmetric_mat' in use_tests:
-            assert is_symmetric_cov_passed
-        if 'symmetric_inv' in use_tests:
+        if 'symmetric_mat' in assert_tests:
+             assert is_symmetric_cov_passed
+        if 'symmetric_inv' in assert_tests:
             assert is_symmetric_invcov_passed
-        if 'inverse' in use_tests:
+        if 'inverse' in assert_tests:
             assert is_inverse_test_passed
         
 
     def _apply_ylm_integral_on_one_block_nori_x_nori(self, one_block_nori_x_nori):
         """Performs integral \int dOmega Ylm* Cov Ylm"""
+
         cov = np.matmul(one_block_nori_x_nori, self._ylms_conj) 
         cov = np.matmul(self._ylms_conj_transpose, cov)
-
         dOmega = self._b3d_cov_calc._b3d_rsd_spec.dOmega
         cov = cov * dOmega
-        #print('cov=', cov)
+        
         #TODO need to add some conversion factor here:
         # 2) Calculate the number of modes here with Volume
+
         return cov
 
-    def _test_ylm_orthogonality(self, rtol=1e-3):
+    def _test_ylm_orthogonality(self, rtol=1e-2, atol=1e-2):
         nori = self._b3d_cov_calc._nori
         one_block_nori_x_nori = np.identity(nori)
         cov = np.matmul(one_block_nori_x_nori, self._ylms_conj) 
@@ -273,17 +355,22 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         nlm = self._ylms_conj.shape[1]
         
         is_symmetric = matrix_utils.check_matrix_symmetric(cov)
-        is_identity = np.allclose(cov, np.identity(nlm), rtol=rtol)
+
+        identity = np.identity(nlm, dtype=complex)
+        is_identity = np.allclose(cov, identity, rtol=rtol, atol=atol)
+        
+        max_diff = np.max(cov-identity)
 
         print('_test_ylm_orthogonality: is_symmetric = {}'.format(is_symmetric))
         assert is_symmetric
 
-        print('_test_ylm_orthogonality: is_identity = {}'.format(is_identity))
+        print('_test_ylm_orthogonality: is_identity = {} (rtol={}, atol={})'.format(is_identity, rtol, atol))
         print('_test_ylm_orthogonality: orthogonality test = {}'.format(cov))
+        print('_test_ylm_orthogonality: max_diff = {}'.format(max_diff))
         assert is_identity
         
 
-    def _setup_cov_b3d_rsd(self):
+    def _setup_cov_b3d_rsd(self, do_unique_multitracer):
 
         from lss_theory.covariance import Bispectrum3DRSDCovarianceCalculator
 
@@ -293,7 +380,8 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         
         nbin_cos_theta1 = 10
         nbin_phi12 = 10
-        do_folded_signal = False
+
+        do_folded_signal = False#TODO not input from yaml yet
 
         info_b3d_rsd = info['Bispectrum3DRSDCovariance']['Bispectrum3DRSD']['triangle_orientation_info']
         info_b3d_rsd['min_cos_theta1'] = -1
@@ -302,7 +390,9 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         info_b3d_rsd['min_phi12'] = 0.0
         info_b3d_rsd['max_phi12'] = 2.*np.pi
         info_b3d_rsd['nbin_phi12'] = nbin_phi12
-        info_b3d_rsd['do_folded_signal'] = do_folded_signal
+        info_b3d_rsd['do_folded_signal'] = do_folded_signal #TODO not input from yaml
+
+        info['Bispectrum3DRSDCovariance']['Bispectrum3DRSD']['do_unique_multitracer'] = do_unique_multitracer
 
         info['result_dir'] = './results/b3d_rsd/covariance/cosmo_planck2018_fiducial/nk_11/do_folded_signal_%s/theta_phi_%s_%s/debug/'%(do_folded_signal, nbin_cos_theta1, nbin_phi12)
         info['plot_dir'] = './plots/theory/covariance/b3d_rsd_theta1_phi12_%s_%s/fnl_0/nk_11/'%(nbin_cos_theta1, nbin_phi12)

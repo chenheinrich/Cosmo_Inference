@@ -30,12 +30,13 @@ def check_matrix_inverse(a, inv_a, atol=1e-06, feedback_level=0):
     if feedback_level >= 1:
         print('Passed inverse test? - {}'.format(is_inverse_test_passed))
     
-    if is_inverse_test_passed == False:
-        max_diff1 = np.max(np.abs(id1 - id0))
-        max_diff2 = np.max(np.abs(id2 - id0))
-
-        if feedback_level >= 0:
-            print('max diff1 = {}, max_diff2 = {}'.format(max_diff1, max_diff2))
+    max_diff1 = np.max(np.abs(id1 - id0))
+    max_diff2 = np.max(np.abs(id2 - id0))
+    
+    if (feedback_level == 0 and is_inverse_test_passed):
+        pass
+    else:
+        print('max diff1 = {}, max_diff2 = {}'.format(max_diff1, max_diff2))
 
     return is_inverse_test_passed
     
@@ -43,17 +44,18 @@ def check_matrix_symmetric(a, rtol=1e-05, atol=1e-08):
     """Returns boolean for whether the 2d matrix is symmetric given 
     relative and absolute tolerance"""
     
-    is_symmetric = np.allclose(a, a.T, rtol=rtol, atol=atol)
+    is_symmetric = np.allclose(a, np.transpose(a), rtol=rtol, atol=atol)
 
     if is_symmetric is False:
 
         diff = a - a.T
         frac_diff = diff/a
-        max_frac_diff = np.max(frac_diff)
-        
+        max_frac_diff = np.nanmax(frac_diff)
+
         print('diff: (a - a.T) = {}'.format(diff))
         print('frac_diff: (a - a.T)/a = {}'.format(frac_diff))
         print('max_frac_diff = {}'.format(max_frac_diff))
+        print('a = {}'.format(a))
 
     return is_symmetric
 
@@ -203,3 +205,10 @@ def add_zero_cols_and_rows(mat, row_start, nrow):
     logger.debug('insert {} rows and cols of zeros at index {}'.format(nrow, row_start))
     logger.debug('mat.shape = {}'.format(mat.shape))
     return mat
+
+#TODO not sure if needed yet
+#def matrix_inversion_by_block(mat, nrow, block_nrow):
+#    """Returns inverse of square matrix obtained by recursive block inversion, 
+#    assuming all blocks are invertible.
+#    Algorithm: https://en.wikipedia.org/wiki/Block_matrix
+#    """
