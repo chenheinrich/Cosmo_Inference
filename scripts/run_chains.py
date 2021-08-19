@@ -4,15 +4,15 @@ import subprocess
 
 from cobaya.run import run
 from cobaya.yaml import yaml_load_file, yaml_dump_file
-from spherelikes.params import CobayaPar
-from spherelikes.params_generator import CobayaParGenerator
+from spherex_cobaya.params import CobayaPar
+from spherex_cobaya.params_generator import CobayaParGenerator
 
 if __name__ == '__main__':
 
     """
     Example usage:
     1) in python
-        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 1 -d -run_in_python
+        python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 1 -d --run_in_python
     2) using mpi with 16 chains on TACC
         python3 scripts/run_chains.py ./inputs/chains_pars/ps_base.yaml 16 -d
     """

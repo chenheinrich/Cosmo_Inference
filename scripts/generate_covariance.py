@@ -9,19 +9,25 @@ import pytest
 
 from cobaya.yaml import yaml_load_file
 
-from spherelikes.model import ModelCalculator
-from spherelikes.utils.log import class_logger
-from spherelikes.params import SurveyPar
+from spherex_cobaya.model import ModelCalculator
+from spherex_cobaya.utils.log import class_logger
+from spherex_cobaya.params import SurveyPar
 
+from lss_theory.utils.profiler import profiler
+from lss_theory.math_utils.matrix_utils import check_matrix_symmetric
+from scripts.invert_matrix import invert_block_matrix
+from copy import deepcopy
 
+#TODO Need to clean up old methods
+# old format of cov calculation can go now
 class CovCalculator():
 
     def __init__(self, data, args):
         self.logger = class_logger(self)
-        self.data = data
+        self.data = deepcopy(data)
         self.args = args
 
-        self.galaxy_ps = self.data['galaxy_ps']
+        self.galaxy_ps = np.copy(self.data['galaxy_ps'])
         self.nsample = self.data['aux']['nsample']
         self.dk = self.data['aux']['dk']
         self.dmu = self.data['aux']['dmu']
@@ -43,10 +49,8 @@ class CovCalculator():
 
     def make_dict(self):
         """Creates two dictionaries to map between power spectrum index and galaxy sample pairs.
-
         Note: For example, (j1, j2) = (0,1) is mapped to ips = 0, (1,1) is mapped to ips = 5
         if there are 5 different galaxy samples.
-
         In general, the power spectrum index ips is mapped to (j1, j2) the galaxy sample indices,
         where j1 < j2, while both (j1, j2) and (j2, j1) are mapped to the same power spectrum index.
         """
@@ -67,51 +71,111 @@ class CovCalculator():
                 ips = ips + 1
 
     def load_number_density(self):
-        """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of 1/Mpc,
-        expecting number density in survey_par_file are given in h/Mpc."""
+        """Loads number density into a 2-d numpy array of shape (nsample, nz) in units of (1/Mpc)^3,
+        expecting number density in survey_par_file are given in (h/Mpc)^3."""
         # TODO want to put h * number_density in the survey par maybe?
         self.survey_par = SurveyPar(self.args['survey_par_file'])
         h = self.data['H0'] / 100.0 
-        self.number_density = h * self.survey_par.get_number_density_array()
+        self.number_density = h**3 * self.survey_par.get_number_density_array()
 
     def get_and_save_invcov(self):
         self.get_cov()
         self.get_invcov()
-        self.do_inv_test(self.cov, self.invcov)
+        #TODO need to 
+        #self.do_inv_test(self.cov, self.invcov)
         self.save()
 
     def get_cov(self):
         """Returns the covariance matrix for all power spectra between different
         galaxy samples, assuming it is diagonal in z, k and mu.
-
         We are also assuming that the covariance is symmetric under j1j2 <--> j1'j2':
             Cov[P_{j1, j2} P{j1', j2'}] = Cov[P_{j1', j2'} P{j1, j2}]
         where j1, j2, j1', j2' are indices of the galaxy samples forming the
         power spectra, and the z, k, mu dependence in P_{j1, j2}(z, k, mu) have been
         suppressed here for reasons mentioned above.
         """
-        # Careful: Do not change elements in self.data_1d, it would modify self.data
-        # from outside of this class since it is created w/ np.ravel().
+
         self.get_data_1d()
         self.shape = self.galaxy_ps.shape
-        ntot = np.prod(self.shape)
 
-        self.cov = np.zeros((ntot, ntot))
-        for ips1 in range(self.nps):
-            for ips2 in range(self.nps):
-                print('(ips1, ips2) = ({} {})'.format(ips1, ips2))
-                block_size = np.prod(self.shape[1:])
-                ind1 = ips1 * block_size
-                ind2 = ips2 * block_size
-                block = self.get_block(ips1, ips2)
-                self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]\
-                    = block
+        (self.nps, self.nz, self.nk, self.nmu) = self.shape
+        #ntot = np.prod(self.shape)
 
-        self.block_size = block_size
+        #self.cov = np.zeros((ntot, ntot))
+        self.cov = np.zeros((self.nps, self.nps, self.nz, self.nk, self.nmu))
+
+        for iz in range(self.nz):
+            for ik in range(self.nk):
+                for imu in range(self.nmu):
+                    #for ips1 in range(self.nps):
+                    #    for ips2 in range(self.nps):
+                    #        print('(ips1, ips2) = ({} {})'.format(ips1, ips2))
+                    #        block_size = np.prod(self.shape[1:])
+                    #        ind1 = ips1 * block_size
+                    #        ind2 = ips2 * block_size
+                    #        block = self.get_block(ips1, ips2)
+                    #        self.cov[ind1:(ind1 + block_size), ind2:(ind2 + block_size)]\
+                    #            = block
+
+                    self.cov[:, :, iz, ik, imu] = self.get_cov_smallest_nondiagonal_block(iz, ik, imu)
+
+
+        nmodes_z_k_mu = self.get_nmodes_z_k_mu(fsky=self.fsky)
+        self.cov = self.cov / (nmodes_z_k_mu[np.newaxis, np.newaxis, :, :, :])
 
         return self.cov
 
+    def get_cov_smallest_nondiagonal_block(self, iz, ik, imu):
+        cov = self.get_cov_nps_x_nps_block(iz, ik, imu)   
+        assert check_matrix_symmetric(cov)     
+        return cov
+
+    #@profiler
+    def get_cov_nps_x_nps_block(self, iz, ik, imu):
+
+        nps = self.nps
+        cov = np.zeros((nps, nps))
+
+        for ips in range(nps):
+            for jps in range(nps):
+
+                (a, b) = self.dict_sample_pair_from_ips['%i' % ips]
+                (c, d) = self.dict_sample_pair_from_ips['%i' % jps]
+
+                ips1 = self.dict_ips_from_sample_pair['%i,%i' % (a, c)]
+                ips2 = self.dict_ips_from_sample_pair['%i,%i' % (b, d)]
+                ips3 = self.dict_ips_from_sample_pair['%i,%i' % (a, d)]
+                ips4 = self.dict_ips_from_sample_pair['%i,%i' % (b, c)]
+
+                cov[ips, jps] = self.get_observed_ps_from_ips_iz_ik_imu(ips1, iz, ik, imu) \
+                        * self.get_observed_ps_from_ips_iz_ik_imu(ips2, iz, ik, imu) \
+                    + self.get_observed_ps_from_ips_iz_ik_imu(ips3, iz, ik, imu) \
+                        * self.get_observed_ps_from_ips_iz_ik_imu(ips4, iz, ik, imu)
+
+                # TODO not accounting for equilateral and isoceles triangles yet 
+                # TODO for these other terms in the cov, will need to change fog definition
+
+        return cov
+
+    @profiler
     def get_invcov(self, rescale=1.0):
+
+        try:
+            self.invcov = np.zeros_like(self.cov)
+
+            for iz in range(self.nz):
+                for ik in range(self.nk):
+                    for imu in range(self.nmu):
+                        self.invcov[:,:,iz,ik,imu] = np.linalg.inv(self.cov[:,:,iz,ik,imu] * rescale)
+                        assert check_matrix_symmetric(self.invcov[:,:,iz,ik,imu])             
+            
+            return self.invcov
+
+        except Exception as e:
+            self.logger.error('Error: {}'.format(e))
+
+    @profiler
+    def get_invcov_old_format(self, rescale=1.0):
         try:
             self.invcov = np.linalg.inv(self.cov * rescale)
             self.logger.debug(
@@ -120,8 +184,19 @@ class CovCalculator():
         except Exception as e:
             self.logger.error('Error: {}'.format(e))
 
+    @profiler
+    def get_invcov2(self):
+        """Not faster actually"""
+        try:
+            self.invcov = invert_block_matrix(self.cov, self.nps)
+            self.logger.debug(
+                'self.invcov.shape = {}'.format(self.invcov.shape))
+            return self.invcov
+        except Exception as e:
+            self.logger.error('Error: {}'.format(e))
+
     @staticmethod
-    def do_inv_test(mat, invmat, threshold=1e-3):
+    def do_inv_test_old_format(mat, invmat, threshold=1e-3):
         id0 = np.diag(np.ones(mat.shape[0]))
         id1 = np.matmul(mat, invmat)
         id2 = np.matmul(invmat, mat)
@@ -190,6 +265,11 @@ class CovCalculator():
         ps = self.get_galaxy_ps(a, b) + self.get_noise(a, b)
         return ps
 
+    def get_observed_ps_from_ips_iz_ik_imu(self, ips, iz, ik, imu):
+        (a, b) = self.dict_sample_pair_from_ips['%i' % ips]
+        ps = self.galaxy_ps[ips, iz, ik, imu] + self.get_noise(a, b)[iz, ik, imu] #TODO need to optimize
+        return ps
+
     def get_nmodes_z_k_mu(self, fsky=1.0):
         if not hasattr(self, 'nmodes_z_k_mu'):
             self.__make_nmodes()
@@ -216,8 +296,12 @@ class CovCalculator():
     def __make_nmodes(self):
         """Returns a 3d numpy array of shape (nz, nk, nmu) for Nmodes
         needed in a Cov[P_{j1, j2} P{j1', j2'}] block of the covariance,
-        where Cov = (2 / Nmodes) * (P + 1/n)^2, and
-        Nmodes = Vsurvey * (2 pi k^2 dk dmu)/ (2 pi)^3 with fsky = 1.
+        where 
+            Cov = (Nmodes)^{-1} * 
+                [(P{j1, j1'} + 1/n)(P{j2, j2'} + 1/n) 
+                + (P{j1, j2'} + 1/n)(P{j2, j1'} + 1/n)],
+        and
+            Nmodes = Vsurvey * (2 pi k^2 dk dmu)/ (2 pi)^3 with fsky = 1.
         """
         # (nk, nmu)
         nmodes_k_mu = (self.k**2 * self.dk)[:, np.newaxis] * \
@@ -228,23 +312,15 @@ class CovCalculator():
         self.nmodes_z_k_mu = volume_array[:, np.newaxis, np.newaxis]\
             * nmodes_k_mu[np.newaxis, :, :]
 
+    #TODO Might want to decouple this from requirements in theory module
+        # where this is requested for now.
+    #TODO delete zmid calculations?
     def get_survey_volume_array(self):
         """Returns 1d numpy array of shape (nz, ) for the volume of the 
-        redshift bins.
-
-        Note: The calculation is approximate: We do not integrate dV over
-        dz, but instead integrate dchi and use the bin center for the area.
-        """
-        # TODO might want to have more finely integrated volume
-        # this would require getting comoving_radial_distance from camb
-        # at more redshift values.
-        # Might want to decouple this from requirements in theory module
-        # where this is requested for now.
+        redshift bins in Mpc^3 (no h^{-3})."""
         d_lo = self.data['comoving_radial_distance_lo']
         d_hi = self.data['comoving_radial_distance_hi']
-        d_mid = self.data['comoving_radial_distance']
-        dist = d_mid
-        V = (4.0 * np.pi) * dist**2 * (d_hi - d_lo)
+        V = (4.0 * np.pi/3.0) * (d_hi**3 - d_lo**3)
         return V
 
     def test_dictionaries_are_constructed_correctly(self):
@@ -272,7 +348,7 @@ class CovCalculator():
         block21 = self.cov[ind2:(ind2 + block_size), ind1:(ind1 + block_size)]
         assert np.allclose(block12, block21)
 
-    def test_get_noise(self):
+    def test_get_noise(self): #TODO this might need to fixed, 1/h --> 1/h^2 due to bug fix
 
         h = self.data['H0'] / 100.0
 
@@ -358,10 +434,8 @@ class CovCalculator():
 def generate_covariance(args_in):
     """Computes and saves covariance matrix and its inverse, using an input
     fiducial cosmology (need to be the same as reference cosmollogy for AP).
-
     Note: We set is_reference_model = True automatically in this script to
     avoid calculating AP effects and bypass likelihood calculations.
-
     Note: We also disable the likelihood calculation to not load elements
     yet to be calculated (e.g. inverse covariance and simulated data vectors)
     by setting is_reference_likelihood = True.

@@ -1,0 +1,48 @@
+run_name: 'b3d_rsd_do_folded_signal_True'
+
+cosmo_par_file: './inputs/cosmo_pars/planck2018_fiducial.yaml' 
+
+cosmo_par_fid_file: './inputs/cosmo_pars/planck2018_fiducial.yaml'
+
+survey_par_file: './inputs/survey_pars/survey_pars_v27_base_cbe_Mar21.yaml'
+
+Bispectrum3DRSD: 
+  nk: 11 # number of k points (to be changed into bins)
+  nmu: -1 # number of mu bins 
+  kmin: 0.0007 # equivalent to 0.001 h/Mpc
+  kmax: 0.14 # equivalent to 0.2 h/Mpc
+  do_unique_multitracer: False
+  triangle_orientation_info: 
+    parametrization_name: 'theta1_phi12' 
+    min_cos_theta1: 0.0
+    max_cos_theta1: 1.0
+    nbin_cos_theta1: 2
+    min_phi12: 0
+    max_phi12: 'np.pi'
+    nbin_phi12: 4
+    do_folded_signal: True 
+  debug_settings:
+    set_mu_to_zero: False
+    sigp: null
+    f_of_z: null
+
+AllDerivatives:
+  h_frac: 0.05
+  h:
+    fnl: 0.1
+    theta_MC_100: 0.01
+  params:
+    - As
+    - ns
+    - fnl
+    - omch2
+    - ombh2
+    - theta_MC_100
+    - "*gaussian_biases"
+  method: 'finite_diff' #finite_diff or five_point
+
+fisher:
+  data_dir: './results/b3d_rsd/fisher/cut_signal_and_nmodes/'
+  #cov_type can be full or diagonal_in_triangle_orientation which is not accurate
+  cov_type: diagonal_in_triangle_orientation
+  invcov_path: './plots/theory/covariance/b3d_rsd_theta1_phi12_2_4/fnl_0/nk_11/test20210526/invcov_diag_in_orientation.npy'

@@ -1,0 +1,9 @@
+chain_dir: '/Users/chenhe/Research/My_Projects/SPHEREx/SPHEREx_forecasts/git/SphereLikes/chains/tacc_chains/ps_base_all_loose_with_omegak/'
+roots: 
+  - 'ps_base'
+plot_dir: './analysis/plots/'
+nsample: 5
+nz: 11
+analysis_settings:
+  ignore_rows: 0.1
+data_cosmo_par_file: "./chains/tacc_chains/ps_base_all_loose_with_omegak/data/sim_data.cosmo.yaml"

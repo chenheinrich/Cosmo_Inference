@@ -9,20 +9,27 @@ venv
 cosmo
 *.DS_Store
 docker_interactive
+*debug.py
 
 # User generated files
+*profiler/
+*sample_outputs/
 *chains/
 *.png
+*.npy
+!src/lss_theory/tests/data/*.npy
 demo*
 plots/
-*.npy
 data/unit_test
 analysis/inputs
 analysis/plots
-data/
+*data/
+!src/lss_theory/tests/data/
 job/
 out/
 inputs/cobaya_pars/chen
+tests/outputs/
+*chen/
 
 # Distribution / packaging
 .Python
@@ -43,3 +50,4 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+

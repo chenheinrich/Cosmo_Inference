@@ -10,7 +10,7 @@ from scripts.generate_ref import generate_ref
 from scripts.generate_covariance import generate_covariance
 from scripts.generate_data import generate_data
 
-from spherelikes.params import CobayaPar
+from spherex_cobaya.params import CobayaPar
 
 class ChainPreparation():
 
@@ -23,7 +23,7 @@ class ChainPreparation():
         common_args = yaml_load_file(config_file)
         cobaya_par = CobayaPar(common_args['cobaya_par_file'])
         survey_par = cobaya_par.get_survey_par()
-        common_args['survey_par_file'] = survey_par.get_par_file()
+        common_args['survey_par_file'] = survey_par.filename
         common_args['fix_default_bias'] = True
 
         if 'overwrite_covariance' not in common_args.keys():
@@ -32,9 +32,9 @@ class ChainPreparation():
         return common_args
 
     def prepare_chains(self):
-        self._get_reference_model()
+        #self._get_reference_model()
         self._get_covariance()
-        self._get_simulated_data()
+        #self._get_simulated_data()
 
     def _get_reference_model(self):
         """Generate reference cosmology results for AP"""

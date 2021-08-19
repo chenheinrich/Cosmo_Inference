@@ -1,83 +1,124 @@
-# SPHEREx Simulated Likelihood Analysis
+# SPHEREx Cosmo_Inference
 
-This is a python package for the [SPHEREx](https://spherex.caltech.edu/) simulated likelihood anaysis.
-It requires the MCMC sampler [Cobaya](https://cobaya.readthedocs.io/en/latest/index.html) to run.
+The [SPHEREx](https://spherex.caltech.edu/) Cosmo_Inference is the Inference section of the SPHEREx L4 Cosmology pipeline. It is used for performing simulated likelihood anaysis.
+
+It comprises of the following python packages:
+- lss_theory
+- spherex_cobaya
+
+We make use of the public code [Cobaya](https://cobaya.readthedocs.io/en/latest/index.html) as a MCMC sampler. 
 
 ## Before you start
 
 1. Clone the repository:
 
     `git clone https://github.com/chenheinrich/SphereLikes.git`
+    `cd Cosmo_Inference`
     
-2. It is recommended you create a [virtual environment](https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/20/conda/) before installing the dependencies:
+2. It is recommended you create a [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) before installing the dependencies (Note that Python 2 is decaprecated, we are using Python 3; if you are on a cluster, do `module avail python` to see what's available and use `module load python<X>` to select the version that corresponds to Python 3.7):
 
-    `conda create -n <yourenvname> python=3.7 anaconda`
+    `python3 -m pip install virtualenv [--user]`
 
-    `source activate <yourenvname>`
+    `python3 -m venv env`
 
-   or
+    `source env/bin/activate`
 
-    `pip3 install pipenv [--user]`
+or 
+    `conda create -n spherex python=3.7`
 
-    `virtualenv venv`
+    `conda activate spherex`
 
-    `source venv/bin/activate`
+We recommend using `virtualenv` instead of `conda`, since installing with pip inside a conda environment could cause problems sometimes.
 
 ## Install Requirements
 
-You may skip to step 3 if you already have Cobaya and its cosmological packages including camb and planck likelihoods.
+2. From inside Cosmo_Inference, install packages (`spherex_cobaya` and `lss_theory`) in this repository (add `--user` if you're on a cluster; and remove `-e` if you are not activately developing these packages):
 
-1. Install Cobaya.
-
-    `git clone https://github.com/CobayaSampler/cobaya.git`
-
-    `pip3 install -e cobaya --upgrade`
-
-   To test the installation: `python3 -c "import cobaya"`. If you have trouble, follow instructions here to install cobaya manually: https://cobaya.readthedocs.io/en/latest/installation.html#making-sure-that-cobaya-is-installed
-
-2. Install cosmological packages in Cobaya. But before you proceed, make sure you have gfortran or ifort compiler installed (test with `<gfortran_or_ifort> --version`). Also, MPI installation is optional but highly recommended (follow instructions [here](https://cobaya.readthedocs.io/en/latest/installation.html)).
-
-   Install cosmological packages in Cobaya, replacing `<path_to_packages>` with the path of your choice, e.g. `./cosmo`. This means you will have `cobaya`, `cosmo` and `SphereLikes` on the same level. 
-
-    `cobaya-install cosmo -p <path_to_packages>`
+    `python -m pip install -e ./src/lss_theory [--user]`
     
-    You may also decide to only install camb (the only one needed for now) and skip the rest:
-    
-    `cobaya-install camb -p <path_to_packages>`
+    `python -m pip install -e ./src/spherex_cobaya [--user] `
 
-   If Planck likelihood installation fails, follow instructions [here](cosmo/code/planck/code).
+3. Test that the packages are properly installed:
 
-3. Install other requirements (add `--user` if you're on a cluster):
+    `python -c "import lss_theory; import spherex_cobaya"`
 
-    `cd SphereLikes`
+## Run tests
 
-    `pip3 install -r requirements.txt [--user]`
+[PLEASE SKIP THIS SECTION, IT IS UNDER CONSTRUCTION]
 
-## Pip install `spherelikes` package 
+Current working tests are:
 
-Install in editable mode for now:
+For lss_theory:
+1. `python -m pytest src/lss_theory/tests`
 
-`pip3 install -e . [--user]`
+For spherex_cobaya
+1. `python tests/dev_test_theory.py`
+2. `python -m pytest tests/test_theory.py -m short`
 
-if you have venv activated and do not have administrative permission, give explicit path for pip in your environment, e.g.:
+Note: Use `python -m pytest` instead of `pytest` to ensure that you are using the 
+same `pytest` you installed earlier with `requirements.txt` if there are various
+python versions.
 
-`venv/bin/pip3.7 install -e .`
+## Run scripts from individual packages:
 
-Test with `python3 -c "import spherelikes"`
+Current directory must be Cosmo_Inference.
 
-## Run a sample cobaya run (must be from the root of this directory):
+Run lss_theory sample scripts:
 
-You should be able to run:
+- Power spectrum signal with RSD (linear theory + FoG)
 
-   `python3 scripts/prep_chains.py ./inputs/chains_pars/ps_base_v27.yaml`
+    `python -m lss_theory.scripts.get_ps ./src/lss_theory/sample_inputs/get_ps.yaml`
 
-to generate data needed for running MCMC chains: covariance matrix, reference cosmology and simulated data.
+- Bispectrum signal with RSD (linear theory + FoG)
 
-Then you can run chains (in debug mode add `-d` and to force removing existing chains add `-f`):
+    `python -m lss_theory.scripts.get_b3d_rsd ./src/lss_theory/sample_inputs/get_b3d_rsd.yaml`
 
-`python3 scripts/run_chains.py ./inputs/chains_pars/ps_base_v27.yaml 1 -d -f -run_in_python`
+- Bispectrum signal without RSD (linear theory)  
+
+    `python3 -m lss_theory.scripts.get_b3d_base ./src/lss_theory/sample_inputs/get_b3d_base.yaml`
+
+- Bispectrum multipole signal (linear theory)  
+
+    `python3 -m lss_theory.scripts.get_bis_mult ./src/lss_theory/sample_inputs/get_bis_mult.yaml`
+
+- Covariance for Bispectrum with RSD [Not validated; under construction]
+
+    `python3 -m lss_theory.scripts.get_covariance_b3d_rsd ./src/lss_theory/sample_inputs/get_covariance_b3d_rsd.yaml`
+
+- Covariance for Bispectrum multipole [Not validated; under construction]
+
+    `python3 -m lss_theory.scripts.get_covariance_bis_mult ./src/lss_theory/sample_inputs/get_covariance_bis_mult.yaml`
+
+- Fisher matrix for Bispectrum with RSD [Not validated; to be relocated]
+
+    `python3 -m lss_theory.fisher.fisher_b3d_rsd ./src/lss_theory/sample_inputs/get_fisher_b3d_rsd.yaml`
+
+- Fisher matrix for Bispectrum multipoles [Not validated; to be relocated]
+
+    `python3 -m lss_theory.fisher.fisher_bis_mult ./src/lss_theory/sample_inputs/get_fisher_bis_mult.yaml`
+
+
+Run spherex_cobaya sample scripts:
+
+    `cobaya-run ./src/spherex_cobaya/sample_inputs/cobaya_pars/b3d_rsd_vary_all_but_w0_wa_mnu.yaml -d -f`
+
+To get the data needed for running MCMC chains (covariance matrix and simulated data), use:
+
+    [Coming soon]
+
+[Other yaml files are still being upgraded.]
+
+## Run sample pipeline:
+
+Current directory must be Cosmo_Inference.
+
+There is a draft pipeline under construction:
+
+`./pipeline/scripts/execute.sh`
 
 ## Alternatives: Docker (under development)
+
+[PLEASE SKIP THIS SECTION, THE FOLLOWING NEEDS TO BE UPDATED]
 
 ### Basic run
 
