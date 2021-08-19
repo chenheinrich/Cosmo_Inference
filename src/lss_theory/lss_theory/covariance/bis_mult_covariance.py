@@ -1,3 +1,4 @@
+from operator import itruediv
 import yaml
 import numpy as np
 import os
@@ -12,6 +13,12 @@ from lss_theory.utils.file_tools import mkdir_p
 from lss_theory.params.survey_par import SurveyPar
 from lss_theory.utils.logging import class_logger
 
+def get_conditional_number(cov):
+    w, v = linalg.eig(cov)
+    #print('w = {}, v = {}'.format(w,v)) # conditional number 1e10
+    conditional_number = np.abs(w[0])/np.abs(w[-1])
+    print('conditional number = {:e}'.format(conditional_number))
+    return conditional_number
 class BispectrumMultipoleCovarianceBase():
     """This class takes in the 3D Fourier galaxy bispectrum covariance
     and performs two integrals over the spherical harmonics to
@@ -24,7 +31,8 @@ class BispectrumMultipoleCovarianceBase():
         self._info = copy.deepcopy(info)
         self._setup_dir()
         self._setup_paths()
-        self._load_b3d_rsd_cov()
+        #HACK delete later if not needed
+        #self._load_b3d_rsd_cov()
         
         survey_par = SurveyPar(self._info['survey_par_file'])
 
@@ -202,9 +210,31 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         cov_signal = np.zeros(shape, dtype=complex)
         cov_noise = np.zeros(shape, dtype=complex)
 
+        #HACK
+        print('self._nb', self._nb)
+        nbxnori = self._nb * nori
+        shape2 = (nbxnori, nbxnori, self._nz, self._ntri)
+        cov_ori = np.zeros(shape2, dtype=complex)
+
+        #HACK
+
+        itris_equilateral = []
+        itris_isoceles = []
+        for itri in range(self._ntri):
+            ik_triplet = self._b3d_cov_calc._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
+            print('itri = {}, (ik1, ik2, ik3) = {}'.format(itri, ik_triplet))
+            is_equilateral = self._b3d_cov_calc._is_equilateral(*ik_triplet)
+            is_isoceles = self._b3d_cov_calc._is_equilateral(*ik_triplet)
+            if is_equilateral:
+                itris_equilateral.append(itri)
+            if is_isoceles:
+                itris_isoceles.append(itri)
+        
+        print('Equilateral itris: {}'.format(itris_equilateral))
+
         for iz in range(self._nz):
             for itri in range(self._ntri):
-
+            #for itri in itris_isoceles:
                 print('iz = {}, itri = {}'.format(iz, itri))
 
                 #HACK remove later test
@@ -220,35 +250,37 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
                         blocks_of_nori_x_nori[:, :, iori, jori] = \
                             self._b3d_cov_calc.get_cov_nb_x_nb_block(iz, itri, iori, jori, do_signal_noise_split=False)
                 
-                assert np.allclose(blocks_of_nori_x_nori, blocks_of_nori_x_nori_signal_noise_split[:,:,0,:,:] + blocks_of_nori_x_nori_signal_noise_split[:,:,1,:,:])
+                #assert np.allclose(blocks_of_nori_x_nori, blocks_of_nori_x_nori_signal_noise_split[:,:,0,:,:] + blocks_of_nori_x_nori_signal_noise_split[:,:,1,:,:])
 
-                rescale = np.ones(nb*nb, dtype=complex)
-                
-                rescale_of_large_matrix = np.ones(nb, dtype=complex)
+                rescale = np.ones(nb*nb)
 
                 iib = 0
                 for ib in range(nb):
                     for jb in range(nb):
+
+                        print('\nib, jb = ({}, {})'.format(ib, jb))
                     
                         one_block_nori_x_nori = blocks_of_nori_x_nori[ib, jb, :, :]
-                    
+                        cov_ori[ib*(nori):(ib+1)*nori, jb*(nori):(jb+1)*nori, iz, itri] = one_block_nori_x_nori
+                        
                         one_block_nlm_x_nlm = self._apply_ylm_integral_on_one_block_nori_x_nori(one_block_nori_x_nori)
                         
+                        rank = np.linalg.matrix_rank(one_block_nori_x_nori)
+                        print('matrix rank (one_block_nori_x_nori)= {:e}'.format(rank))
+                        assert int(rank) == 100
+                        rank = np.linalg.matrix_rank(one_block_nlm_x_nlm)
+                        print('matrix rank (one_block_nlm_x_nlm) = {:e}'.format(rank))
+                        assert int(rank) == 6
+
                         #HACK debug
                         one_block_nori_x_nori_signal_noise_split = blocks_of_nori_x_nori_signal_noise_split[ib, jb, :, :, :]
                         one_block_nlm_x_nlm_signal = self._apply_ylm_integral_on_one_block_nori_x_nori(one_block_nori_x_nori_signal_noise_split[0,:,:])
                         one_block_nlm_x_nlm_noise = self._apply_ylm_integral_on_one_block_nori_x_nori(one_block_nori_x_nori_signal_noise_split[1,:,:])
                         
-                        assert np.allclose(one_block_nori_x_nori, one_block_nori_x_nori_signal_noise_split[0,:,:] + one_block_nori_x_nori_signal_noise_split[1,:,:])
-                        #assert np.allclose(one_block_nlm_x_nlm, one_block_nlm_x_nlm_signal+one_block_nlm_x_nlm_noise)
-
                         inv_one_block = linalg.inv(one_block_nlm_x_nlm)
 
                         print('testing for one_block_nlm_x_nlm')
                         rescale[iib] = np.mean(np.diag(one_block_nori_x_nori))
-
-                        #if ib == jb:
-                        #    rescale_of_large_matrix[ib] = np.sqrt(np.mean(one_block_nlm_x_nlm))
 
                         self._test_matrix_and_inverse(one_block_nlm_x_nlm/rescale[iib], inv_one_block*rescale[iib], \
                             atol_inv=1e-5, feedback_level_inv=0, assert_tests=['symmetric_mat', 'symmetric_inv', 'inverse'])
@@ -260,51 +292,38 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
 
                         iib = iib + 1
 
-                #print('rescale', rescale)
-                #print('max rescale = ', np.max(rescale))
-                #print('min rescale = ', np.min(rescale))
-                #print('mean rescale = ', np.mean(rescale))
-                mean_rescale = np.mean(rescale)
+                #HACK debug
+                rank = np.linalg.matrix_rank(cov[:,:,iz,itri])
+                print('matrix rank (cov[:,:,iz,itri])= {:e}'.format(rank))
 
-                mat = cov[:, :, iz, itri]
-                invcov[:, :, iz, itri] = linalg.inv(mat)
-                
-                rescale_array_tmp = np.ones(nb*nlm, dtype=complex)
-                for ib in range(nb):
-                    rescale_array_tmp[ib*nlm:(ib+1)*nlm] = np.ones(nlm)*rescale_of_large_matrix[ib]
-                
-                rescale_matrix = np.diag(rescale_array_tmp)
+                #rank = np.linalg.matrix_rank(cov_ori[:,:,iz,itri])
+                #print('matrix rank (cov_ori[:,:,iz,itri])= {:e}'.format(rank))
 
-                #mat = np.matmul(rescale_matrix, np.matmul(cov[:, :, iz, itri], rescale_matrix))
-                #invmat = linalg.inv(mat)
-                #invcov[:, :, iz, itri] = np.matmul(rescale_matrix, np.matmul(invmat, rescale_matrix))
-                
-                #print('testing for entire nbxnlm, nbxnlm block - rescaled')
-                #self._test_matrix_and_inverse(mat, invmat,
-                #    atol_inv=1e-3, feedback_level_inv=1, assert_tests=[])
-                #INFO:BispectrumMultipoleCovariance:is_symmetric_cov_passed = False
-                #INFO:BispectrumMultipoleCovariance:is_symmetric_invcov_passed = True
-                #INFO:BispectrumMultipoleCovariance:is_inverse_test_passed = False
-                
-                print('blocks_of_nori_x_nori.shape = {}'.format(blocks_of_nori_x_nori.shape))
+                #HACK debug
+                output_dir = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35_with_triangle_cases_debug_iz_%s_itri_%s/'%(iz, itri)
+                mkdir_p(output_dir)
 
-                print('testing for entire nbxnlm, nbxnlm block')
-
-                fn_cov = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35/cov.npy'
-                fn_cov_signal = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35/cov_signal.npy'
-                fn_cov_noise = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35/cov_noise.npy'
-
+                fn_cov_ori = os.path.join(output_dir, 'cov_ori.npy')
+                np.save(fn_cov_ori, cov_ori[:,:,iz,itri])
+            
+                fn_cov = os.path.join(output_dir, 'cov.npy')
                 np.save(fn_cov, cov[:,:,iz,itri])
-                np.save(fn_cov_signal, cov_signal[:,:,iz,itri])
+
+                fn_cov_noise = os.path.join(output_dir, 'cov_noise.npy')
                 np.save(fn_cov_noise, cov_noise[:,:,iz,itri])
+
+                fn_cov_signal = os.path.join(output_dir, 'cov_signal.npy')
+                np.save(fn_cov_signal, cov_signal[:,:,iz,itri])
+
                 print('Saved files: {}'.format(fn_cov))
+                print('Saved files: {}'.format(fn_cov_ori))
                 print('Saved files: {}'.format(fn_cov_signal))
                 print('Saved files: {}'.format(fn_cov_noise))
 
-                assert np.allclose(cov[:,:,iz,itri], cov_signal[:,:,iz,itri]+cov_noise[:,:,iz,itri])
-                
+                print('testing for entire nbxnlm, nbxnlm block')
+
                 self._test_matrix_and_inverse(cov[:, :, iz, itri], invcov[:, :, iz, itri], 
-                    atol_inv=1e-3, feedback_level_inv=1, assert_tests=['inverse'])
+                    atol_inv=1e-3, feedback_level_inv=1, assert_tests=[]) #assert_tests=['inverse']
         
         return cov, invcov
 
@@ -334,6 +353,12 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
 
     def _apply_ylm_integral_on_one_block_nori_x_nori(self, one_block_nori_x_nori):
         """Performs integral \int dOmega Ylm* Cov Ylm"""
+
+        mean_cov = np.mean(np.abs(one_block_nori_x_nori))
+        mean_ylms = np.mean(np.abs(self._ylms_conj))
+        min_ylms = np.min(np.abs(self._ylms_conj))
+        max_ylms = np.max(np.abs(self._ylms_conj))
+        print('mean_cov, mean_ylms, min_ylms, max_ylms: ', mean_cov, mean_ylms, min_ylms, max_ylms)
 
         cov = np.matmul(one_block_nori_x_nori, self._ylms_conj) 
         cov = np.matmul(self._ylms_conj_transpose, cov)
