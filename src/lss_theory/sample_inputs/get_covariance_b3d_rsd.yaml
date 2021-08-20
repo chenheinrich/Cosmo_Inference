@@ -12,7 +12,7 @@ Bispectrum3DRSDCovariance:
     nmu: -1 # number of mu bins 
     kmin: 0.0007 # equivalent to 0.001 h/Mpc
     kmax: 0.14 # equivalent to 0.2 h/Mpc
-    do_unique_multitracer: False
+    do_unique_multitracer: True
     triangle_orientation_info: 
       parametrization_name: 'theta1_phi12' 
       min_cos_theta1: 0.0
@@ -35,7 +35,7 @@ Bispectrum3DRSDCovariance:
   fsky: 0.75
   cov_type: 'diag_in_orientation'
 
-output_dir: './pipeline/sample_outputs/lss_theory/Bispectrum3DRSDCovariance/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/do_folded_signal_True/theta_phi_2_4/' 
+output_dir: './pipeline/sample_outputs/lss_theory/Bispectrum3DRSDCovariance/do_unique_multitracer_True/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/do_folded_signal_True/theta_phi_2_4/' 
 
 do_plot: False
-plot_dir: './pipeline/sample_outputs/lss_theory/Bispectrum3DRSDCovariance/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/do_folded_signal_True/theta_phi_2_4/plots/' 
+plot_dir: './pipeline/sample_outputs/lss_theory/Bispectrum3DRSDCovariance/do_unique_multitracer_True/cosmo_planck2018_fnl_1p0/survey_v27/nk_11/do_folded_signal_True/theta_phi_2_4/plots/' 

@@ -224,24 +224,22 @@ class Bispectrum3DRSDCovarianceCalculator():
 
                     cov_tmp = self.get_cov_nb_x_nb_block(iz, itri, iori, iori)\
                         * self._cov_rescale[iz, itri]
-    
+
                     cov[:, :, iz, itri, iori] = cov_tmp
 
                     if do_invcov == True:
-                        try:
-                            #HACK decide if want this? cuts mode off
-                            #self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
-                            self.invcov[:, :, iz, itri, iori] = \
-                                matrix_utils.invert_with_zero_cols_and_rows(\
-                                    cov_tmp, rows_null=None, fill_value=0) 
+                        self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
+                    #    try:
+                    #        #HACK decide if want this? cuts mode off
+                    #        #self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
+                    #        self.invcov[:, :, iz, itri, iori] = \
+                    #            matrix_utils.invert_with_zero_cols_and_rows(\
+                    #                cov_tmp, rows_null=None, fill_value=0) 
                     
-                        except np.linalg.LinAlgError as e:
-                            print('Got error: {}'.format(e))
-                            print('cov_tmp = {}'.format(cov_tmp))
-
-                    self.logger.debug('iz={}, itri={}, ib=0, iori={}: cov = {}'.format(iz, itri, iori, cov[0, 0, iz, itri, iori]))
-                    #self.logger.debug('cov_tmp = {}'.format(cov_tmp))
-                    #self.logger.debug('invcov[:, :, iz, itri, iori] = {}'.format(invcov[:, :, iz, itri, iori]))
+                    #    except np.linalg.LinAlgError as e:
+                    #        print('Got error: {}'.format(e))
+                    #        print('cov_tmp = {}'.format(cov_tmp))
+                    
         return cov
 
     def _get_cov_rescale(self):
@@ -520,7 +518,6 @@ class Bispectrum3DRSDCovarianceCalculator():
         return (((a != b) and (b != c)) and (a != b))
 
     def _get_cov_isamples_jsamples(self, isamples, jsamples, iz, itri, iori, jori, do_signal_noise_split=False):
-        """Can be used for both do_unique_multitracer = True/False."""
 
         (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
 
