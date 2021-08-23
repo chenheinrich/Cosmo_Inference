@@ -448,6 +448,7 @@ class Bispectrum3DRSDCovarianceCalculator():
         list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
         return list_of_isamples
 
+    #TODO moved to data_spec.py, replace function calls with self._b3d_rsd_spec._get_list...
     def _get_list_of_isamples_for_ib_unique_multitracer(self, ib, k_triplet):
 
         triplet = self._b3d_rsd_spec.get_isamples(ib)
@@ -473,6 +474,7 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         return list_of_isamples
 
+    #TODO moved to data_spec.py, replace function calls
     @staticmethod
     def _get_one_perm_for_a_b_c(a, b, c):
         return [(a, b, c)]

@@ -279,6 +279,8 @@ class Bispectrum3DBaseSpec(DataSpec):
 
         self._setup_ntri()
         self._overwrite_shape_for_b3d_base()
+
+        self.print_isamples()
         
     @property
     def nb(self):
@@ -320,7 +322,7 @@ class Bispectrum3DBaseSpec(DataSpec):
         
         return dict_isamples_to_ib, dict_ib_to_isamples, nb
 
-    @staticmethod    
+    @staticmethod
     def _get_multi_tracer_unique_config_all(nsample):
         ib = 0
         dict_ib_to_isamples = {}
@@ -329,7 +331,6 @@ class Bispectrum3DBaseSpec(DataSpec):
             for isample2 in range(isample1, nsample):
                 for isample3 in range(isample2, nsample):
                     triplets = (isample1, isample2, isample3)
-                    print('ib = {}, triplets = {}'.format(ib, triplets))
                     dict_ib_to_isamples['%i'%ib] = triplets
                     dict_isamples_to_ib['%i_%i_%i'%(isample1, isample2, isample3)] = ib
                     ib = ib + 1
@@ -347,13 +348,96 @@ class Bispectrum3DBaseSpec(DataSpec):
         (ik1, ik2, ik3) = self.triangle_spec.get_ik1_ik2_ik3() 
         return (self._dk[ik1], self._dk[ik2], self._dk[ik3])
 
-    def get_ib(self, isample1, isample2, isample3):
+    def get_ib_from_isamples(self, isample1, isample2, isample3):
         """Returns the index of bispectrum given indices of 3 galaxy samples"""
         return self._dict_isamples_to_ib['%i_%i_%i'%(isample1, isample2, isample3)]
 
     def get_isamples(self, ib):
         """Returns a tuple of 3 galaxy sample indices given index of bispectrum"""
         return self._dict_ib_to_isamples['%i'%(ib)]
+
+    def print_isamples(self):
+        for ib in range(self.nb):
+            self._logger.info('ib = {}, isamples = {}'.format(ib, self.get_isamples(ib)))
+
+    def get_list_of_isamples_for_ib(self, ib, k_triplet=None):
+        if self._do_unique_multitracer == True:
+            return self.get_list_of_isamples_for_ib_unique_multitracer(ib, k_triplet=k_triplet)
+        else:
+            return [self.get_isamples(ib)]
+
+    def get_list_of_isamples_for_ib_unique_multitracer(self, ib, k_triplet=None):
+
+        triplet = self._b3d_rsd_spec.get_isamples(ib)
+
+        if k_triplet is None:
+            k_triplet_scalene_random = (1, 2, 3) 
+            k_triplet = k_triplet_scalene_random
+
+        if self._is_equilateral(*triplet):
+            list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
+
+        elif self._is_isoceles(*triplet):
+            list_of_isamples = self._get_cyclic_perm_for_a_b_c(*triplet)
+            #For finer case treatment:
+            if self._is_equilateral(*k_triplet):
+                list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
+            elif self._is_isoceles(*k_triplet):
+                list_of_isamples = self._get_two_cyclic_perm_for_a_b_c(*triplet) 
+
+        elif self._is_scalene(*triplet):
+            list_of_isamples = self._get_all_perm_for_a_b_c(*triplet)
+            #For finer case treatment:
+            if self._is_equilateral(*k_triplet):
+                list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
+            elif self._is_isoceles(*k_triplet):
+                list_of_isamples = self._get_cyclic_perm_for_a_b_c(*triplet)
+
+        return list_of_isamples
+
+    @staticmethod
+    def _get_one_perm_for_a_b_c(a, b, c):
+        return [(a, b, c)]
+    
+    @staticmethod
+    def _get_cyclic_perm_for_a_b_c(a, b, c):
+        return [(a, b, c), (b, c, a), (c, a, b)]
+
+    @staticmethod
+    def _get_two_cyclic_perm_for_a_b_c(a, b, c):
+        return [(a, b, c), (c, a, b)]
+    
+    @staticmethod
+    def _get_all_perm_for_a_b_c(a, b, c):
+        return [(a, b, c), (b, c, a), (c, a, b), \
+                (c, b, a), (b, a, c), (a, c, b)] 
+
+    @staticmethod
+    def _is_equilateral(a, b, c):
+        return ((a == b) and (b == c))
+    
+    @staticmethod
+    def _is_isoceles_a_b(a, b, c):
+        return ((a == b) and (a != c))
+    
+    @staticmethod
+    def _is_isoceles_b_c(a, b, c):
+        return ((b == c) and (b != a))
+
+    @staticmethod
+    def _is_isoceles_a_c(a, b, c):
+        return ((a == c) and (a != b))
+
+    def _is_isoceles(self, a, b, c):
+        t = (a, b, c)
+        iso1 = self._is_isoceles_a_b(*t)
+        iso2 = self._is_isoceles_b_c(*t)
+        iso3 = self._is_isoceles_a_c(*t)
+        return ((iso1 or iso2) or iso3)
+
+    @staticmethod
+    def _is_scalene(a, b, c):
+        return (((a != b) and (b != c)) and (a != b))
 
 class Bispectrum3DRSDSpec(Bispectrum3DBaseSpec):
     """Bispectrum3DRSDSpec should not be used directly, use its subclasses"""

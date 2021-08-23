@@ -387,7 +387,11 @@ class Bispectrum3DBase(DataVector):
 
         return pk12, pk23, pk13
 
-        
+
+#changes:
+# isamples = dict[...] --> get_isamples(ib)
+# nb = nsamples**3 --> dataspec.nb
+# 
 class Bispectrum3DRSD(Bispectrum3DBase):
 
     """No AP"""
@@ -407,34 +411,9 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
         (self._Z1_k1, self._Z1_k2, self._Z1_k3) = self._get_Z1_for_k1_k2_k3()
 
-    def _get_Bggg(self, term_name='b10'):
-        """3d numpy array of shape (nb, nz, ntri)"""
+        self._data_spec.print_isamples()
 
-        allowed_term_name = ['b10_prim', 'b10_grav', 'b20']
-
-        if term_name in allowed_term_name:
-
-            nb = self._data_spec.nsample**3
-            nz = self._data_spec.nz
-            ntri = self._triangle_spec.ntri
-            nori = self._triangle_spec.nori
-
-            Bggg = np.zeros((nb, nz, ntri, nori))
-            for iz in range(self._data_spec.nz):
-                ib = 0
-                for isample1 in range(self._data_spec.nsample):
-                    for isample2 in range(self._data_spec.nsample):
-                        for isample3 in range(self._data_spec.nsample):
-                            Bggg_tmp =  getattr(self, \
-                                '_get_Bggg_' + term_name + '_at_iz')\
-                                    (iz, isample1, isample2, isample3)
-                            Bggg[ib, iz, :, :] = Bggg_tmp
-                            ib = ib + 1
-            return Bggg
-        else:
-            raise NotImplementedError
-
-    def _get_Bggg(self, term_name='b10'):
+    def _get_Bggg(self, term_name='b10_prim'):
         """3d numpy array of shape (nb, nz, ntri)"""
 
         allowed_term_name = ['b10_prim', 'b10_grav', 'b20']
@@ -448,7 +427,7 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
     def _get_Bggg_b10_prim(self):
         
-        nb = self._data_spec.nsample**3
+        nb = self._data_spec.nb
         nz = self._data_spec.nz
         ntri = self._triangle_spec.ntri
         nori = self._triangle_spec.nori
@@ -457,22 +436,21 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
         for ib in range(nb):
 
-            isamples = self._data_spec.dict_ib_to_isamples['%s'%ib]
-            isample1 = isamples[0]
-            isample2 = isamples[1]
-            isample3 = isamples[2]
+            list_isamples = self._data_spec.get_list_of_isamples_for_ib(ib)
 
-            Bggg_b10[ib, :, :, :] = self._get('Bmmm_prim')[np.newaxis, :, :, np.newaxis] \
-                * self._Z1_k1[isample1, :, :, :] \
-                * self._Z1_k2[isample2, :, :, :] \
-                * self._Z1_k3[isample3, :, :, :] \
-                * self._fog_all[ib, :, :, :]
+            for isamples in list_isamples:
+                (isample1, isample2, isample3) = isamples
+                Bggg_b10[ib, :, :, :] += self._get('Bmmm_prim')[np.newaxis, :, :, np.newaxis] \
+                    * self._Z1_k1[isample1, :, :, :] \
+                    * self._Z1_k2[isample2, :, :, :] \
+                    * self._Z1_k3[isample3, :, :, :] \
+                    * self._fog_all[ib, :, :, :]
 
         return Bggg_b10
 
     def _get_Bggg_b10_grav(self):
         
-        nb = self._data_spec.nsample**3
+        nb = self._data_spec.nb
         nz = self._data_spec.nz
         ntri = self._triangle_spec.ntri
         nori = self._triangle_spec.nori
@@ -481,16 +459,15 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
         for ib in range(nb):
 
-            isamples = self._data_spec.dict_ib_to_isamples['%s'%ib]
-            isample1 = isamples[0]
-            isample2 = isamples[1]
-            isample3 = isamples[2]
-
-            Bggg_b10[ib, :, :, :] = self._get('Bmmm_grav')[np.newaxis, :, :, np.newaxis] \
-                * self._Z1_k1[isample1, :, :, :] \
-                * self._Z1_k2[isample2, :, :, :] \
-                * self._Z1_k3[isample3, :, :, :] \
-                * self._fog_all[ib, :, :, :]
+            list_isamples = self._data_spec.get_list_of_isamples_for_ib(ib)
+            
+            for isamples in list_isamples:
+                (isample1, isample2, isample3) = isamples
+                Bggg_b10[ib, :, :, :] += self._get('Bmmm_grav')[np.newaxis, :, :, np.newaxis] \
+                    * self._Z1_k1[isample1, :, :, :] \
+                    * self._Z1_k2[isample2, :, :, :] \
+                    * self._Z1_k3[isample3, :, :, :] \
+                    * self._fog_all[ib, :, :, :]
 
         return Bggg_b10
 
@@ -498,7 +475,7 @@ class Bispectrum3DRSD(Bispectrum3DBase):
 
         bias_20 = self._grs_ingredients.get('galaxy_bias_20') 
 
-        nb = self._data_spec.nsample**3
+        nb = self._data_spec.nb
         nz = self._data_spec.nz
         ntri = self._triangle_spec.ntri
         nori = self._triangle_spec.nori
@@ -516,37 +493,33 @@ class Bispectrum3DRSD(Bispectrum3DBase):
         Bggg_b20 = np.zeros((nb, nz, ntri, nori))
 
         for ib in range(nb):
+            
+            list_isamples = self._data_spec.get_list_of_isamples_for_ib(ib)
+            
+            for isamples in list_isamples:
+                (isample1, isample2, isample3) = isamples
 
-            #TODO should write an access function
-            isamples = self._data_spec.dict_ib_to_isamples['%s'%ib]
-            isample1 = isamples[0]
-            isample2 = isamples[1]
-            isample3 = isamples[2]
-
-            ib = self._data_spec.dict_isamples_to_ib[\
-                '%s_%s_%s'%(isample1, isample2, isample3)]
-   
-            Bggg_b20[ib, :, :, :] = \
-                self._fog_all[ib, :, :, :] * (\
-                    self._Z1_k1[isample1, :, :, :] \
-                        * self._Z1_k2[isample2, :, :, :] \
-                        * bias_20[isample3, :, np.newaxis, np.newaxis] \
-                        * pk12[np.newaxis,:,:,np.newaxis] \
-                    + self._Z1_k1[isample1, :, :, :] \
-                        * bias_20[isample2, :, np.newaxis, np.newaxis] \
-                        * self._Z1_k3[isample3, :, :, :] \
-                        * pk13[np.newaxis,:,:,np.newaxis] \
-                    + bias_20[isample1, :, np.newaxis, np.newaxis] \
-                        * self._Z1_k2[isample2, :, :, :] \
-                        * self._Z1_k3[isample3, :, :, :] \
-                        * pk23[np.newaxis,:,:,np.newaxis]
-                    )
+                Bggg_b20[ib, :, :, :] += \
+                    self._fog_all[ib, :, :, :] * (\
+                        self._Z1_k1[isample1, :, :, :] \
+                            * self._Z1_k2[isample2, :, :, :] \
+                            * bias_20[isample3, :, np.newaxis, np.newaxis] \
+                            * pk12[np.newaxis,:,:,np.newaxis] \
+                        + self._Z1_k1[isample1, :, :, :] \
+                            * bias_20[isample2, :, np.newaxis, np.newaxis] \
+                            * self._Z1_k3[isample3, :, :, :] \
+                            * pk13[np.newaxis,:,:,np.newaxis] \
+                        + bias_20[isample1, :, np.newaxis, np.newaxis] \
+                            * self._Z1_k2[isample2, :, :, :] \
+                            * self._Z1_k3[isample3, :, :, :] \
+                            * pk23[np.newaxis,:,:,np.newaxis]
+                        )
                             
         return Bggg_b20
 
     def _get_Z1_for_k1_k2_k3(self):
 
-        """Returns a tuple of 3 elements, each a 4d numpy array of shape (nb, nz, ntri, nori).
+        """Returns a tuple of 3 elements, each a 4d numpy array of shape (nsample, nz, nk, nori).
         for Z1 = (b(k)+f(z)*mu^2), where mu is a function of triangle shape and orientation."""
 
         bias = self._grs_ingredients.get('galaxy_bias_without_AP') 
@@ -622,35 +595,6 @@ class Bispectrum3DRSD(Bispectrum3DBase):
                         fog[ib,:,:,:] = np.exp( -0.5 * (sigp_kmu_squared))
 
                         ib = ib + 1
-
-        return fog
-
-    #OLD
-    def _get_fog_old(self, iz, isample1, isample2, isample3, k1mu1, k2mu2, k3mu3):
-
-        if self._data_spec._debug_sigp is not None:
-            sigp = self._data_spec._debug_sigp
-            sigp1 = sigp2 = sigp3 = sigp
-        else:
-            sigp = self._grs_ingredients.get('sigp')
-            sigp1, sigp2, sigp3 = (\
-            sigp[isample1, iz], \
-            sigp[isample2, iz], \
-            sigp[isample3, iz]
-            )
-
-        self.logger.debug('using sigp1, sigp2, sigp3 = {}, {}, {}'\
-            .format(sigp1, sigp2, sigp3))
-        
-        sigp_kmu_squared = (k1mu1*sigp1)**2 \
-            + (k2mu2*sigp2) ** 2 \
-            + (k3mu3*sigp3) ** 2
-        
-        if sigp_kmu_squared.shape != k1mu1.shape:
-            self.logger.error('Assertion error {} vs {}'.format(
-                sigp_kmu_squared.shape, k1mu1.shape))
-
-        fog = np.exp(- 0.5 * (sigp_kmu_squared))
 
         return fog
         
