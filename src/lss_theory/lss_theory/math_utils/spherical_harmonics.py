@@ -37,7 +37,7 @@ class CacheNotFoundError(Exception):
         super().__init__(self.message)
 
 
-def test_ylms(theta, phi, do_negative_m):  
+def test_ylms_lmax_2(theta, phi, do_negative_m):  
     """Returns 1d numpy array of 4 elements for Ylm values with
     (l, m) = [(0,0), (1,-1), (1,0), (1,1)] given polar angle theta 
     and azimuthal angle phi. Used for testing.
@@ -50,6 +50,7 @@ def test_ylms(theta, phi, do_negative_m):
         return np.array([y00, y1m1, y1m0, y11])
     else:
         return np.array([y00, y1m0, y11])
+
 class SphericalHarmonicsTable():
     """This class gets the saved spherical harmonics table
     from disk or computes from scratch and saves them.
@@ -178,10 +179,10 @@ class SphericalHarmonicsTable():
         theta = self._thetas[itheta] 
         phi = self._phis[iphi]
 
-        expected = test_ylms(theta, phi, self._do_negative_m)
-        length = expected.size
+        expected = test_ylms_lmax_2(theta, phi, self._do_negative_m)
+        length = min(expected.size, sh_table.shape[1])
         check_passed = np.allclose(\
-            expected, \
+            expected[:length], \
             sh_table[iori, :length]\
         )
         assert check_passed

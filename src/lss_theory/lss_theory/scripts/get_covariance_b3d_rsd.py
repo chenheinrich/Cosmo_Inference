@@ -236,11 +236,11 @@ if __name__ == '__main__':
     fn_invcov = os.path.join(info['output_dir'], 'invcov_%s.npy'%cov_type)
 
     #For a single block
-    iz = 0
-    itri = 1
-    iori = 0
-    jori = 0
-    block = cov_calculator.get_cov_nb_x_nb_block(iz, itri, iori, jori)
+    #iz = 0
+    #itri = 1
+    #iori = 0
+    #jori = 0
+    #block = cov_calculator.get_cov_nb_x_nb_block(iz, itri, iori, jori)
 
     cov_calculator.get_and_save_cov(fn_cov, cov_type=cov_type, do_invcov=True)
     #cov = np.load(fn_cov)

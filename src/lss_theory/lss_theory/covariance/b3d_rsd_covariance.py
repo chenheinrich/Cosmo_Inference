@@ -224,24 +224,22 @@ class Bispectrum3DRSDCovarianceCalculator():
 
                     cov_tmp = self.get_cov_nb_x_nb_block(iz, itri, iori, iori)\
                         * self._cov_rescale[iz, itri]
-    
+
                     cov[:, :, iz, itri, iori] = cov_tmp
 
                     if do_invcov == True:
-                        try:
-                            #HACK decide if want this? cuts mode off
-                            #self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
-                            self.invcov[:, :, iz, itri, iori] = \
-                                matrix_utils.invert_with_zero_cols_and_rows(\
-                                    cov_tmp, rows_null=None, fill_value=0) 
+                        self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
+                    #    try:
+                    #        #HACK decide if want this? cuts mode off
+                    #        #self.invcov[:, :, iz, itri, iori] = scipy.linalg.inv(cov_tmp)
+                    #        self.invcov[:, :, iz, itri, iori] = \
+                    #            matrix_utils.invert_with_zero_cols_and_rows(\
+                    #                cov_tmp, rows_null=None, fill_value=0) 
                     
-                        except np.linalg.LinAlgError as e:
-                            print('Got error: {}'.format(e))
-                            print('cov_tmp = {}'.format(cov_tmp))
-
-                    self.logger.debug('iz={}, itri={}, ib=0, iori={}: cov = {}'.format(iz, itri, iori, cov[0, 0, iz, itri, iori]))
-                    #self.logger.debug('cov_tmp = {}'.format(cov_tmp))
-                    #self.logger.debug('invcov[:, :, iz, itri, iori] = {}'.format(invcov[:, :, iz, itri, iori]))
+                    #    except np.linalg.LinAlgError as e:
+                    #        print('Got error: {}'.format(e))
+                    #        print('cov_tmp = {}'.format(cov_tmp))
+                    
         return cov
 
     def _get_cov_rescale(self):
@@ -400,8 +398,10 @@ class Bispectrum3DRSDCovarianceCalculator():
         
     def _get_cov_ib_jb_unique_multitracer(self, ib, jb, iz, itri, iori, jori, do_signal_noise_split=False):
 
-        list_of_isamples = self._get_list_of_isamples_for_ib_unique_multitracer(ib)
-        list_of_jsamples = self._get_list_of_isamples_for_ib_unique_multitracer(jb)
+        k_triplet = self._b3d_rsd_spec.triangle_spec.get_k1_k2_k3_for_itri(itri)
+
+        list_of_isamples = self._get_list_of_isamples_for_ib_unique_multitracer(ib, k_triplet)
+        list_of_jsamples = self._get_list_of_isamples_for_ib_unique_multitracer(jb, k_triplet)
 
         cov_ib_jb = 0.0
         cov_ib_jb_no_noise = 0.0
@@ -448,7 +448,8 @@ class Bispectrum3DRSDCovarianceCalculator():
         list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
         return list_of_isamples
 
-    def _get_list_of_isamples_for_ib_unique_multitracer(self, ib):
+    #TODO moved to data_spec.py, replace function calls with self._b3d_rsd_spec._get_list...
+    def _get_list_of_isamples_for_ib_unique_multitracer(self, ib, k_triplet):
 
         triplet = self._b3d_rsd_spec.get_isamples(ib)
 
@@ -457,12 +458,23 @@ class Bispectrum3DRSDCovarianceCalculator():
 
         elif self._is_isoceles(*triplet):
             list_of_isamples = self._get_cyclic_perm_for_a_b_c(*triplet)
+            #For finer case treatment:
+            if self._is_equilateral(*k_triplet):
+                list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
+            elif self._is_isoceles(*k_triplet):
+                list_of_isamples = self._get_two_cyclic_perm_for_a_b_c(*triplet) 
 
         elif self._is_scalene(*triplet):
             list_of_isamples = self._get_all_perm_for_a_b_c(*triplet)
+            #For finer case treatment:
+            if self._is_equilateral(*k_triplet):
+                list_of_isamples = self._get_one_perm_for_a_b_c(*triplet)
+            elif self._is_isoceles(*k_triplet):
+                list_of_isamples = self._get_cyclic_perm_for_a_b_c(*triplet)
 
         return list_of_isamples
 
+    #TODO moved to data_spec.py, replace function calls
     @staticmethod
     def _get_one_perm_for_a_b_c(a, b, c):
         return [(a, b, c)]
@@ -470,6 +482,10 @@ class Bispectrum3DRSDCovarianceCalculator():
     @staticmethod
     def _get_cyclic_perm_for_a_b_c(a, b, c):
         return [(a, b, c), (b, c, a), (c, a, b)]
+
+    @staticmethod
+    def _get_two_cyclic_perm_for_a_b_c(a, b, c):
+        return [(a, b, c), (c, a, b)]
     
     @staticmethod
     def _get_all_perm_for_a_b_c(a, b, c):
@@ -504,7 +520,6 @@ class Bispectrum3DRSDCovarianceCalculator():
         return (((a != b) and (b != c)) and (a != b))
 
     def _get_cov_isamples_jsamples(self, isamples, jsamples, iz, itri, iori, jori, do_signal_noise_split=False):
-        """Can be used for both do_unique_multitracer = True/False."""
 
         (ik1, ik2, ik3) = self._b3d_rsd_spec.triangle_spec.get_ik1_ik2_ik3_for_itri(itri) #TODO make part of b3d_rsd_spec
 
