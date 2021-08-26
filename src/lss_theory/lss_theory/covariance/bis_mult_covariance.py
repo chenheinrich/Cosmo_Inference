@@ -187,14 +187,10 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         #HACK debug, make input later if useful
         do_signal_noise_split = True 
 
-        nb = self._b3d_cov_calc._nb
-
-        #TODO delete later
-        for ib in range(nb):
-            isamples = self._b3d_cov_calc._b3d_rsd_spec.get_isamples(ib)
-            #print('ib = {}, isamples = {}'.format(ib, isamples))
+        nb = self._nb
 
         nbxnlm = self._nb * self._nlm
+        print('self._nb = ',self._nb)
         nlm = self._nlm
 
         shape = (nbxnlm, nbxnlm, self._nz, self._ntri)
@@ -231,10 +227,9 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
                 itris_isoceles.append(itri)
         
         print('Equilateral itris: {}'.format(itris_equilateral))
-
+        
         for iz in range(self._nz):
             for itri in range(self._ntri):
-            #for itri in itris_isoceles:
                 print('iz = {}, itri = {}'.format(iz, itri))
 
                 #HACK remove later test
@@ -270,7 +265,7 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
                         assert int(rank) == 100
                         rank = np.linalg.matrix_rank(one_block_nlm_x_nlm)
                         print('matrix rank (one_block_nlm_x_nlm) = {:e}'.format(rank))
-                        assert int(rank) == 6
+                        #assert int(rank) == 6
 
                         #HACK debug
                         one_block_nori_x_nori_signal_noise_split = blocks_of_nori_x_nori_signal_noise_split[ib, jb, :, :, :]
@@ -300,7 +295,7 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
                 #print('matrix rank (cov_ori[:,:,iz,itri])= {:e}'.format(rank))
 
                 #HACK debug
-                output_dir = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/35x35_with_triangle_cases_debug_iz_%s_itri_%s/'%(iz, itri)
+                output_dir = './results/bis_mult/covariance/cosmo_planck2018_fiducial/nk_11/lmax_2/do_folded_signal_False/theta_phi_2_4/five_samples_lmax_1/with_triangle_cases_debug_iz_%s_itri_%s/'%(iz, itri)
                 mkdir_p(output_dir)
 
                 fn_cov_ori = os.path.join(output_dir, 'cov_ori.npy')
@@ -320,10 +315,23 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
                 print('Saved files: {}'.format(fn_cov_signal))
                 print('Saved files: {}'.format(fn_cov_noise))
 
+
+                cov_tmp = np.load(fn_cov)
+                ind_deg = [8, 11, 14, 20, 23, 26, 29, 32, 35]
+                cov_deg = cov_tmp[ind_deg, :][:, ind_deg]
+                print('cov_deg = ', cov_deg)
+
                 print('testing for entire nbxnlm, nbxnlm block')
 
-                self._test_matrix_and_inverse(cov[:, :, iz, itri], invcov[:, :, iz, itri], 
-                    atol_inv=1e-3, feedback_level_inv=1, assert_tests=[]) #assert_tests=['inverse']
+                #HACK
+                #self._test_matrix_and_inverse(cov[:, :, iz, itri], invcov[:, :, iz, itri], 
+                #    atol_inv=1e-3, feedback_level_inv=1, assert_tests=['inverse']) #assert_tests=['inverse']
+                
+                invcov_tmp = linalg.inv(cov_tmp)
+                self._test_matrix_and_inverse(cov_tmp, invcov_tmp, 
+                    atol_inv=2e-3, feedback_level_inv=1, assert_tests=['inverse']) #assert_tests=['inverse']
+
+        sys.exit()
         
         return cov, invcov
 
@@ -358,7 +366,6 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         mean_ylms = np.mean(np.abs(self._ylms_conj))
         min_ylms = np.min(np.abs(self._ylms_conj))
         max_ylms = np.max(np.abs(self._ylms_conj))
-        print('mean_cov, mean_ylms, min_ylms, max_ylms: ', mean_cov, mean_ylms, min_ylms, max_ylms)
 
         cov = np.matmul(one_block_nori_x_nori, self._ylms_conj) 
         cov = np.matmul(self._ylms_conj_transpose, cov)
@@ -400,7 +407,7 @@ class BispectrumMultipoleCovariance(BispectrumMultipoleCovarianceBase):
         from lss_theory.covariance import Bispectrum3DRSDCovarianceCalculator
 
         #TODO buried file path, need to change this
-        config_file = './src/lss_theory/sample_inputs/get_covariance_b3d_rsd.yaml'
+        config_file = './src/lss_theory/sample_inputs/chen/get_covariance_b3d_rsd_debug.yaml'
         with open(config_file) as file:
             info = yaml.load(file, Loader=yaml.FullLoader)
         

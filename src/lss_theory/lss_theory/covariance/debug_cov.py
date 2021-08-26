@@ -7,6 +7,9 @@ import lss_theory.math_utils.matrix_utils as matrix_utils
 do_unique_multitracer = True
 do_one_term = False
 do_split_signal_noise = True
+do_five_samples = True
+
+iz = 0
 
 def load_cov_tot_and_cov_ori(subdir):
 
@@ -29,6 +32,8 @@ def load_cov_tot_and_cov_ori(subdir):
     cov_signal = np.load(fn_cov_signal)
     cov_noise_in = np.load(fn_cov_noise)
 
+    print('Loaded cov_tot from fn_cov = {}'.format(fn_cov))
+
     return cov_tot, cov_ori, cov_signal, cov_noise_in
 
 if do_unique_multitracer == True:
@@ -42,7 +47,10 @@ if do_unique_multitracer == True:
 
     if do_split_signal_noise == True:
         itri = 0
-        subdir = '35x35_with_triangle_cases_iz_0_itri_%s/'%itri
+        if do_five_samples == True:
+            subdir = 'five_samples/with_triangle_cases_debug_iz_%s_itri_%s/'%(iz, itri)
+        else:
+            subdir = '35x35_with_triangle_cases_iz_%s_itri_%s/'%(iz, itri)
         cov_tot, cov_ori, cov_signal, cov_noise_in = load_cov_tot_and_cov_ori(subdir)
 
 else:
@@ -190,97 +198,198 @@ from lss_theory.math_utils.matrix_utils import delete_zero_cols_and_rows
 
 if do_split_signal_noise == True:
 
-    
-    itris = [0, 12, 23, 33, 42, 50, 57, 63, 68, 72, 75]
-    is_inverse_test_passed_array = np.zeros(len(itris))
+    if do_five_samples == True:
 
-    iz = 0
-    for itri in itris:
-        subdir = '35x35_with_triangle_cases_iz_%s_itri_%s/'%(iz, itri)
-        cov_tot, cov_ori, cov_signal, cov_noise = load_cov_tot_and_cov_ori(subdir)
+        itris = [0]
+        itris_equilateral = [0, 12, 23, 33, 42, 50, 57, 63, 68, 72, 75]
 
-        #get_conditional_number(cov_ori)
-        #get_det(cov_ori)
-        #get_matrix_rank(cov_ori)
+        is_inverse_test_passed_array = np.zeros(len(itris))
+
+        for itri in itris:
+            subdir = 'five_samples_lmax_1_bias_sample4_2p0/with_triangle_cases_debug_iz_%s_itri_%s/'%(iz, itri)
+            cov_tot, cov_ori, cov_signal, cov_noise = load_cov_tot_and_cov_ori(subdir)
+
+            #cov_tot = cov_tot[0:72,0:72]
+            #print(cov_tot.shape)
+            print('cov_tot.shape', cov_tot.shape)
+
+            print('itri = {}'.format(itri))
+            if itri in itris_equilateral:
+                print('   is equilateral')
+            get_matrix_rank(cov_tot)
+            get_matrix_rank(cov_signal)
+            get_matrix_rank(cov_noise)
+
+            invcov_tot = linalg.inv(cov_tot)
+            is_inverse_test_passed = matrix_utils.check_matrix_inverse(cov_tot, \
+                invcov_tot, atol=2e-3, feedback_level=0)
+
+
+            #assert is_inverse_test_passed
+            #is_inverse_test_passed_array[itri] = is_inverse_test_passed
+            #print('\n')
+
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(14,20))
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(12,15))
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_small, rows_null = range(18,21))
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(12,18))
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(18,24))
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(24,30))
+            #print('\n number of rows removed:', len(rows_null))
+
+            is_row_degenerate = np.zeros(105)
+            is_inverse_test_passed_cov_small_array = np.zeros(105)
+            for i in range(105):
+                print('\nRemoving row i = ', i)
+                cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = [i])
+                print('number of rows removed:', len(rows_null))
+            
+                rank = get_matrix_rank(cov_small)
+                invcov_small = linalg.inv(cov_small)
+                is_inverse_test_passed_cov_small = matrix_utils.check_matrix_inverse(cov_small, \
+                    invcov_small, atol=1e-3, feedback_level=0)
+                print('is_inverse_test_passed_cov_small: ', is_inverse_test_passed_cov_small)
+                
+                if is_inverse_test_passed_cov_small == True:
+                    is_inverse_test_passed_cov_small_array[i] = 1
+
+                if rank == 104:
+                    is_row_degenerate[i] = 1
+                
+            print('is_row_degenerate', is_row_degenerate)
+            print('   which rows = ', np.where(is_row_degenerate == 1))
+            ind_deg = np.where(is_row_degenerate == 1)
+
+            print('is_inverse_test_passed_cov_small_array', is_inverse_test_passed_cov_small_array)
+            print('   which rows = ', np.where(is_inverse_test_passed_cov_small_array == 1))
+
+
+        cov_degenerate =cov_tot[ind_deg[0],:][:,ind_deg[0]]
+        
+        for i in range(9):
+            print('\nRemoving row i = ', i)
+            cov_small, rows_null = delete_zero_cols_and_rows(cov_degenerate, rows_null = [i])
+            print('number of rows removed:', len(rows_null))
+        
+            rank = get_matrix_rank(cov_small)
+            invcov_small = linalg.inv(cov_small)
+            is_inverse_test_passed_cov_small = matrix_utils.check_matrix_inverse(cov_small, \
+                invcov_small, atol=1e-3, feedback_level=0)
+            print('is_inverse_test_passed_cov_small: ', is_inverse_test_passed_cov_small)
+        
+        print('cov_degenerate[0,:]')
+        print(cov_degenerate[0,:])
+        print('cov_degenerate[1,:]/cov_degenerate[1,0]*cov_degenerate[0,0]')
+        print(cov_degenerate[1,:]/cov_degenerate[1,0]*cov_degenerate[0,0])
+
+        print('cov_degenerate = ', cov_degenerate)
+
+        invcov_degenerate = linalg.inv(cov_degenerate)
+        is_inverse_test_passed_cov_degenerate = matrix_utils.check_matrix_inverse(cov_degenerate, \
+            invcov_degenerate, atol=1e-3, feedback_level=0)
+        print('is_inverse_test_passed_cov_degenerate: ', is_inverse_test_passed_cov_degenerate)
+
+        import pdb; 
+        pdb.set_trace()
+
+        #from scipy.sparse.linalg import cg
+
+        ##print('is_inverse_test_passed_array = {}'.format(is_inverse_test_passed_array))
+        ##ind = np.where(is_inverse_test_passed_array == 0)
+        ##print('ind = ', ind)
+
+    else:
+        
+        itris = [0, 12, 23, 33, 42, 50, 57, 63, 68, 72, 75]
+        is_inverse_test_passed_array = np.zeros(len(itris))
+
+        iz = 0
+        for itri in itris:
+            subdir = '35x35_with_triangle_cases_iz_%s_itri_%s/'%(iz, itri)
+            cov_tot, cov_ori, cov_signal, cov_noise = load_cov_tot_and_cov_ori(subdir)
+
+            #get_conditional_number(cov_ori)
+            #get_det(cov_ori)
+            #get_matrix_rank(cov_ori)
+
+            get_mean(cov_tot)
+            get_mean(cov_signal)
+            get_mean(cov_noise)
+            
+            rank = get_matrix_rank(cov_tot)
+            rank = get_matrix_rank(cov_signal)
+            rank = get_matrix_rank(cov_noise)
+
+            do_test = False
+            if do_test:
+                end = 210
+                start = 100
+                for n in np.arange(18,20):
+                    cov_small = cov_tot[n:end, n:end]
+                    #cov_small = cov_tot[n:end, n:end]
+                    print('For cov last block start at {}, {}'.format(n, n))
+                    rank = get_matrix_rank(cov_small)
+                    #assert n == rank, (n, rank)
+                    assert n == end-rank, (n, end-rank)
+
+            #sys.exit()
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(120,195))
+            #cov_small, rows_null = delete_zero_cols_and_rows(cov_noise, rows_null = range(125,195)) #156
+            
+            cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(14,20))
+            print('number of rows removed:', len(rows_null))
+
+            #cov_small = cov_tot
+            rank = get_matrix_rank(cov_small)
+
+            invcov_small = linalg.inv(cov_small)
+            is_inverse_test_passed = matrix_utils.check_matrix_inverse(cov_small, \
+                invcov_small, atol=1e-3, feedback_level=0)
+
+            #is_inverse_test_passed_array[itri] = is_inverse_test_passed
+
+        print('is_inverse_test_passed_array = {}'.format(is_inverse_test_passed_array))
+        ind = np.where(is_inverse_test_passed_array == 0)
+        print('ind = ', ind)
+
+        sys.exit()
+
+        rescale = 1.0
+
+        get_conditional_number(cov_tot/rescale)
+        get_conditional_number(cov_signal/rescale)
+        get_conditional_number(cov_noise/rescale)
+
+        get_det(cov_tot/rescale)
+        get_det(cov_signal/rescale)
+        get_det(cov_noise/rescale)
 
         get_mean(cov_tot)
         get_mean(cov_signal)
         get_mean(cov_noise)
-        
-        rank = get_matrix_rank(cov_tot)
-        rank = get_matrix_rank(cov_signal)
-        rank = get_matrix_rank(cov_noise)
 
-        do_test = False
-        if do_test:
-            end = 210
-            start = 100
-            for n in np.arange(18,20):
-                cov_small = cov_tot[n:end, n:end]
-                #cov_small = cov_tot[n:end, n:end]
-                print('For cov last block start at {}, {}'.format(n, n))
-                rank = get_matrix_rank(cov_small)
-                #assert n == rank, (n, rank)
-                assert n == end-rank, (n, end-rank)
+        get_matrix_rank(cov_tot)
+        get_matrix_rank(cov_signal)
+        get_matrix_rank(cov_noise)
 
-        #sys.exit()
-        #cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(120,195))
-        #cov_small, rows_null = delete_zero_cols_and_rows(cov_noise, rows_null = range(125,195)) #156
-        
-        cov_small, rows_null = delete_zero_cols_and_rows(cov_tot, rows_null = range(14,20))
-        print('number of rows removed:', len(rows_null))
+        print('cov_tot.shape', cov_tot.shape)
 
-        #cov_small = cov_tot
-        rank = get_matrix_rank(cov_small)
+        invcov_tot = linalg.inv(cov_tot/rescale)
+        is_inverse_test_passed = matrix_utils.check_matrix_inverse(cov_tot/rescale, \
+            invcov_tot, atol=1e-3, feedback_level=0)
 
-        invcov_small = linalg.inv(cov_small)
-        is_inverse_test_passed = matrix_utils.check_matrix_inverse(cov_small, \
-            invcov_small, atol=1e-3, feedback_level=0)
+        A = cov_noise/rescale
+        B = cov_signal/rescale
+        invcov_tot2 = get_inverse_of_sum_A_and_B(A, B)
+        is_inverse_test_passed = matrix_utils.check_matrix_inverse(cov_tot/rescale, \
+            invcov_tot2, atol=1e-3, feedback_level=0)
 
-        #is_inverse_test_passed_array[itri] = is_inverse_test_passed
-
-    print('is_inverse_test_passed_array = {}'.format(is_inverse_test_passed_array))
-    ind = np.where(is_inverse_test_passed_array == 0)
-    print('ind = ', ind)
-
-    sys.exit()
-
-    rescale = 1.0
-
-    get_conditional_number(cov_tot/rescale)
-    get_conditional_number(cov_signal/rescale)
-    get_conditional_number(cov_noise/rescale)
-
-    get_det(cov_tot/rescale)
-    get_det(cov_signal/rescale)
-    get_det(cov_noise/rescale)
-
-    get_mean(cov_tot)
-    get_mean(cov_signal)
-    get_mean(cov_noise)
-
-    get_matrix_rank(cov_tot)
-    get_matrix_rank(cov_signal)
-    get_matrix_rank(cov_noise)
-
-    print('cov_tot.shape', cov_tot.shape)
-
-    invcov_tot = linalg.inv(cov_tot/rescale)
-    is_inverse_test_passed = matrix_utils.check_matrix_inverse(cov_tot/rescale, \
-        invcov_tot, atol=1e-3, feedback_level=0)
-
-    A = cov_noise/rescale
-    B = cov_signal/rescale
-    invcov_tot2 = get_inverse_of_sum_A_and_B(A, B)
-    is_inverse_test_passed = matrix_utils.check_matrix_inverse(cov_tot/rescale, \
-        invcov_tot2, atol=1e-3, feedback_level=0)
-
-    cov_tot2 = cov_noise + cov_signal
-    frac_diff = np.abs((cov_tot2 - cov_tot)/cov_tot)
-    max_frac_diff = np.nanmax(frac_diff)
-    print('max_frac_diff = {}'.format(max_frac_diff))
-    ind = np.where(frac_diff == max_frac_diff)
-    print(cov_tot[ind], cov_tot2[ind])
+        cov_tot2 = cov_noise + cov_signal
+        frac_diff = np.abs((cov_tot2 - cov_tot)/cov_tot)
+        max_frac_diff = np.nanmax(frac_diff)
+        print('max_frac_diff = {}'.format(max_frac_diff))
+        ind = np.where(frac_diff == max_frac_diff)
+        print(cov_tot[ind], cov_tot2[ind])
 
 else:
     if do_unique_multitracer == True:
